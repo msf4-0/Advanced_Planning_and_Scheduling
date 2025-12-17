@@ -1,0 +1,42 @@
+services:
+  appsmith:
+    image: appsmith/appsmith-ce:release
+    container_name: appsmith
+    ports:
+      - "8080:80"
+    environment:
+      APPSMITH_ENCRYPTION_PASSWORD: abcd
+      APPSMITH_ENCRYPTION_SALT: abcd
+    volumes:
+      - ./stacks:/appsmith-stacks
+    restart: unless-stopped
+
+  aps-backend:
+    build: ./aps-backend  # Or use image: your-backend-image
+    container_name: aps-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgresUser
+      - POSTGRES_PASSWORD=postgresPass
+      - POSTGRES_DB=postgresDB
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: apache/age:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgresUser
+      POSTGRES_PASSWORD: postgresPass
+      POSTGRES_DB: postgresDB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
