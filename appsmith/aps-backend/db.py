@@ -123,7 +123,8 @@ def fetch_order_operations(product_name):
             o.material_needed
         FROM product_operations po
         JOIN operations o ON po.operation_id = o.operation_id
-        WHERE po.product_name = %s
+        JOIN products p ON po.product_id = p.product_id
+        WHERE p.product_name = %s
         ORDER BY po.sequence;
     """, (product_name,))
     
