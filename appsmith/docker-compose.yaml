@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: apache/age:latest
+    image: apache/age:release_PG15_1.6.0
     container_name: postgres
     environment:
       POSTGRES_USER: postgresUser

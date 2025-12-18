@@ -2,6 +2,7 @@ from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
 from typing import List
 from datetime import date, datetime
+from psycopg2.extras import execute_values
 
 from db import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_order_operations, fetch_inventory_for_item
 from scheduler import generate_schedule, pick_machine
@@ -44,13 +45,22 @@ class InventoryItem(BaseModel):
 
 @app.get("/get/inventory", response_model=List[InventoryItem])
 def get_inventory():
+    """
+    Retrieve the current inventory list.
+
+    Returns a list of inventory items, including their quantities, 
+    minimum required, maximum capacity, and age in days.
+    """
+
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT item_id, item_name, quantity, min_required, max_capacity, last_updated, received_at
-        FROM inventory
-        ORDER BY item_name, received_at;
-    """)
+    cur.execute(
+            """
+            SELECT item_id, item_name, quantity, min_required, max_capacity, last_updated, received_at
+            FROM inventory
+            ORDER BY item_name, received_at;
+            """
+        )
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -90,11 +100,13 @@ def get_orders():
 def get_schedule_gantt():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         SELECT order_id, operation, start_ts, end_ts
         FROM schedule_results
         ORDER BY start_ts
-    """)
+        """
+    )
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -116,12 +128,16 @@ def get_schedule_gantt():
 def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
+
+    cur.execute(
+        """
         UPDATE inventory
         SET quantity = %s, last_updated = NOW()
         WHERE item_id = %s
         RETURNING item_name;
-    """, (quantity, item_id))
+        """, (quantity, item_id)
+    )
+
     row = cur.fetchone()
     item_name = row[0] if row is not None else None
     conn.commit()
@@ -137,11 +153,13 @@ def add_inventory(item_name: str = Body(...),
                   max_capacity: int = Body(...)):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO inventory (item_name, quantity, min_required, max_capacity, last_updated, received_at)
         VALUES (%s, %s, %s, %s, NOW(), NOW())
         RETURNING item_id;
-    """, (item_name, quantity, min_required, max_capacity))
+        """, (item_name, quantity, min_required, max_capacity)
+    )
     row = cur.fetchone()
     item_id = row[0] if row is not None else None
     conn.commit()
@@ -152,6 +170,12 @@ def add_inventory(item_name: str = Body(...),
 
 @app.post("/add/sequences")
 def add_sequences(sequences: List[dict] = Body(...)):
+    """
+    Add or update product operation sequences.
+    
+    :param sequences: Description
+    :type sequences: List[dict]
+    """
     if not sequences:
         raise HTTPException(status_code=400, detail="No sequences provided")
 
@@ -160,29 +184,38 @@ def add_sequences(sequences: List[dict] = Body(...)):
     added = 0
     updated = 0
 
+    # Prepare a list of valid tuples
+    values = []
+
     for seq in sequences:
         # basic validation
         try:
-            product_name = seq['product_name']
+            product_id = int(seq['product_id'])
             operation_id = int(seq['operation_id'])
             sequence = int(seq['sequence'])
+            values.append((product_id, operation_id, sequence))
         except (KeyError, ValueError):
             continue  # skip invalid entries
 
-        # insert or update if exists
-        cur.execute("""
-            INSERT INTO product_operations (product_name, operation_id, sequence)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (product_name, operation_id)
+    if values:
+        execute_values(
+            cur,
+            """
+            INSERT INTO product_operations (product_id, operation_id, sequence)
+            VALUES %s
+            ON CONFLICT (product_id, operation_id)
             DO UPDATE SET sequence = EXCLUDED.sequence
             RETURNING (xmax = 0) AS inserted;
-        """, (product_name, operation_id, sequence))
+            """,
+            values
+        )
 
-        row = cur.fetchone()
-        if row and row[0]:
-            added += 1
-        else:
-            updated += 1
+        results = cur.fetchall()
+        for r in results:
+            if r[0]:
+                added += 1
+            else:
+                updated += 1
 
     conn.commit()
     cur.close()
