@@ -168,6 +168,50 @@ def add_inventory(item_name: str = Body(...),
     return {"status": "ok", "item_id": item_id, "quantity": quantity}
 
 
+@app.post("/add/products")
+def add_products(products: List[str] = Body(...)):
+    """
+    Add new products to the system.
+    
+    :param products: List of product names to add.
+    :type products: List[str]
+    :example:
+    [
+        "Product A",
+        "Product B",
+        ...
+    ]
+    """
+    if not products:
+        raise HTTPException(status_code=400, detail="No products provided")
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    added = 0
+
+    for product_name in products:
+        try:
+            cur.execute(
+                """
+                INSERT INTO products (product_name)
+                VALUES (%s)
+                ON CONFLICT (product_name) DO NOTHING;
+                """, (product_name,)
+            )
+            if cur.rowcount > 0:
+                added += 1
+        except Exception as e:
+            logging.error(f"Error adding product {product_name}: {e}")
+            continue
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"status": "ok", "added": added}
+
+
 @app.post("/add/sequences")
 def add_sequences(sequences: List[dict] = Body(...)):
     """
@@ -175,53 +219,66 @@ def add_sequences(sequences: List[dict] = Body(...)):
     
     :param sequences: Description
     :type sequences: List[dict]
+    :example:
+    [
+        {"product_id": 1, "operation_id": 2, "sequence": 1},
+        {"product_id": 1, "operation_id": 3, "sequence": 2},
+        ...
+    ]
     """
     if not sequences:
         raise HTTPException(status_code=400, detail="No sequences provided")
 
     conn = get_connection()
     cur = conn.cursor()
+
+    product_ids = set(seq['product_id'] for seq in sequences if 'product_id' in seq)
     added = 0
     updated = 0
 
-    # Prepare a list of valid tuples
+    # Prepare values for insert/update
     values = []
+    operation_ids_to_keep = {seq['operation_id'] for seq in sequences}
 
     for seq in sequences:
-        # basic validation
         try:
             product_id = int(seq['product_id'])
             operation_id = int(seq['operation_id'])
             sequence = int(seq['sequence'])
             values.append((product_id, operation_id, sequence))
         except (KeyError, ValueError):
-            continue  # skip invalid entries
+            continue
 
     if values:
+        # Insert or update
         execute_values(
             cur,
             """
             INSERT INTO product_operations (product_id, operation_id, sequence)
             VALUES %s
             ON CONFLICT (product_id, operation_id)
-            DO UPDATE SET sequence = EXCLUDED.sequence
-            RETURNING (xmax = 0) AS inserted;
+            DO UPDATE SET sequence = EXCLUDED.sequence;
             """,
             values
         )
 
-        results = cur.fetchall()
-        for r in results:
-            if r[0]:
-                added += 1
-            else:
-                updated += 1
+    # Delete any operations not in the new list for the affected products
+    if operation_ids_to_keep:
+        cur.execute(
+            """
+            DELETE FROM product_operations
+            WHERE product_id = ANY(%s)
+              AND operation_id NOT IN %s;
+            """,
+            (list(product_ids), tuple(operation_ids_to_keep))
+        )
 
     conn.commit()
     cur.close()
     conn.close()
 
     return {"status": "ok", "added": added, "updated": updated}
+
 
 @app.post("/create/orders", status_code=201)
 def create_order(order: OrderCreate):
