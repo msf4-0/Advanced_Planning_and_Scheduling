@@ -288,8 +288,15 @@ def create_order(order: OrderCreate):
 
 @app.post("/run/schedule", response_model=List[ScheduledOperation])
 def run_schedule():
+    """
+    Generate and save a new production schedule based on current orders and inventory.
+    This endpoint fetches all raw orders, checks if they can be scheduled based on inventory,
+    generates a schedule, saves it to the database, and returns the scheduled operations.
+
+    :return: List of scheduled operations with order ID, operation name, machine assigned, start and end times.
+    :rtype: List[ScheduledOperation]
+    """
     raw_orders = fetch_orders()
-    # operations_master = fetch_operations()
     machines_master = fetch_machines()
 
     logging.info("Raw orders: %s", raw_orders)
