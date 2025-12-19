@@ -280,6 +280,40 @@ def add_sequences(sequences: List[dict] = Body(...)):
     return {"status": "ok", "added": added, "updated": updated}
 
 
+@app.post("/add/operation")
+def add_operation(name: str = Body(...), machine_type: str = Body(...), duration: int = Body(...), material_needed: str = Body(None)):
+    """
+    Add a new operation to the system.\n
+    
+    :param name: Name of the operation.\n
+    :param machine_type: Type of machine required for the operation.\n
+    :param duration: Duration of the operation in minutes.\n
+    :param material_needed: (Optional) Material needed for the operation.\n
+
+    :return: Status and operation ID.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO operations (name, machine_type, duration, material_needed)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (name) DO UPDATE
+        SET machine_type = EXCLUDED.machine_type,
+            duration = EXCLUDED.duration,
+            material_needed = EXCLUDED.material_needed
+        RETURNING operation_id;
+        """, (name, machine_type, duration, material_needed)
+    )
+    row = cur.fetchone()
+    operation_id = row[0] if row is not None else None
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "ok", "operation_id": operation_id}
+
+
+
 @app.post("/create/orders", status_code=201)
 def create_order(order: OrderCreate):
     add_order(order)
