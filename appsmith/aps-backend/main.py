@@ -281,12 +281,12 @@ def add_sequences(sequences: List[dict] = Body(...)):
 
 
 @app.post("/add/operation")
-def add_operation(name: str = Body(...), machine_type: str = Body(...), duration: int = Body(...), material_needed: str = Body(None)):
+def add_operation(name: str = Body(...), required_machine_type: str = Body(...), duration: int = Body(...), material_needed: str = Body(None)):
     """
     Add a new operation to the system.\n
     
     :param name: Name of the operation.\n
-    :param machine_type: Type of machine required for the operation.\n
+    :param required_machine_type: Type of machine required for the operation.\n
     :param duration: Duration of the operation in minutes.\n
     :param material_needed: (Optional) Material needed for the operation.\n
 
@@ -296,14 +296,14 @@ def add_operation(name: str = Body(...), machine_type: str = Body(...), duration
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO operations (name, machine_type, duration, material_needed)
+        INSERT INTO operations (name, required_machine_type, duration, material_needed)
         VALUES (%s, %s, %s, %s)
         ON CONFLICT (name) DO UPDATE
-        SET machine_type = EXCLUDED.machine_type,
+        SET required_machine_type = EXCLUDED.required_machine_type,
             duration = EXCLUDED.duration,
             material_needed = EXCLUDED.material_needed
         RETURNING operation_id;
-        """, (name, machine_type, duration, material_needed)
+        """, (name, required_machine_type, duration, material_needed)
     )
     row = cur.fetchone()
     operation_id = row[0] if row is not None else None
@@ -312,6 +312,53 @@ def add_operation(name: str = Body(...), machine_type: str = Body(...), duration
     conn.close()
     return {"status": "ok", "operation_id": operation_id}
 
+
+@app.post("/add/machine")
+def add_machine(name: str = Body(...), type: str = Body(...), capacity: int = Body(None)):
+    """
+    Add a new machine to the system. If a machine with the same name exists,
+    automatically increment the name (e.g., machine, machine2, machine3, ...).
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Find all machines with the same base name or base name + number
+    cur.execute(
+        """
+        SELECT name FROM machines WHERE name ~ %s;
+        """,
+        (f'^{name}(\\d*)$',)
+    )
+    existing_names = [row[0] for row in cur.fetchall()]
+
+    if name in existing_names:
+        # Find the highest suffix
+        max_suffix = 1
+        for n in existing_names:
+            if n == name:
+                continue
+            suffix = n[len(name):]
+            if suffix.isdigit():
+                max_suffix = max(max_suffix, int(suffix) + 1)
+        new_name = f"{name}{max_suffix}"
+    else:
+        new_name = name
+
+    # Insert the new machine
+    cur.execute(
+        """
+        INSERT INTO machines (name, type, capacity)
+        VALUES (%s, %s, %s)
+        RETURNING machine_id;
+        """,
+        (new_name, type, capacity)
+    )
+    row = cur.fetchone()
+    machine_id = row[0] if row is not None else None
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "ok", "machine_id": machine_id, "machine_name": new_name}
 
 
 @app.post("/create/orders", status_code=201)
