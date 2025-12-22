@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   aps-backend:
-    build: ./aps-backend  # Or use image: your-backend-image
+    build: ./aps_backend  # Or use image: your-backend-image
     container_name: aps-backend
     ports:
       - "8000:8000"
