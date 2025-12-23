@@ -6,6 +6,8 @@ from psycopg2.extras import execute_values
 
 from db import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_order_operations, fetch_inventory_for_item
 from scheduler import generate_schedule, pick_machine
+from route_service import RouteService
+from route_repository import RouteRepository
 
 import os
 import logging
@@ -382,11 +384,14 @@ def run_schedule():
 
     logging.info("Raw orders: %s", raw_orders)
 
+    route_service = RouteService(RouteRepository(get_connection()))
+
     orders = []
 
     for ro in raw_orders:
         ops = []
 
+        product_route = route_service.get_product_route(ro["product_id"])
         ops_for_order = fetch_order_operations(ro["product_name"])
 
         logging.info("Operations for order %s: %s", ro["order_id"], ops_for_order)

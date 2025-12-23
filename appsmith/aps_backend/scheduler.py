@@ -8,9 +8,15 @@ def generate_schedule(orders, machines):
     Returns: list of scheduled operations [{'order_id', 'operation', 'machine', 'start', 'end'}]
     """
     model = cp_model.CpModel()
-    all_tasks = {}
     horizon = sum(operation['duration'] for order in orders for operation in order['operations'])
+    all_tasks = {}
+    operation_duration = {}
 
+    for order in orders:
+        for operation_idx, operation in enumerate(order['operations']):
+            operation_duration[(order['order_id'], operation_idx)] = operation['duration']
+
+    
     # Build a mapping from machine type to machine names
     machine_type_to_names = {}
     for machine in machines:
@@ -26,44 +32,67 @@ def generate_schedule(orders, machines):
         prev_end = None
         for operation_idx, operation in enumerate(order['operations']):
             operation_key = (order['order_id'], operation_idx)
-            operation_starts[operation_key] = model.NewIntVar(0, horizon, f"start_o{order['order_id']}_{operation_idx}")
-            operation_ends[operation_key] = model.NewIntVar(0, horizon, f"end_o{order['order_id']}_{operation_idx}")
+            operation_starts[operation_key] = model.NewIntVar(0, horizon, f"start_order{order['order_id']}_operation{operation_idx}")
+            operation_ends[operation_key] = model.NewIntVar(0, horizon, f"end_order{order['order_id']}_operation{operation_idx}")
             machine_names = machine_type_to_names.get(operation['machine_type'], [])
             if not machine_names:
                 raise ValueError(f"No machines available for type {operation['machine_type']}")
+            
             # For each possible machine, create an optional interval
             operation_machine_bools[operation_key] = {}
             operation_intervals[operation_key] = {}
             for mName in machine_names:
-                bool_var = model.NewBoolVar(f"is_{mName}_o{order['order_id']}_{operation_idx}")
+                bool_var = model.NewBoolVar(f"is_{mName}_order{order['order_id']}_operation{operation_idx}")
                 interval_var = model.NewOptionalIntervalVar(
-                    operation_starts[operation_key], operation['duration'], operation_ends[operation_key], bool_var, f"interval_{mName}_o{order['order_id']}_{operation_idx}"
+                    operation_starts[operation_key], operation['duration'], operation_ends[operation_key], bool_var, f"interval_{mName}_order{order['order_id']}_operation{operation_idx}"
                 )
                 operation_machine_bools[operation_key][mName] = bool_var
                 operation_intervals[operation_key][mName] = interval_var
             # Each operation must be assigned to exactly one machine
-            model.AddExactlyOne([operation_machine_bools[operation_key][mname] for mname in machine_names])
+            model.AddExactlyOne([operation_machine_bools[operation_key][mName] for mName in machine_names])
             # Enforce operation sequence per order
             if prev_end is not None:
                 model.Add(operation_starts[operation_key] >= prev_end)
             prev_end = operation_ends[operation_key]
 
     # Machine constraints: no overlaps for intervals assigned to each machine
+    machine_to_intervals = {}
     for machine in machines:
-        mName = machine['name']
-        intervals = []
-        for order in orders:
-            for operation_idx, operation in enumerate(order['operations']):
-                operation_key = (order['order_id'], operation_idx)
-                if mName in operation_intervals[operation_key]:
-                    intervals.append(operation_intervals[operation_key][mName])
+        machine_to_intervals[machine['name']] = []
+    
+    for operation_key, machine_intervals in operation_intervals.items():
+        for mName, intval in machine_intervals.items():
+            machine_to_intervals[mName].append(intval)
+
+    for mName, intervals in machine_to_intervals.items():
         if intervals:
             model.AddNoOverlap(intervals)
+    
+    machine_loads = {}
+
+    for machine in machines:
+        mName = machine['name']
+        terms = []
+
+        for operation_key, machine_bools in operation_machine_bools.items():
+            if mName in machine_bools:
+                duration = operation_duration[operation_key]
+                terms.append(machine_bools[mName] * duration)
+
+        if terms:
+            load_var = model.NewIntVar(0, horizon, f"load_{mName}")
+            model.Add(load_var == sum(terms))
+            machine_loads[mName] = load_var
+
 
     # Minimize makespan
     makespan = model.NewIntVar(0, horizon, "makespan")
-    model.AddMaxEquality(makespan, [operation_ends[(order['order_id'], op_idx)] for order in orders for op_idx in range(len(order['operations']))])
-    model.Minimize(makespan)
+    model.AddMaxEquality(makespan, [operation_ends[operation_key] for operation_key in operation_ends])
+    
+    max_load = model.NewIntVar(0, horizon, "max_load")
+    model.AddMaxEquality(max_load, list(machine_loads.values()))
+    
+    model.Minimize(makespan * 1000 + max_load)
 
     # Solve
     solver = cp_model.CpSolver()
@@ -76,11 +105,10 @@ def generate_schedule(orders, machines):
             for operation_idx, operation in enumerate(order['operations']):
                 operation_key = (order['order_id'], operation_idx)
                 # Find which machine was assigned
-                assigned_machine = None
-                for mName, bool_var in operation_machine_bools[operation_key].items():
-                    if solver.Value(bool_var):
-                        assigned_machine = mName
-                        break
+                assigned_machine = next(
+                    mName for mName, bool_var in operation_machine_bools[operation_key].items() if solver.Value(bool_var)
+                )
+                
                 schedule.append({
                     'order_id': order['order_id'],
                     'operation': operation['name'],
@@ -89,6 +117,32 @@ def generate_schedule(orders, machines):
                     'end': solver.Value(operation_ends[operation_key])
                 })
     return schedule
+
+
+def build_orders_from_graph(orders_from_db, route_service):
+    """
+    Build orders with their operations based on the product routes.
+    orders_from_db: list of dicts with 'order_id' and 'product_id'
+    route_service: instance of RouteService to fetch product routes
+    Returns: list of orders with operations
+    """
+    orders = []
+    for order in orders_from_db:
+        product_route = route_service.get_product_route(order['product_id'])
+        operations = []
+        for step in product_route.steps:
+            op = step.operation
+            operations.append({
+                'name': op.name,
+                'duration': op.duration,
+                'machine_type': getattr(op, 'machine_type', None)
+            })
+        orders.append({
+            'order_id': order['order_id'],
+            'operations': operations
+        })
+    return orders
+
 
 def pick_machine(machine_type, machines):
     """

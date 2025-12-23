@@ -31,32 +31,6 @@ def get_connection():
 
 # Fetch functions
 
-def fetch_inventory_for_item(item_needed):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT * 
-        FROM inventory 
-        WHERE item_name = %s
-    """, (item_needed,))
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if row:
-        return {
-            "item_id": row[0],
-            "item_name": row[1],
-            "quantity": row[2],
-            "min_required": row[3],
-            "max_capacity": row[4],
-            "last_updated": row[5],
-            "received_at": row[6]
-        }
-    else:
-        return None
-
-
 def fetch_inventory():
     conn = get_connection()
     cur = conn.cursor()
@@ -111,6 +85,26 @@ def fetch_operations():
     ]
 
 
+def fetch_machines():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT machine_id, name, type
+        FROM machines
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            "name": r[1],
+            "type": r[2],
+        }
+        for r in rows
+    ]
+
+
 def fetch_order_operations(product_name):
     conn = get_connection()
     cur = conn.cursor()
@@ -144,25 +138,31 @@ def fetch_order_operations(product_name):
     ]
 
 
-
-def fetch_machines():
+def fetch_inventory_for_item(item_needed):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT machine_id, name, type
-        FROM machines
-    """)
-    rows = cur.fetchall()
+        SELECT * 
+        FROM inventory 
+        WHERE item_name = %s
+    """, (item_needed,))
+    row = cur.fetchone()
     cur.close()
     conn.close()
 
-    return [
-        {
-            "name": r[1],
-            "type": r[2],
+    if row:
+        return {
+            "item_id": row[0],
+            "item_name": row[1],
+            "quantity": row[2],
+            "min_required": row[3],
+            "max_capacity": row[4],
+            "last_updated": row[5],
+            "received_at": row[6]
         }
-        for r in rows
-    ]
+    else:
+        return None
+
 
 # Add functions
 
