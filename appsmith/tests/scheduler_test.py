@@ -31,8 +31,16 @@ class TestScheduler(unittest.TestCase):
         """
         schedule = generate_schedule(self.orders, self.machines)
         self.assertEqual(len(schedule), 4)
-        order1_ops = [op for op in schedule if op['order_id'] == 1]
-        order2_ops = [op for op in schedule if op['order_id'] == 2]
+        order1_ops = sorted(
+            [op for op in schedule if op['order_id'] == 1],
+            key=lambda x: x['start']
+        )
+    
+        order2_ops = sorted(
+            [op for op in schedule if op['order_id'] == 2],
+            key=lambda x: x['start']
+        )
+        
         # Each operation should have a machine assigned and valid start/end
         for op in schedule:
             self.assertIn(op['machine'], [m['name'] for m in self.machines])

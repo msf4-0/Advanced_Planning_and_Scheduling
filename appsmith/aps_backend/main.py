@@ -370,7 +370,7 @@ def create_order(order: OrderCreate):
 
 
 @app.post("/run/schedule", response_model=List[ScheduledOperation])
-def run_schedule():
+def run_schedule(): #TODO: fix so it works with graph database
     """
     Generate and save a new production schedule based on current orders and inventory.
     This endpoint fetches all raw orders, checks if they can be scheduled based on inventory,
@@ -379,27 +379,23 @@ def run_schedule():
     :return: List of scheduled operations with order ID, operation name, machine assigned, start and end times.
     :rtype: List[ScheduledOperation]
     """
-    raw_orders = fetch_orders()
-    machines_master = fetch_machines()
+    route_service = RouteService(RouteRepository(get_connection()))
+    raw_orders = route_service.repo.get_all_orders() # Fetch all orders from graph database
+    machines_master = fetch_machines() # Fetch all machines from relational database
 
     logging.info("Raw orders: %s", raw_orders)
-
-    route_service = RouteService(RouteRepository(get_connection()))
 
     orders = []
 
     for ro in raw_orders:
         ops = []
 
-        product_route = route_service.get_product_route(ro["product_id"])
-        ops_for_order = fetch_order_operations(ro["product_name"])
+        # Fetch operations for the order's product route (graph database)
+        ops_for_order = route_service.repo.get_order_operations(ro["order_id"])
 
         logging.info("Operations for order %s: %s", ro["order_id"], ops_for_order)
 
-        schedulable = can_schedule(ops_for_order)
-        logging.info("Can schedule? %s", schedulable)
-
-        if not schedulable:
+        if not can_schedule(ops_for_order):
             logging.warning(f"Order {ro['order_id']} cannot be scheduled due to low inventory")
             continue
 

@@ -106,6 +106,39 @@ class RouteRepository:
             for row in rows
         ]
     
+    def get_order_operations(self, order_id: int) -> List[dict]:
+        """
+        Fetch operations for a given order based on its product's route.
+        
+        Args:
+            order_id (int): The ID of the order.
+        Returns: list of operations with 'name', 'duration', 'machine_type', 'sequence'
+        """
+
+        sql = """
+        SELECT op_node
+        FROM cypher('production_graph', $$
+        MATCH (o:Order {order_id: $order_id})-[:OF_PRODUCT]->(p:Product)-[:HAS_STEP]->(s:OpStep)-[:ASSIGNED_OP]->(op:Operation)
+        RETURN op
+        ORDER BY s.sequence
+        $$) AS (op_node agtype);
+        """
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, {'order_id': order_id})
+            rows = cur.fetchall()
+
+        return [
+            {
+                "name": row['op_node']['name'],
+                "duration": row['op_node']['duration'],
+                "machine_type": row['op_node']['required_machine_type'],
+                "sequence": row['op_node']['sequence'],
+                "material_needed": row['op_node']['material_needed']
+            }
+            for row in rows
+        ]
+    
     def shift_sequences_up(
         self,
         product_id: int,
