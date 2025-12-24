@@ -2,8 +2,11 @@ import os
 import psycopg2
 import logging
 import uuid
+from typing import Optional
 from psycopg2.extras import RealDictCursor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+
+from appsmith.aps_backend.main import OrderCreate
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
@@ -33,24 +36,13 @@ def get_connection():
 
 def fetch_inventory():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT * FROM inventory;")
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
-    return [
-        {
-            "item_id": r[0],
-            "item_name": r[1],
-            "quantity": r[2],
-            "min_required": r[3],
-            "max_capacity": r[4],
-            "last_updated": r[5],
-            "received_at": r[6]
-        }
-        for r in rows
-    ]
+    return rows
 
 
 def fetch_orders():
@@ -65,110 +57,79 @@ def fetch_orders():
 
 def fetch_operations():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
-        SELECT operation_id, name, duration, required_machine_type
-        FROM operations
+        SELECT * FROM operations
         ORDER BY operation_id
     """)
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
-    return [
-        {
-            "name": r[1],
-            "duration": r[2],
-            "machine_type": r[3],
-        }
-        for r in rows
-    ]
+    return rows
 
 
 def fetch_machines():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
-        SELECT machine_id, name, type
-        FROM machines
+        SELECT * FROM machines
+        ORDER BY machine_id
     """)
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
-    return [
-        {
-            "name": r[1],
-            "type": r[2],
-        }
-        for r in rows
-    ]
+    return rows
 
 
-def fetch_order_operations(product_name):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT
-            o.name,
-            o.duration,
-            o.required_machine_type,
-            po.sequence,
-            o.material_needed
-        FROM product_operations po
-        JOIN operations o ON po.operation_id = o.operation_id
-        JOIN products p ON po.product_id = p.product_id
-        WHERE p.product_name = %s
-        ORDER BY po.sequence;
-    """, (product_name,))
+def fetch_inventory_for_item(
+        item_id: Optional[int] = None, 
+        item_name: Optional[str] = None,
+        aggregate: bool = False
+    ):
     
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return [
-        {
-            "name": r[0],
-            "duration": r[1],
-            "machine_type": r[2],
-            "sequence": r[3],
-            "material_needed": r[4]
-        }
-        for r in rows
-    ]
-
-
-def fetch_inventory_for_item(item_needed):
+    if item_id is None and item_name is None:
+        raise ValueError("Either item_id or item_name must be provided")
+    
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT * 
-        FROM inventory 
-        WHERE item_name = %s
-    """, (item_needed,))
-    row = cur.fetchone()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    if item_id is not None:
+        cur.execute("SELECT * FROM inventory WHERE item_id = %s", (item_id,))
+    else:
+        cur.execute("SELECT * FROM inventory WHERE item_name = %s", (item_name,))
+
+    rows = cur.fetchone()
     cur.close()
     conn.close()
 
-    if row:
+    if aggregate:
+        total_qty = sum(rows['quantity'] for rows in rows) if rows else 0
+        min_required = max(rows['min_required'] for rows in rows) if rows else 0
+        max_capacity = sum(rows['max_capacity'] for rows in rows) if rows else 0
+        last_updated = max(rows['last_updated'] for rows in rows) if rows else None
+        received_at = min(rows['received_at'] for rows in rows) if rows else None
+
         return {
-            "item_id": row[0],
-            "item_name": row[1],
-            "quantity": row[2],
-            "min_required": row[3],
-            "max_capacity": row[4],
-            "last_updated": row[5],
-            "received_at": row[6]
+            'item_id': rows[0]['item_id'] if rows else item_id,
+            'item_name': rows[0]['item_name'] if rows else item_name,
+            'total_quantity': total_qty,
+            'min_required': min_required,
+            'max_capacity': max_capacity,
+            'last_updated': last_updated,
+            'received_at': received_at,
+            'material_id': rows[0]['material_id'] if rows else None
         }
-    else:
-        return None
+
+    return rows
 
 
 # Add functions
 
-def add_order(order):
+def add_order(order: OrderCreate):
     """
-    order: pydantic Order model
+    order: object with attributes product_name, priority, due_date, quantity
     """
     conn = get_connection()
     cur = conn.cursor()
@@ -182,7 +143,7 @@ def add_order(order):
                 order.product_name,
                 order.priority,
                 order.due_date,
-                order.quantity or 0
+                order.quantity
             )    
         )
         conn.commit()
@@ -194,10 +155,17 @@ def add_order(order):
 
 # Save / Logging functions
 
-def save_schedule(schedule, base_date=None):
+def save_schedule(schedule: list[dict], base_date: Optional[date] = None, overwrite: bool = True):
     """
-    schedule: list of dicts, each dict = {order_id, operation, machine, start, end}
-    base_date: datetime, optional base date to calculate actual timestamps
+    Save a production schedule to the database.
+
+    Args:
+        schedule (list[dict]): Each dict = {order_id, operation, machine, start, end} in hours.
+        base_date (datetime.date, optional): Base date to calculate timestamps. Defaults to today.
+        overwrite (bool): If True, clears the current live schedule before saving.
+
+    Returns:
+        uuid.UUID: Unique run ID for this schedule.
     """
 
     if base_date is None:
@@ -209,11 +177,8 @@ def save_schedule(schedule, base_date=None):
     cur = conn.cursor()
 
     try:
-
-        cur.execute("BEGIN;")
-
-        # Optionally, delete old live schedule if you want only latest visible
-        cur.execute("DELETE FROM schedule_results;")
+        if overwrite:
+            cur.execute("DELETE FROM schedule_results;") # Clear existing schedule
         
         for s in schedule:
             start_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=s['start'])
@@ -237,20 +202,28 @@ def save_schedule(schedule, base_date=None):
                 )
             )
 
-        cur.execute("COMMIT;")
-
         conn.commit()
+        logging.info("Schedule saved with run_id: %s", run_id)
+        return run_id
+    
     except Exception as e:
+        conn.rollback()
         logging.error("Error saving schedule: %s", e)
-        cur.execute("ROLLBACK;")
+        raise
 
     finally:
         cur.close()
         conn.close()
 
-        return run_id
+def log_schedule_run(run_id: uuid.UUID, note=None):
+    """
+    Log a schedule run in the schedule_runs table.
 
-def log_schedule_run(run_id, note=None):
+    :args:
+        run_id: UUID of the schedule run
+        note: optional note about the run
+    """
+
     conn = get_connection()
     cur = conn.cursor()
     
@@ -263,16 +236,28 @@ def log_schedule_run(run_id, note=None):
             (str(run_id), note)
         )
         conn.commit()
+        logging.info("Logged schedule run: %s", run_id)
+    
+    except Exception as e:
+        conn.rollback()
+        logging.error("Error logging schedule run: %s", e)
+        raise
+
     finally:
         cur.close()
         conn.close()
 
-def save_schedule_archive(schedule, run_id, base_date=None):
+def save_schedule_archive(schedule: list[dict], run_id: uuid.UUID, base_date=None):
     """
     Save a copy of the schedule to the archive table
-    schedule: list of dicts, each dict = {order_id, operation, machine, start, end}
-    run_id: UUID of the schedule run
-    base_date: optional, to calculate actual timestamps
+    
+    Args:
+        schedule (list[dict]): Each dict = {order_id, operation, machine, start, end} in hours.
+        run_id (uuid.UUID): Unique run ID for this schedule.
+        overwrite (bool): If True, clears the current live schedule before saving.
+
+    Returns:
+        uuid.UUID: Unique run ID for this schedule.
     """
 
     if base_date is None:
@@ -288,24 +273,31 @@ def save_schedule_archive(schedule, run_id, base_date=None):
 
             cur.execute(
                 """
-                INSERT INTO schedule_archive
+                INSERT INTO schedule_results
                 (order_id, operation, machine, start_offset, end_offset, start_ts, end_ts, run_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """,
                 (
-                    s["order_id"],
-                    s["operation"],
-                    s["machine"],
-                    s["start"],
-                    s["end"],
-                    start_dt,
-                    end_dt,
-                    str(run_id)
+                    s["order_id"],   # order_id first
+                    s["operation"],  # operation
+                    s["machine"],    # machine
+                    s["start"],      # start_offset
+                    s["end"],        # end_offset
+                    start_dt,        # start_ts
+                    end_dt,          # end_ts
+                    str(run_id)      # run_id last
                 )
             )
+
         conn.commit()
+        logging.info("Schedule (archive) saved with run_id: %s", run_id)
+        return run_id
+    
     except Exception as e:
-        logging.error("Error saving schedule to archive: %s", e)
+        conn.rollback()
+        logging.error("Error saving schedule (archive): %s", e)
+        raise
+
     finally:
         cur.close()
         conn.close()
