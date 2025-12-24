@@ -1,5 +1,7 @@
 from ortools.sat.python import cp_model
 
+#TODO: change it to be encapsulated class later
+
 def generate_schedule(orders, machines):
     """
     orders: list of dicts, e.g.,
