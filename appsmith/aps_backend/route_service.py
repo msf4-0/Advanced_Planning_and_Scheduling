@@ -32,7 +32,6 @@ class RouteService:
             steps=steps
         )
 
-
     def validate_route(
             self, 
             product_id: int, 

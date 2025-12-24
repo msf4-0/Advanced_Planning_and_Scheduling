@@ -156,7 +156,7 @@ class RouteRepository:
         sql = """
         SELECT * 
         FROM cypher('production_graph', $$
-            MATCH (p:OpStep {product_id: %s})
+            MATCH (s:OpStep {product_id: %s})
             WHERE s.sequence >= %s
             SET s.sequence = s.sequence + 1
             RETURN count(s)
