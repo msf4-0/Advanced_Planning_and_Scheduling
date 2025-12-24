@@ -1,7 +1,6 @@
 import pytest
-from aps_backend.route_repository import RouteRepository
-from aps_backend.route_service import RouteService
-from appsmith.aps_backend.models.api_models import OpStepCreate, RouteFilter
+from aps_backend.routes import RouteRepository, RouteService
+from appsmith.aps_backend.api_models import OpStepCreate, RouteFilter
 from appsmith.aps_backend.db.connection import get_connection
 
 @pytest.fixture
