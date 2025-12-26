@@ -1,6 +1,6 @@
 # route_repository.py
 from typing import List, Optional
-from appsmith.aps_backend.api_models import OperationRead, OpStepRead, ProductRouteRead
+from appsmith.aps_backend.models import OperationRead, OpStepRead, ProductRouteRead
 
 class RouteRepository:
     def __init__(self, conn):

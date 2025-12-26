@@ -1,7 +1,7 @@
 import pytest
 from aps_backend.routes import RouteRepository, RouteService
-from appsmith.aps_backend.api_models import OpStepCreate, RouteFilter
-from appsmith.aps_backend.db.connection import get_connection
+from appsmith.aps_backend.models import OpStepCreate, RouteFilter
+from appsmith.aps_backend.repository.db_repository import get_connection
 
 @pytest.fixture
 def db_conn():

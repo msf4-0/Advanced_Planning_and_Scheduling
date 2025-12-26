@@ -23,12 +23,20 @@ Graph-Connections
 TODO:
 1. Refactor
 + connection.py
-- graph_editor.py
-- route_repository.py
-- route_service.py
-- routes_api.py
++ graph_editor.py
++ route_repository.py
++ route_service.py
++ routes_api.py
 - scheduler.py
 - main.py
+
+- Split main.py into route files
+- Create InventoryService + InventoryRepository
+- Create ScheduleService + ScheduleRepository
+- Move can_schedule() into InventoryService
+- Remove all SQL from FastAPI routes
+- Inject DB connections via repositories
+- Keep RouteService as-is (it’s already clean)
 
 2. Delegate Task From
 - main.py

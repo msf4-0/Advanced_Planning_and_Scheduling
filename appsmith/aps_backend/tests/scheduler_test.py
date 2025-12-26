@@ -1,5 +1,5 @@
 import unittest
-from appsmith.aps_backend.scheduler.scheduler import generate_schedule, pick_machine
+from appsmith.aps_backend.service.scheduler import generate_schedule, pick_machine
 
 class TestScheduler(unittest.TestCase):
     def setUp(self):

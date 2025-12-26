@@ -4,9 +4,10 @@ from typing import List
 from datetime import date, datetime
 from psycopg2.extras import execute_values
 
-from appsmith.aps_backend.db.connection import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_order_operations, fetch_inventory_for_item
-from appsmith.aps_backend.scheduler.scheduler import generate_schedule, pick_machine
+from appsmith.aps_backend.repository.db_repository import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_inventory_for_item
+from appsmith.aps_backend.service.scheduler import generate_schedule, pick_machine
 from appsmith.aps_backend.routes import RouteService, RouteRepository
+from appsmith.aps_backend.models import InventoryItem, OrderRead, OrderCreate, ScheduledOperation
 
 import os
 import logging
@@ -14,37 +15,11 @@ import logging
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
-class OrderCreate(BaseModel):
-    product_name: str
-    priority: int
-    due_date: date
-    quantity: int = 0
-
-class OrderRead(OrderCreate):
-    order_id: int
-
-class ScheduledOperation(BaseModel):
-    order_id: int
-    operation: str
-    machine: str
-    start: int
-    end: int
-
-class InventoryItem(BaseModel):
-    item_id: int
-    item_name: str
-    quantity: int
-    min_required: int
-    max_capacity: int
-    last_updated: datetime
-    received_at: datetime
-    age_days: int
-
 
 
 # Get Endpoints
 
-@app.get("/get/inventory", response_model=List[InventoryItem])
+'''@app.get("/get/inventory", response_model=List[InventoryItem])
 def get_inventory():
     """
     Retrieve the current inventory list.
@@ -78,10 +53,10 @@ def get_inventory():
             "age_days": (datetime.now() - r[6]).days
         }
         for r in rows
-    ]
+    ]'''
 
 
-@app.get("/get/orders", response_model=List[OrderRead])
+'''@app.get("/get/orders", response_model=List[OrderRead])
 def get_orders():
     rows = fetch_orders()
 
@@ -89,12 +64,12 @@ def get_orders():
     for r in rows:
         result.append(OrderRead(
             order_id=r['order_id'],
-            product_name=r['product_name'],
+            product_id=r['product_name'],
             priority=r['priority'],
             due_date=r['due_date'].isoformat() if isinstance(r['due_date'], date) else r['due_date'],
             quantity=r.get('quantity', 0)
         ))
-    return result
+    return result'''
 
 
 @app.get("/schedule/gantt")
@@ -125,7 +100,7 @@ def get_schedule_gantt():
 
 # Post Endpoints
 
-@app.post("/update/inventory")
+'''@app.post("/update/inventory")
 def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
     conn = get_connection()
     cur = conn.cursor()
@@ -145,9 +120,9 @@ def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
     cur.close()
     conn.close()
     return {"status": "ok", "item_id": item_id, "item_name": item_name, "new_quantity": quantity}
+'''
 
-
-@app.post("/add/inventory")
+'''@app.post("/add/inventory")
 def add_inventory(item_name: str = Body(...),
                   quantity: int = Body(...),
                   min_required: int = Body(...),
@@ -167,9 +142,9 @@ def add_inventory(item_name: str = Body(...),
     cur.close()
     conn.close()
     return {"status": "ok", "item_id": item_id, "quantity": quantity}
+'''
 
-
-@app.post("/add/products")
+'''@app.post("/add/products")
 def add_products(products: List[str] = Body(...)):
     """
     Add new products to the system.
@@ -211,7 +186,7 @@ def add_products(products: List[str] = Body(...)):
     conn.close()
 
     return {"status": "ok", "added": added}
-
+'''
 
 @app.post("/add/sequences")
 def add_sequences(sequences: List[dict] = Body(...)):
@@ -362,11 +337,11 @@ def add_machine(name: str = Body(...), type: str = Body(...), capacity: int = Bo
     return {"status": "ok", "machine_id": machine_id, "machine_name": new_name}
 
 
-@app.post("/create/orders", status_code=201)
+'''@app.post("/create/orders", status_code=201)
 def create_order(order: OrderCreate):
     add_order(order)
     return {"message": "Order created successfully"}
-
+'''
 
 @app.post("/run/schedule", response_model=List[ScheduledOperation])
 def run_schedule(): #TODO: fix so it works with graph database
@@ -418,7 +393,7 @@ def run_schedule(): #TODO: fix so it works with graph database
 
     run_id = save_schedule(schedule, base_date=date.today())
     log_schedule_run(run_id)
-    save_schedule_archive(run_id, schedule)
+    save_schedule_archive(schedule, run_id)
 
     logging.info("Schedule run %s generated", run_id)
 

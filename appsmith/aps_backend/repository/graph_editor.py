@@ -17,6 +17,15 @@ class GraphEditor:
         Returns:
             dict: The created node's properties.
         """
+
+        if not properties:
+            props_str = ''
+            params = ()
+        else:
+            for key in properties.keys():
+                if not isinstance(key, str):
+                    raise ValueError("All property keys must be strings.")
+        
         props_str = ', '.join(f"{k}: %s" for k in properties.keys())
         sql = f"""
         SELECT * 
@@ -44,6 +53,10 @@ class GraphEditor:
             list[dict]: A list of nodes matching the criteria.
         """
         if filters:
+            for key in filters.keys():
+                if not isinstance(key, str):
+                    raise ValueError("All filter keys must be strings.")
+                
             filter_str = ' AND '.join(f"n.{k} = %s" for k in filters.keys())
             sql = f"""
             SELECT * 
@@ -84,6 +97,14 @@ class GraphEditor:
         """
 
         id_key, id_value = node_id
+        if not id_key or not isinstance(id_key, str):
+            raise ValueError("The property key for node identification must be a non-empty string.")
+        if not properties:
+            raise ValueError("Properties to update cannot be empty.")
+        for key in properties.keys():
+            if not isinstance(key, str):
+                raise ValueError("All property keys must be strings.")
+
         set_str = ', '.join(f"n.{k} = %s" for k in properties.keys())
         sql = f"""
         SELECT * 
@@ -110,6 +131,9 @@ class GraphEditor:
             property_value: The property value to identify the node.
         """
         id_key, id_value = node_id
+        if not id_key.isidentifier():
+            raise ValueError("The property key must be a valid identifier.")
+        
         sql = f"""
         SELECT * 
         FROM cypher('production_graph', $$
@@ -140,6 +164,10 @@ class GraphEditor:
         
         from_key, from_value = from_id
         to_key, to_value = to_id
+
+        for v in [from_key, to_key, edge_type, from_label, to_label]:
+            if not v.isidentifier():
+                raise ValueError(f"Property keys and edge type must be valid identifiers. Invalid value: {v}")
 
         sql = f"""
         SELECT * 
@@ -177,6 +205,20 @@ class GraphEditor:
 
         match_clause = "MATCH (a)-[r]->(b)"  # always match all edges first
         conditions = []
+
+        for label in [from_label, to_label]:
+            if label and not label.isidentifier():
+                raise ValueError(f"Node labels must be valid identifiers. Invalid label: {label}")
+        if edge_type and not edge_type.isidentifier():
+            raise ValueError(f"Edge type must be a valid identifier. Invalid edge type: {edge_type}")
+        if from_id:
+            prop_name, _ = from_id
+            if not prop_name.isidentifier():
+                raise ValueError(f"Property key must be a valid identifier. Invalid key: {prop_name}")
+        if to_id:
+            prop_name, _ = to_id
+            if not prop_name.isidentifier():
+                raise ValueError(f"Property key must be a valid identifier. Invalid key: {prop_name}")
 
         # labels
         if from_label:
@@ -238,6 +280,10 @@ class GraphEditor:
         from_key, from_value = from_id
         to_key, to_value = to_id
 
+        for v in [from_key, to_key, edge_type, from_label, to_label]:
+            if not v.isidentifier():
+                raise ValueError(f"Property keys and edge type must be valid identifiers. Invalid value: {v}")
+
         conditions = [f"a.{from_key} = %s", f"b.{to_key} = %s"]
         params = [from_value, to_value]
 
@@ -264,6 +310,10 @@ class GraphEditor:
     # Specialized Operations
     def rebuild_next_operation_edges(self, product_id: int) -> None:
         """Rebuild NEXT_OPERATION edges based on OpStep sequences."""
+
+        if not isinstance(product_id, int):
+            raise ValueError("product_id must be an integer.")
+        
         sql = """
         SELECT * 
         FROM cypher('production_graph', $$
