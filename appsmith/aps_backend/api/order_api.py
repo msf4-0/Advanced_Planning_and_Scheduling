@@ -35,7 +35,7 @@ def add_order(payload: OrderCreate):
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="Failed to create order.")
 
-    row = db.fetch_order_by_id(order_id)
+    row = db.fetch_orders(order_id)
     order = OrderRead(
         order_id=row['order_id'],
         product_name=row['product_name'],
