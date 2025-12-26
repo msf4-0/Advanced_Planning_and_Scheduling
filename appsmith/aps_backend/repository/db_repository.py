@@ -50,36 +50,23 @@ class DBTable:
 
         return rows
 
-
-    def fetch_orders(self):
+    def fetch_orders(self, order_id: Optional[int] = None):
         """
-        Fetch all orders from the database.
-        Returns: list of orders with 'order_id', 'product_name', 'priority', 'due_date', 'quantity'
+        Fetch all orders from the database or a specific order by ID.
+        Returns: list of orders with 'order_id', 'product_name', 'priority', 'due_date', 'quantity', 'status'
         """
 
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM orders;")
+        if order_id is not None:
+            cur.execute("SELECT * FROM orders WHERE order_id = %s;", (order_id,))
+        else:
+            cur.execute("SELECT * FROM orders;")
+        
         rows = cur.fetchall()
         cur.close()
         conn.close()
         return rows
-
-
-    def fetch_order_by_id(self, order_id: int):
-        """
-        Fetch a single order by its ID.
-        Returns: order with 'order_id', 'product_name', 'priority', 'due_date', 'quantity'
-        """
-
-        conn = self.get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM orders WHERE order_id = %s;", (order_id,))
-        row = cur.fetchone()
-        cur.close()
-        conn.close()
-        return row
-
 
     def fetch_operations(self, operation_id: Optional[int] = None):
         """
@@ -104,14 +91,13 @@ class DBTable:
                 ORDER BY operation_id
             """)
             rows = cur.fetchall()
-            
+
         cur.close()
         conn.close()
 
         return rows
 
-
-    def fetch_machines(self):
+    def fetch_machines(self, machine_id: Optional[int] = None, machine_name: Optional[str] = None):
         """
         Fetch all machines from the database.
         Returns: list of machines with 'machine_id', 'name', 'capacity'
@@ -119,16 +105,30 @@ class DBTable:
 
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT * FROM machines
-            ORDER BY machine_id
-        """)
+
+        if machine_id is not None:
+            cur.execute("""
+                SELECT * FROM machines
+                WHERE machine_id = %s
+                ORDER BY machine_id
+            """, (machine_id,))
+        elif machine_name is not None:
+            cur.execute("""
+                SELECT * FROM machines
+                WHERE name = %s
+                ORDER BY machine_id
+            """, (machine_name,))
+        else:
+            cur.execute("""
+                SELECT * FROM machines
+                ORDER BY machine_id
+            """)
+            
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
         return rows
-
 
     def fetch_inventory_for_item(
             self,
@@ -182,7 +182,6 @@ class DBTable:
 
         return rows
 
-
     def fetch_product(self, product_id: Optional[int] = None):
         """
         Fetch product details by ID or name if provided else fetch all products.
@@ -205,7 +204,6 @@ class DBTable:
         conn.close()
 
         return rows
-
 
     def fetch_material(self, material_id: Optional[int] = None, material_name: Optional[str] = None):
         """
@@ -412,6 +410,41 @@ class DBTable:
         
         except Exception as e:
             logging.error("Error adding material: %s", e)
+        finally:
+            cur.close()
+            conn.close()
+
+    def add_machine(self, name: str, machine_type: str, capacity: Optional[int] = None):
+        """
+        Add a new machine to the database.
+
+        Args:
+            name (str): The name of the machine.
+            machine_type (str): The type/category of the machine.
+            capacity (Optional[int]): The capacity of the machine.
+
+        Returns:
+            int: The ID of the newly created machine.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO machines (name, machine_type, capacity)
+                VALUES (%s, %s, %s)
+                RETURNING machine_id;
+                """,
+                (name, machine_type, capacity)
+            )
+
+            machine_id = cur.fetchone()['machine_id']
+            conn.commit()
+            return machine_id
+        
+        except Exception as e:
+            logging.error("Error adding machine: %s", e)
         finally:
             cur.close()
             conn.close()
