@@ -49,16 +49,12 @@ class RouteRepository:
                   -[:HAS_STEP]->(s:OpStep)
                   -[:DOES]->(o:Operation)
             {where_clause}
-            RETURN s.sequence,
-                   o.operation_id,
-                   o.name,
-                   o.duration
+            RETURN s.sequence AS sequence,
+                   o AS operation_node
             ORDER BY s.sequence
         $$) AS (
             sequence agtype,
-            operation_id agtype,
-            operation_name agtype,
-            duration agtype
+            operation_node agtype
         );
         """
 
@@ -71,9 +67,11 @@ class RouteRepository:
                 product_id=product_id,
                 sequence=int(row[0]),
                 operation=OperationRead(
-                    operation_id=int(row[1]),
-                    name=row[2],
-                    duration=int(row[3]),
+                    operation_id=int(row[1]['properties']['operation_id']),
+                    name=row[1]['properties']['name'],
+                    duration=int(row[1]['properties']['duration']),
+                    machine_type=row[1]['properties']['machine_type'],
+                    material_id=row[1]['properties']['material_id'].get('material_id')
                 ),
             )
             for row in rows

@@ -16,6 +16,8 @@ class OperationRead(BaseModel):
     operation_id: int
     name: str
     duration: int
+    machine_type: str
+    material_id: Optional[int] = None
 
 class OpStepRead(BaseModel):
     """

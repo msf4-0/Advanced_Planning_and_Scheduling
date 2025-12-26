@@ -81,7 +81,7 @@ class DBTable:
         return row
 
 
-    def fetch_operations(self):
+    def fetch_operations(self, operation_id: Optional[int] = None):
         """
         Fetch all operations from the database.
         Returns: list of operations with 'operation_id', 'name', 'duration'
@@ -89,11 +89,22 @@ class DBTable:
 
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT * FROM operations
-            ORDER BY operation_id
-        """)
-        rows = cur.fetchall()
+
+        if operation_id is not None:
+            cur.execute("""
+                SELECT * FROM operations
+                WHERE operation_id = %s
+                ORDER BY operation_id
+            """, (operation_id,))
+            row = cur.fetchone()
+            rows = [row] if row else []
+        else:
+            cur.execute("""
+                SELECT * FROM operations
+                ORDER BY operation_id
+            """)
+            rows = cur.fetchall()
+            
         cur.close()
         conn.close()
 
@@ -189,6 +200,35 @@ class DBTable:
         elif product_id is not None:
             cur.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
             rows = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        return rows
+
+
+    def fetch_material(self, material_id: Optional[int] = None, material_name: Optional[str] = None):
+        """
+        Fetch material details by ID or name if provided else fetch all materials.
+        
+        :param material_id: Description
+        :type material_id: Optional[int]
+        :param material_name: Description
+        :type material_name: Optional[str]
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+            
+        if material_id is not None:
+            cur.execute("SELECT * FROM materials WHERE material_id = %s", (material_id,))
+            rows = cur.fetchone()
+        elif material_name is not None:
+            cur.execute("SELECT * FROM materials WHERE material_name = %s", (material_name,))
+            rows = cur.fetchone()
+        else:
+            cur.execute("SELECT * FROM materials;")
+            rows = cur.fetchall()
 
         cur.close()
         conn.close()
@@ -299,6 +339,79 @@ class DBTable:
         
         except Exception as e:
             logging.error("Error adding product: %s", e)
+        finally:
+            cur.close()
+            conn.close()
+
+    def add_operation(self, name: str, required_machine_type: str, duration: int, material_id: Optional[int] = None):
+        """
+        Add a new operation to the database.
+
+        Args:
+            name (str): The name of the operation.
+            required_machine_type (str): The type of machine required for the operation.
+            duration (int): The duration of the operation in minutes.
+            material_needed (str): The material needed for the operation.
+
+        Returns:
+            int: The ID of the newly added operation.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO operations (name, required_machine_type, duration, material_needed)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (name) DO UPDATE
+                SET required_machine_type = EXCLUDED.required_machine_type,
+                    duration = EXCLUDED.duration,
+                    material_needed = EXCLUDED.material_needed
+                RETURNING operation_id;
+                """, (name, required_machine_type, duration, material_id)
+            )
+
+            operation_id = cur.fetchone()['operation_id']
+            conn.commit()
+            return operation_id
+        
+        except Exception as e:
+            logging.error("Error adding operation: %s", e)
+        finally:
+            cur.close()
+            conn.close()
+
+    def add_material(self, material_name: str):
+        """
+        Add a new material to the database.
+
+        Args:
+            material_name (str): The name of the material.
+
+        Returns:
+            int: The ID of the newly added material.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO materials (material_name)
+                VALUES (%s)
+                ON CONFLICT (material_name) DO NOTHING
+                RETURNING material_id;
+                """,
+                (material_name,)
+            )
+
+            material_id = cur.fetchone()['material_id']
+            conn.commit()
+            return material_id
+        
+        except Exception as e:
+            logging.error("Error adding material: %s", e)
         finally:
             cur.close()
             conn.close()
