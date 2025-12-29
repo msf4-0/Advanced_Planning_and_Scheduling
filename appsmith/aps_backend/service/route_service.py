@@ -13,7 +13,7 @@ class RouteService:
             filters: Optional[Dict] = None
         ) -> ProductRouteRead:
         """
-        Retrieve the full route for a product, optionally filtered by sequence range or operation ID.
+        Retrieve the full manufacturing sequence for a product, optionally filtered by sequence range or operation ID.
         
         Args:
             product_id (int): The ID of the product.
@@ -83,7 +83,7 @@ class RouteService:
             filters: Optional[Dict] = None
         ) -> bool:
         """
-        Validate that the sequence of OpSteps is continuous for a product.
+        Validate that the manufacturing sequence of OpSteps is continuous for a product.
         Optional `filters` can limit which steps are checked.
 
         Args:
@@ -112,7 +112,7 @@ class RouteService:
             insert_after: Optional[int] = None
         ) -> None:
         """
-        Add a new OpStep to the product's route.
+        Add a new OpStep to the product's manufacturing process.
 
         Args:
             product_id (int): The ID of the product.
@@ -163,7 +163,7 @@ class RouteService:
 
     def delete_opstep(self, product_id: int, sequence: int) -> None:
         """
-        Delete an OpStep from the product's route.
+        Delete an OpStep from the product's manufacturing process.
 
         Args:
             product_id (int): The ID of the product.
@@ -196,7 +196,7 @@ class RouteService:
 
     def reorder_opsteps(self, product_id: int, new_order: List[int]) -> None:
         """
-        Reorder the OpSteps for a product based on a new list of operation IDs.
+        Reorder the OpSteps (manufacturing steps) for a product according to new_order.
 
         Args:
             product_id (int): The ID of the product.
@@ -216,7 +216,9 @@ class RouteService:
         self.validate_sequence(product_id)
  
     def rebuild_next_operation_edges(self, product_id: int) -> None:
-        """Rebuild NEXT_OPERATION edges based on OpStep sequences."""
+        """
+        Rebuild NEXT_OPERATION edges based on OpStep manufacturing sequences.
+        """
 
         # Remove all existing NEXT_OPERATION edges for this product
         steps = self.graph.get_node('OpStep', {'product_id': product_id})
@@ -238,6 +240,7 @@ class RouteService:
         """
         Rebuild CAN_RUN_ON edges for all operations based on required_machine_type.
         """
+
         # Remove all existing CAN_RUN_ON edges
         edges = self.graph.get_edges(edge_type='CAN_RUN_ON')
         for edge in edges:
@@ -300,7 +303,7 @@ class RouteService:
     # Fetch steps
     def get_order_operations(self, order_id: int) -> List[dict]:
         """
-        Fetch operations for a given order based on its product's route.
+        Fetch operations for a given order based on its product's manufacturing sequence.
 
         Args:
             order_id (int): The ID of the order.
@@ -337,7 +340,7 @@ class RouteService:
     
     def get_ready_opsteps(self) -> List[OpStepRead]:
         """
-        Fetch all OpSteps that are ready to be scheduled.
+        Fetch all OpSteps (manufacturing steps) that are ready to be scheduled by ORTools.
         An OpStep is ready if:
         - It has no incoming BLOCKED_BY edges
         - All previous steps (NEXT_OPERATION predecessors) are done
