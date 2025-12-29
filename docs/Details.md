@@ -16,127 +16,247 @@ Graph-node
 Graph-Connections
 
 - (products) - [HAS_STEP] -> (OpStep)
-- (OpStep) - [HAS_OPERATION]
+- (OpStep) - [HAS_OPERATION] -> (Operation)
+- (OpStep) - [NEXT_OPERATION] -> (OpStep)
+- (Operation) - [NEEDS] -> (Machine)
+- (Operation) - [USES] -> (Materials)
+- 
+
+TODO
+- Setup entities (data)
+  - tables
+  - graph-nodes
 
 
+## 🎯 End Goal (mental anchor)
 
-TODO:
-1. Refactor
-+ connection.py
-+ graph_editor.py
-+ route_repository.py
-+ route_service.py
-+ routes_api.py
-- scheduler.py
-- main.py
+* **GraphEditor** → *dumb graph plumbing*
+  CRUD nodes, CRUD edges, no business rules.
 
-- Split main.py into route files
-- Create InventoryService + InventoryRepository
-- Create ScheduleService + ScheduleRepository
-- Move can_schedule() into InventoryService
-- Remove all SQL from FastAPI routes
-- Inject DB connections via repositories
-- Keep RouteService as-is (it’s already clean)
+* **RouteService** → *owns ALL route / OpStep logic*
+  Sequence, NEXT_OPERATION, BLOCKED_BY meaning, validation.
 
-2. Delegate Task From
-- main.py
-- routes_api.py
-
-
-## **1. API Organization & Project Structure**
-
-* [+] Move the flat `/aps_backend` into a proper package/folder layout:
-
-  ```
-  /aps_backend
-  ├── __init__.py
-  ├── db/
-  │   ├── __init__.py
-  │   ├── connection.py
-  ├── routes/
-  │   ├── __init__.py
-  │   ├── routes_api.py
-  ├── scheduler/
-  │   ├── __init__.py
-  │   ├── scheduler.py
-  ├── graph/
-  │   ├── __init__.py
-  │   ├── graph_editor.py
-  ├── route/
-  │   ├── __init__.py
-  │   ├── route_service.py
-  │   ├── route_repository.py
-  ├── api_models.py
-  ├── main.py
-  ├── requirements.txt
-  └── Dockerfile
-  ```
-* [+] Make sure all `__init__.py` files exist to treat folders as packages. Content can be empty or export relevant classes.
+* **RouteRepository** → ❌ **gone**
 
 ---
 
-## **2. Route / Graph Integration**
-
-* [ ] Ensure `RouteService` and `RouteRepository` work with the **latest “spine” schema** you defined.
-* [ ] Validate that `get_all_orders` and `get_order_operations` fetch correct nodes/edges from your graph DB.
-* [ ] Add missing error handling if orders or operations are missing in the graph.
-* [ ] Make `graph_editor` modular for CRUD operations.
+## ✅ TODO LIST (do these in order)
 
 ---
 
-## **3. Scheduler Integration**
+---
 
-* [ ] `scheduler.py`:
+# ✅ FINAL CLEAN TODO LIST (pin this)
 
-  * Ensure it accepts operations built from graph DB routes.
-  * Map operation machine types to actual machines.
-  * Handle optional/required inventory items per operation.
-* [ ] Fix `run_schedule` in `main.py`:
+### 🔴 Must do now
 
-  * Pull orders from graph DB using `RouteService`.
-  * Convert route steps into scheduler input format.
-  * Apply `pick_machine` correctly.
-* [ ] Make scheduling deterministic and log runs with `log_schedule_run` and `save_schedule_archive`.
+* [+] Fix `rebuild_next_operation_edges` (don’t delete nodes)
+* [+] Stop using `sequence` as node identity (add `opstep_id`)
+
+### 🟡 Next cleanup
+
+* [+] Delete redundant helper methods
+* [ ] Simplify RouteService public API
+* [ ] Make GraphEditor edge queries more explicit
+
+### 🟢 Later (scheduler phase)
+
+* [ ] OR-Tools consumes `get_ready_opsteps`
+* [ ] BLOCKED_BY edges added by inventory/machine services
+* [ ] Time becomes a solver concern, not graph concern
 
 ---
 
-## **4. Inventory / Machine / Product APIs**
+## 1️⃣ Decide final responsibility boundaries (lock this in)
 
-* [ ] Add validation to `/update/inventory` and `/add/inventory` endpoints.
-* [ ] Add proper return types using Pydantic models (`InventoryItem`, `OrderRead`, etc.).
-* [ ] Fix `/add/machine` to handle name conflicts safely.
-* [ ] Add `/add/products`, `/add/operation`, `/add/sequences` with proper conflict resolution.
+**You already converged here, this is just confirmation:**
 
----
+### GraphEditor (keep)
 
-## **5. Product Route APIs**
+* create_node
+* get_node
+* update_node
+* delete_node
+* create_edge
+* get_edges
+* delete_edge
 
-* [ ] `routes_api.py`:
+🛑 **GraphEditor must NOT**
 
-  * Add POST endpoint for adding step (`/products/{product_id}/steps`).
-  * Add POST endpoint for route validation.
-  * Add GET endpoint for retrieving product route.
-* [ ] Ensure API uses **dependency injection** for DB connections.
-
----
-
-## **6. Testing**
-
-* [ ] Unit tests for:
-
-  * `RouteService` operations: add, delete, reorder, validate steps.
-  * Scheduler: test with sample orders & machines.
-* [ ] API tests using FastAPI `TestClient`:
-
-  * `/get/orders`, `/get/inventory`, `/run/schedule`, `/products/...`
+* understand sequence
+* understand routes
+* understand “ready”
+* understand BLOCKED_BY semantics
 
 ---
 
-## **7. Miscellaneous**
+### RouteService (owns all logic)
 
-* [ ] Logging & error handling for all endpoints.
-* [ ] Refactor `main.py` to import APIs from `routes/` instead of defining everything inline.
-* [ ] Remove redundant code and ensure consistent naming conventions (`machine_type`, `operation_id`, etc.).
-* [ ] Document all endpoints with OpenAPI descriptions.
-* [ ] Optional: create config for `base_date`, `scheduler settings`, or other runtime parameters.
+* What is a route
+* What is an OpStep order
+* What NEXT_OPERATION means
+* What BLOCKED_BY means
+* What “ready to schedule” means
 
+---
+
+## 2️⃣ Delete RouteRepository (after migration)
+
+**Before deleting**, you must migrate these responsibilities:
+
+### From RouteRepository → RouteService
+
+* get_steps_for_product
+* shift_sequences_up / down
+* insert_step
+* delete_step
+* reassign_sequences
+* rebuild_next_operation_edges
+* get_ready_opsteps
+
+👉 **All of these become orchestration logic using GraphEditor**
+
+Once done:
+
+* ❌ delete `route_repository.py`
+* ❌ remove all imports of it
+
+---
+
+## 3️⃣ Define OpStep invariants (write this as comments first)
+
+Put this at the top of `RouteService` 👇
+
+```python
+"""
+OpStep invariants:
+1. Each OpStep belongs to exactly one Product
+2. Each OpStep has a unique (product_id, sequence)
+3. NEXT_OPERATION edges reflect sequence order
+4. BLOCKED_BY edges represent non-sequential constraints
+"""
+```
+
+This becomes your **mental contract** while coding.
+
+---
+
+## 4️⃣ Normalize what each edge means (VERY important)
+
+Lock these definitions 👇
+
+### NEXT_OPERATION
+
+* Purely **sequence-based**
+* Auto-generated
+* Never user-created
+* Rebuilt whenever sequence changes
+
+### BLOCKED_BY
+
+* Manual or system-added constraint
+* Cross-product allowed
+* Cross-node-type allowed
+* Means: *“this OpStep cannot start until that node is satisfied”*
+
+⚠️ BLOCKED_BY is **NOT** about order
+⚠️ BLOCKED_BY is **NOT** part of route sequencing
+
+---
+
+## 5️⃣ Rewrite RouteService using GraphEditor ONLY
+
+Do this step-by-step:
+
+### 5.1 Route read
+
+* Fetch OpSteps via `GraphEditor.get_node`
+* Sort in memory by `sequence`
+* Assemble DTOs
+
+---
+
+### 5.2 Add step
+
+* Decide new sequence
+* Shift affected OpSteps (loop + update_node)
+* Create OpStep
+* Create HAS_STEP + DOES edges
+* Rebuild NEXT_OPERATION
+* Validate
+
+---
+
+### 5.3 Delete step
+
+* Delete OpStep
+* Shift remaining sequences down
+* Rebuild NEXT_OPERATION
+* Validate
+
+---
+
+### 5.4 Reorder steps
+
+* Validate same OpSteps
+* Rewrite sequences
+* Rebuild NEXT_OPERATION
+* Validate
+
+---
+
+## 6️⃣ Move NEXT_OPERATION rebuild OUT of GraphEditor
+
+🚨 This is subtle but important.
+
+### You should:
+
+* ❌ remove `rebuild_next_operation_edges` from GraphEditor
+* ✅ keep it inside RouteService
+
+Reason:
+
+> NEXT_OPERATION is **business meaning**, not graph plumbing
+
+---
+
+## 7️⃣ Implement get_ready_opsteps as a SERVICE method
+
+**Do NOT put this in GraphEditor**
+
+Service logic:
+
+1. Fetch all OpSteps
+2. Exclude OpSteps with incoming BLOCKED_BY
+3. Exclude OpSteps whose previous NEXT_OPERATION step is not `done`
+4. Return remaining
+
+GraphEditor only helps fetch nodes + edges.
+
+---
+
+## 8️⃣ (Optional but recommended) Rename things
+
+To reduce confusion:
+
+| Old name     | Better name          |
+| ------------ | -------------------- |
+| RouteService | `OpStepRouteService` |
+| GraphEditor  | `GraphRepository`    |
+| HAS_STEP     | `HAS_OPSTEP`         |
+
+This is optional but will save future-you pain.
+
+---
+
+## 9️⃣ Final cleanup pass
+
+Checklist:
+
+* [ ] No RouteRepository imports left
+* [ ] GraphEditor has zero business logic
+* [ ] RouteService contains all sequencing logic
+* [ ] NEXT_OPERATION only created in one place
+* [ ] BLOCKED_BY only interpreted in services
+
+---
