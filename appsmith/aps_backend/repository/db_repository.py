@@ -6,7 +6,7 @@ from typing import Optional
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta, date
 
-from appsmith.aps_backend.models import OrderCreate
+from models import OrderCreate
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))

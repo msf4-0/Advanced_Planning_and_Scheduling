@@ -1,5 +1,5 @@
-from appsmith.aps_backend.repository.route_repository import RouteRepository
-from appsmith.aps_backend.models import ProductRouteRead, OpStepRead
+from repository.route_repository import RouteRepository
+from models import ProductRouteRead, OpStepRead
 from typing import Optional, Dict, List
 
 class RouteService:

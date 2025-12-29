@@ -1,7 +1,7 @@
 from typing import Optional, List
 
-from appsmith.aps_backend.models import OperationRead
-from appsmith.aps_backend.repository.db_repository import DBTable
+from models import OperationRead
+from repository.db_repository import DBTable
 
 class OperationService:
     def __init__(self, db: DBTable):

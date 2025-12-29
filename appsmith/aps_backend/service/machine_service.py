@@ -1,5 +1,5 @@
 from typing import Optional, List
-from appsmith.aps_backend.repository.db_repository import DBTable
+from repository.db_repository import DBTable
 
 class MachineService:
     def __init__(self, db: DBTable):

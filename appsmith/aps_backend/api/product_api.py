@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body
 from typing import List, Optional
 from datetime import datetime
 
-from appsmith.aps_backend.repository.db_repository import DBTable
+from repository.db_repository import DBTable
 
 router = APIRouter()
 

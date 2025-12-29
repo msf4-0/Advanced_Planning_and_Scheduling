@@ -3,11 +3,19 @@ from pydantic import BaseModel
 from typing import List
 from datetime import date, datetime
 from psycopg2.extras import execute_values
+'''
+from repository.db_repository import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_inventory_for_item
+from service.scheduler import generate_schedule, pick_machine
+from routes import RouteService, RouteRepository
+from models import InventoryItem, OrderRead, OrderCreate, ScheduledOperation
+'''
 
-from appsmith.aps_backend.repository.db_repository import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_inventory_for_item
-from appsmith.aps_backend.service.scheduler import generate_schedule, pick_machine
-from appsmith.aps_backend.routes import RouteService, RouteRepository
-from appsmith.aps_backend.models import InventoryItem, OrderRead, OrderCreate, ScheduledOperation
+from api import (
+    machine_api,
+    operation_api,
+    order_api,
+    inventory_api
+)
 
 import os
 import logging
@@ -15,62 +23,14 @@ import logging
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
+app.include_router(machine_api.router)
+app.include_router(operation_api.router)
+app.include_router(order_api.router)
+app.include_router(inventory_api.router)
 
 
+'''
 # Get Endpoints
-
-'''@app.get("/get/inventory", response_model=List[InventoryItem])
-def get_inventory():
-    """
-    Retrieve the current inventory list.
-
-    Returns a list of inventory items, including their quantities, 
-    minimum required, maximum capacity, and age in days.
-    """
-
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-            """
-            SELECT item_id, item_name, quantity, min_required, max_capacity, last_updated, received_at
-            FROM inventory
-            ORDER BY item_name, received_at;
-            """
-        )
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return [
-        {
-            "item_id": r[0],
-            "item_name": r[1],
-            "quantity": r[2],
-            "min_required": r[3],
-            "max_capacity": r[4],
-            "last_updated": r[5],
-            "received_at": r[6],
-            "age_days": (datetime.now() - r[6]).days
-        }
-        for r in rows
-    ]'''
-
-
-'''@app.get("/get/orders", response_model=List[OrderRead])
-def get_orders():
-    rows = fetch_orders()
-
-    result = []
-    for r in rows:
-        result.append(OrderRead(
-            order_id=r['order_id'],
-            product_id=r['product_name'],
-            priority=r['priority'],
-            due_date=r['due_date'].isoformat() if isinstance(r['due_date'], date) else r['due_date'],
-            quantity=r.get('quantity', 0)
-        ))
-    return result'''
-
 
 @app.get("/schedule/gantt")
 def get_schedule_gantt():
@@ -99,94 +59,6 @@ def get_schedule_gantt():
 
 
 # Post Endpoints
-
-'''@app.post("/update/inventory")
-def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        UPDATE inventory
-        SET quantity = %s, last_updated = NOW()
-        WHERE item_id = %s
-        RETURNING item_name;
-        """, (quantity, item_id)
-    )
-
-    row = cur.fetchone()
-    item_name = row[0] if row is not None else None
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"status": "ok", "item_id": item_id, "item_name": item_name, "new_quantity": quantity}
-'''
-
-'''@app.post("/add/inventory")
-def add_inventory(item_name: str = Body(...),
-                  quantity: int = Body(...),
-                  min_required: int = Body(...),
-                  max_capacity: int = Body(...)):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO inventory (item_name, quantity, min_required, max_capacity, last_updated, received_at)
-        VALUES (%s, %s, %s, %s, NOW(), NOW())
-        RETURNING item_id;
-        """, (item_name, quantity, min_required, max_capacity)
-    )
-    row = cur.fetchone()
-    item_id = row[0] if row is not None else None
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"status": "ok", "item_id": item_id, "quantity": quantity}
-'''
-
-'''@app.post("/add/products")
-def add_products(products: List[str] = Body(...)):
-    """
-    Add new products to the system.
-    
-    :param products: List of product names to add.
-    :type products: List[str]
-    :example:
-    [
-        "Product A",
-        "Product B",
-        ...
-    ]
-    """
-    if not products:
-        raise HTTPException(status_code=400, detail="No products provided")
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    added = 0
-
-    for product_name in products:
-        try:
-            cur.execute(
-                """
-                INSERT INTO products (product_name)
-                VALUES (%s)
-                ON CONFLICT (product_name) DO NOTHING;
-                """, (product_name,)
-            )
-            if cur.rowcount > 0:
-                added += 1
-        except Exception as e:
-            logging.error(f"Error adding product {product_name}: {e}")
-            continue
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return {"status": "ok", "added": added}
-'''
 
 @app.post("/add/sequences")
 def add_sequences(sequences: List[dict] = Body(...)):
@@ -254,94 +126,6 @@ def add_sequences(sequences: List[dict] = Body(...)):
     conn.close()
 
     return {"status": "ok", "added": added, "updated": updated}
-
-
-@app.post("/add/operation")
-def add_operation(name: str = Body(...), required_machine_type: str = Body(...), duration: int = Body(...), material_needed: str = Body(None)):
-    """
-    Add a new operation to the system.\n
-    
-    :param name: Name of the operation.\n
-    :param required_machine_type: Type of machine required for the operation.\n
-    :param duration: Duration of the operation in minutes.\n
-    :param material_needed: (Optional) Material needed for the operation.\n
-
-    :return: Status and operation ID.
-    """
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO operations (name, required_machine_type, duration, material_needed)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (name) DO UPDATE
-        SET required_machine_type = EXCLUDED.required_machine_type,
-            duration = EXCLUDED.duration,
-            material_needed = EXCLUDED.material_needed
-        RETURNING operation_id;
-        """, (name, required_machine_type, duration, material_needed)
-    )
-    row = cur.fetchone()
-    operation_id = row[0] if row is not None else None
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"status": "ok", "operation_id": operation_id}
-
-
-@app.post("/add/machine")
-def add_machine(name: str = Body(...), type: str = Body(...), capacity: int = Body(None)):
-    """
-    Add a new machine to the system. If a machine with the same name exists,
-    automatically increment the name (e.g., machine, machine2, machine3, ...).
-    """
-    conn = get_connection()
-    cur = conn.cursor()
-
-    # Find all machines with the same base name or base name + number
-    cur.execute(
-        """
-        SELECT name FROM machines WHERE name ~ %s;
-        """,
-        (f'^{name}(\\d*)$',)
-    )
-    existing_names = [row[0] for row in cur.fetchall()]
-
-    if name in existing_names:
-        # Find the highest suffix
-        max_suffix = 1
-        for n in existing_names:
-            if n == name:
-                continue
-            suffix = n[len(name):]
-            if suffix.isdigit():
-                max_suffix = max(max_suffix, int(suffix) + 1)
-        new_name = f"{name}{max_suffix}"
-    else:
-        new_name = name
-
-    # Insert the new machine
-    cur.execute(
-        """
-        INSERT INTO machines (name, type, capacity)
-        VALUES (%s, %s, %s)
-        RETURNING machine_id;
-        """,
-        (new_name, type, capacity)
-    )
-    row = cur.fetchone()
-    machine_id = row[0] if row is not None else None
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"status": "ok", "machine_id": machine_id, "machine_name": new_name}
-
-
-'''@app.post("/create/orders", status_code=201)
-def create_order(order: OrderCreate):
-    add_order(order)
-    return {"message": "Order created successfully"}
-'''
 
 @app.post("/run/schedule", response_model=List[ScheduledOperation])
 def run_schedule(): #TODO: fix so it works with graph database
@@ -432,3 +216,4 @@ def can_schedule(ops_for_order):
     conn.close()
     return True
 
+'''

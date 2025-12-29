@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Body, HTTPException
 from typing import List, Optional
 
-from appsmith.aps_backend.repository.db_repository import DBTable
-from appsmith.aps_backend.service.machine_service import MachineService
+from repository.db_repository import DBTable
+from service.machine_service import MachineService
 
 router = APIRouter()
 

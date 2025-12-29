@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Body
 from typing import List, Optional
 
-from appsmith.aps_backend.repository.db_repository import DBTable
-from appsmith.aps_backend.models import OperationRead
-from appsmith.aps_backend.service import OperationService
+from repository.db_repository import DBTable
+from models import OperationRead
+from service import OperationService
 
 router = APIRouter()
 
