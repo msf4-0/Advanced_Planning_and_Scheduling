@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends
 from models import RouteFilter, ProductRouteRead, OpStepCreate
-from service.route_service import RouteService
-from appsmith.aps_backend.repository.opstep_graph_repo import RouteRepository
-from repository.db_repository import DBTable  # Make sure to import your connection getter
+from service import RouteService
+from repository import DBTable, GraphEditor  # Make sure to import your connection getter
 
 router = APIRouter()
 
 def get_service():
     conn = DBTable().get_connection()
+    graph_editor = GraphEditor(conn)
     try:
-        yield RouteService(RouteRepository(conn))
+        yield RouteService(graph_editor)
     finally:
         conn.close()
 
@@ -20,7 +20,7 @@ def get_route(product_id: int, service: RouteService = Depends(get_service)):
 
     Location: appsmith/aps_backend/api/routes_api.py
     """
-    return service.get_product_route(product_id)
+    return service.get_product_sequence(product_id)
 
 @router.post("/products/{product_id}/route/validate")
 def validate_route(
@@ -33,7 +33,7 @@ def validate_route(
 
     Location: appsmith/aps_backend/api/routes_api.py
     """
-    service.validate_route(
+    service.validate_sequence(
         product_id, 
         filters.model_dump(exclude_none=True)
     )
@@ -51,7 +51,7 @@ def add_step(
     Location: appsmith/aps_backend/api/routes_api.py
     """
 
-    service.add_step_to_route(
+    service.add_opstep(
         product_id = product_id,
         operation_id = payload.operation_id,
         insert_after = payload.insert_after

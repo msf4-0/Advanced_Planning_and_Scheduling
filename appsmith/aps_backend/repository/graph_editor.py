@@ -20,7 +20,6 @@ class GraphEditor:
 
         if not properties:
             props_str = ''
-            params = ()
         else:
             for key in properties.keys():
                 if not isinstance(key, str):
@@ -38,7 +37,10 @@ class GraphEditor:
         with self.conn.cursor() as cur:
             cur.execute(sql, tuple(properties.values()))
             result = cur.fetchone()
-            return result[0]['node']  # Return the node properties
+            return {
+                "id": result[0]["id"],
+                **result[0]["props"]
+            }  # Return the node properties
         
 
     def get_node(self,label: str, filters: dict) -> list[dict]:
@@ -63,7 +65,7 @@ class GraphEditor:
             FROM cypher('production_graph', $$
                 MATCH (n:{label})
                 WHERE {filter_str}
-                RETURN n
+                RETURN id(n) AS id, properties(n) AS props
             $$) AS (node agtype);
             """
             params = tuple(filters.values())
@@ -72,7 +74,7 @@ class GraphEditor:
             SELECT * 
             FROM cypher('production_graph', $$
                 MATCH (n:{label})
-                RETURN n
+                RETURN id(n) AS id, properties(n) AS props
             $$) AS (node agtype);
             """
             params = ()
@@ -80,10 +82,13 @@ class GraphEditor:
         with self.conn.cursor() as cur:
             cur.execute(sql, params)
             rows = cur.fetchall()
-            return [row[0]['node'] for row in rows]  # Return list of node properties
+            return [
+                {"id": row[0], **row[1]["props"]}
+                for row in rows
+            ]  # Return list of node properties
         
 
-    def update_node(self, label: str, node_id: tuple[str, int], properties: dict) -> dict:
+    def update_node(self, label: str, node_id: int, properties: dict) -> dict:
         """
         Update a node's properties.
 
@@ -96,11 +101,9 @@ class GraphEditor:
             dict: The updated node's properties.
         """
 
-        id_key, id_value = node_id
-        if not id_key or not isinstance(id_key, str):
-            raise ValueError("The property key for node identification must be a non-empty string.")
         if not properties:
             raise ValueError("Properties to update cannot be empty.")
+        
         for key in properties.keys():
             if not isinstance(key, str):
                 raise ValueError("All property keys must be strings.")
@@ -109,19 +112,23 @@ class GraphEditor:
         sql = f"""
         SELECT * 
         FROM cypher('production_graph', $$
-            MATCH (n:{label} {{{id_key}: %s}})
+            MATCH (n)
+            WHERE id(n) = %s
             SET {set_str}
-            RETURN n
-        $$) AS (node agtype);
+            RETURN id(n) AS id, properties(n) AS props
+        $$) AS (id bigint, props agtype);
         """
 
         with self.conn.cursor() as cur:
             cur.execute(sql, (node_id, *properties.values()))
             result = cur.fetchone()
-            return result[0]['node']  # Return the updated node properties
+            if not result:
+                raise ValueError(f"No node found with id {node_id}.")
+            
+            return {"id": result[0], **result[1]["props"]}  # Return the updated node properties
 
 
-    def delete_node(self, label: str, node_id: tuple[str, int]) -> None:
+    def delete_node(self, node_id: int) -> None:
         """
         Delete a node with the given label and property.
 
@@ -130,25 +137,23 @@ class GraphEditor:
             property_key (str): The property key to identify the node.
             property_value: The property value to identify the node.
         """
-        id_key, id_value = node_id
-        if not id_key.isidentifier():
-            raise ValueError("The property key must be a valid identifier.")
         
         sql = f"""
         SELECT * 
         FROM cypher('production_graph', $$
-            MATCH (n:{label} {{{id_key}: %s}})
+            MATCH (n)
+            WHERE id(n) = %s
             DETACH DELETE n
         $$) AS (count agtype);
         """
 
         with self.conn.cursor() as cur:
-            cur.execute(sql, (id_value,))
+            cur.execute(sql, (node_id,))
             # No need to fetch results for this operation
 
     
     # Edge Operations
-    def create_edge(self, from_label: str, from_id: tuple[str, int], to_label: str, to_id: tuple[str, int], edge_type: str) -> dict:
+    def create_edge(self, from_id: int, to_id: int, edge_type: str) -> dict:
         """
         Create an edge of given type between two nodes.
         Args:
@@ -162,87 +167,52 @@ class GraphEditor:
             dict: The created edge's properties.
         """
         
-        from_key, from_value = from_id
-        to_key, to_value = to_id
-
-        for v in [from_key, to_key, edge_type, from_label, to_label]:
-            if not v.isidentifier():
-                raise ValueError(f"Property keys and edge type must be valid identifiers. Invalid value: {v}")
-
         sql = f"""
         SELECT * 
         FROM cypher('production_graph', $$
-            MATCH (a:{from_label} {{{from_key}: %s}}), (b:{to_label} {{{to_key}: %s}})
+            MATCH (a), (b)
+            WHERE id(a) = %s AND id(b) = %s
             CREATE (a)-[r:{edge_type}]->(b)
             RETURN r
         $$) AS (edge agtype);
         """
 
         with self.conn.cursor() as cur:
-            cur.execute(sql, (from_value, to_value))
+            cur.execute(sql, (from_id, to_id))
             result = cur.fetchone()
             return result[0]['edge']  # Return the edge properties
     
 
-    def get_edges(
-            self, 
-            from_label: Optional[str] = None, 
-            from_id: Optional[tuple[str, int]] = None,
-            to_label: Optional[str] = None, 
-            to_id: Optional[tuple[str, int]] = None,
-            edge_type: Optional[str] = None
-        ) -> list[dict]:
+    def get_edges(self, from_id: Optional[int] = None, to_id: Optional[int] = None, edge_type: Optional[str] = None) -> list[dict]:
         """
         Fetch edges matching criteria.
         Args:
-            from_label (Optional[str]): Label of the starting node.
-            from_id (Optional[tuple[str, int]]): (property_key, property_value) of the starting node.
-            to_label (Optional[str]): Label of the ending node.
-            to_id (Optional[tuple[str, int]]): (property_key, property_value) of the ending node.
+            from_id (Optional[int]): ID of the starting node.
+            to_id (Optional[int]): ID of the ending node.
             edge_type (Optional[str]): Type of the edge.
         """
-        params = []
 
         match_clause = "MATCH (a)-[r]->(b)"  # always match all edges first
         conditions = []
+        params = []
 
-        for label in [from_label, to_label]:
-            if label and not label.isidentifier():
-                raise ValueError(f"Node labels must be valid identifiers. Invalid label: {label}")
-        if edge_type and not edge_type.isidentifier():
-            raise ValueError(f"Edge type must be a valid identifier. Invalid edge type: {edge_type}")
-        if from_id:
-            prop_name, _ = from_id
-            if not prop_name.isidentifier():
-                raise ValueError(f"Property key must be a valid identifier. Invalid key: {prop_name}")
-        if to_id:
-            prop_name, _ = to_id
-            if not prop_name.isidentifier():
-                raise ValueError(f"Property key must be a valid identifier. Invalid key: {prop_name}")
-
-        # labels
-        if from_label:
-            match_clause = f"MATCH (a:{from_label})-[r]->(b)"
-        if to_label:
-            match_clause = f"MATCH (a)-[r]->(b:{to_label})"
+        # Filter by Node IDs
+        if from_id is not None:
+            conditions.append(f"a.id = %s")
+            params.append(from_id)
+        if to_id is not None:
+            conditions.append(f"b.id = %s")
+            params.append(to_id)
         
-        # IDs
-        if from_id:
-            prop_name, value = from_id
-            conditions.append(f"a.{prop_name} = %s")
-            params.append(value)
-        if to_id:
-            prop_name, value = to_id
-            conditions.append(f"b.{prop_name} = %s")
-            params.append(value)
+        # Filter by Edge Type
 
         # Edge type
         if edge_type:
+            if not edge_type.isidentifier():
+                raise ValueError(f"Edge type must be a valid identifier. Invalid edge type: {edge_type}")
             conditions.append(f"type(r) = '{edge_type}'")  # edge type filtering in WHERE
 
-        where_clause = ""
-        if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
         sql = f"""
         SELECT * 
@@ -259,14 +229,7 @@ class GraphEditor:
             return [row[0]['edge'] for row in rows]  # Return list of edge properties
             
 
-    def delete_edge(
-            self,
-            from_label: str,
-            from_id: tuple[str,int],
-            to_label: str,
-            to_id: tuple[str,int],
-            edge_type: Optional[str] = None
-        ) -> None:
+    def delete_edge(self, from_id: int, to_id: int, edge_type: Optional[str] = None) -> None:
         """
         Delete a specific edge.
         Args:
@@ -277,26 +240,21 @@ class GraphEditor:
             edge_type (Optional[str]): Type of the edge.
         """
 
-        from_key, from_value = from_id
-        to_key, to_value = to_id
-
-        for v in [from_key, to_key, edge_type, from_label, to_label]:
-            if not v.isidentifier():
-                raise ValueError(f"Property keys and edge type must be valid identifiers. Invalid value: {v}")
-
-        conditions = [f"a.{from_key} = %s", f"b.{to_key} = %s"]
-        params = [from_value, to_value]
+        conditions = [f"a.id = %s", f"b.id = %s"]
+        params = [from_id, to_id]
 
         # Edge type filtering
         if edge_type:
-            conditions.append(f"type(r) = '{edge_type}'")
+            if not edge_type.isidentifier():
+                raise ValueError(f"Edge type must be a valid identifier. Invalid edge type: {edge_type}")
+            conditions.append(f"type(r) = '{edge_type}'")  # edge type filtering in WHERE
 
-        where_clause = "WHERE " + " AND ".join(conditions)
+        where_clause = f"WHERE {' AND '.join(conditions)}"
         
         sql = f"""
         SELECT *
         FROM cypher('production_graph', $$
-            MATCH (a:{from_label})-[r]->(b:{to_label})
+            MATCH (a)-[r]->(b)
             {where_clause}
             DELETE r
         $$) AS (count agtype);
@@ -305,70 +263,3 @@ class GraphEditor:
         with self.conn.cursor() as cur:
             cur.execute(sql, tuple(params))
             # No need to fetch results for this operation
-
-
-    # Specialized Operations
-    def rebuild_next_operation_edges(self, product_id: int) -> None:
-        """Rebuild NEXT_OPERATION edges based on OpStep sequences."""
-
-        if not isinstance(product_id, int):
-            raise ValueError("product_id must be an integer.")
-        
-        sql = """
-        SELECT * 
-        FROM cypher('production_graph', $$
-            MATCH (s:OpStep {product_id: %s})-[r:NEXT_OPERATION]->()
-            DELETE r;
-
-            MATCH (s1:OpStep {product_id: %s})
-            MATCH (s2:OpStep {product_id: %s})
-            WHERE s2.sequence = s1.sequence + 1
-            CREATE (s1)-[:NEXT_OPERATION]->(s2)
-            RETURN count(*)
-        $$) AS (count agtype);
-        """
-
-        with self.conn.cursor() as cur:
-            cur.execute(sql, (product_id, product_id, product_id))
-            # No need to fetch results for this operation
-
-    def rebuild_can_run_on_edges(self) -> None:
-        """
-        Rebuild CAN_RUN_ON edges for all operations based on required_machine_type.
-        """
-
-        sql = """
-        SELECT *
-        FROM cypher('production_graph', $$
-            MATCH (op:Operation)-[r:CAN_RUN_ON]->()
-            DELETE r;
-
-            MATCH (op:Operation), (m:Machine)
-            WHERE op.required_machine_type = m.type
-            CREATE (op)-[:CAN_RUN_ON]->(m)
-            RETURN count(*)
-        $$) AS (count agtype);
-        """
-        with self.conn.cursor() as cur:
-            cur.execute(sql)
-
-    def rebuild_uses_edges(self) -> None:
-        """
-        Rebuild USES edges for all operations based on material_needed property.
-        """
-        
-        sql = """
-        SELECT *
-        FROM cypher('production_graph', $$
-            MATCH (op:Operation)-[r:USES]->()
-            DELETE r;
-
-            MATCH (op:Operation), (mat:Material)
-            WHERE op.material_needed = mat.material_id
-            CREATE (op)-[:USES]->(mat)
-            RETURN count(*)
-        $$) AS (count agtype);
-        """
-
-        with self.conn.cursor() as cur:
-            cur.execute(sql)
