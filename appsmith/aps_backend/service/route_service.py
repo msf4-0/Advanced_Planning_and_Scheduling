@@ -1,10 +1,10 @@
-from appsmith.aps_backend.repository.opstep_graph_repo import RouteRepository
-from models import ProductRouteRead, OpStepRead
+from repository import GraphEditor
+from models import ProductRouteRead, OpStepRead, OperationRead
 from typing import Optional, Dict, List
 
 class RouteService:
-    def __init__(self, repo: RouteRepository):
-        self.repo = repo
+    def __init__(self, graph: GraphEditor):
+        self.graph = graph
 
     def get_product_route(
             self, 
@@ -22,10 +22,39 @@ class RouteService:
                     - 'max_sequence' (int): Maximum sequence number.
                     - 'operation_id' (int): Specific operation ID to filter by.
         """
-        steps = self.repo.get_steps_for_product(product_id, filters=filters)
-        
+        filters = filters or {}
+        node_filters = {'product_id': product_id}
+        if 'min_sequence' in filters or 'max_sequence' in filters:
+            steps = self.graph.get_node('OpStep', node_filters)
+            seq_min = filters.get('min_sequence', 0)
+            seq_max = filters.get('max_sequence', float('inf'))
+            steps = [
+                step for step in steps
+                if seq_min <= step['sequence'] <= seq_max
+            ]
+        else:
+            steps = self.graph.get_node('OpStep', node_filters)
+
+        steps_sorted = sorted(steps, key=lambda s: s['sequence'])
+
+        steps = [
+            OpStepRead(
+                product_id=product_id,
+                sequence=step['sequence'],
+                operation=OperationRead(
+                    operation_id=step['operation']['operation_id'],
+                    name=step['operation']['name'],
+                    duration=step['operation']['duration'],
+                    machine_type=step['operation']['machine_type'],
+                    material_id=step['operation']['material_id'].get('material_id')
+                )
+            )
+            for step in steps_sorted
+        ]
+
         if not steps:
             raise ValueError("No steps found for the given product / sequence range")
+        
         return ProductRouteRead(
             product_id=product_id,
             product_name=f"Product {product_id}",  # optionally fetch name from DB if needed
@@ -49,15 +78,11 @@ class RouteService:
                     - 'max_sequence' (int): Maximum sequence number.
                     - 'operation_id' (int): Specific operation ID to filter by.
         """
-        steps = self.repo.get_steps_for_product(product_id, filters=filters)
+        route = self.get_product_route(product_id, filters)
+        sequences = [step.sequence for step in route.steps]
+        expected = list(range(min(sequences), max(sequences) + 1))
         
-        if not steps:
-            raise ValueError("No steps found for the given product / filters")
-
-        seqs = [s.sequence for s in steps]
-        expected = list(range(min(seqs), max(seqs) + 1))
-
-        if seqs != expected:
+        if sequences != expected:
             raise ValueError("Route sequence is broken")
 
         return True
@@ -78,28 +103,53 @@ class RouteService:
                 If None, appends to the end of the route.
         """
         # load existing steps to determine next sequence number
-        steps = self.repo.get_steps_for_product(product_id)
+        steps = self.graph.get_node('OpStep', {'product_id': product_id})
+
         if not steps:
             next_seq = 1
         elif insert_after is None:
-            next_seq = max(s.sequence for s in steps) + 1
+            next_seq = max(step['sequence'] for step in steps) + 1
         else:
             next_seq = insert_after + 1
-
-        # shift sequences of existing steps if inserting in the middle
-        self.repo.shift_sequences_up(
-            product_id=product_id,
-            starting_sequence=next_seq
+            # Shift sequences up
+            for step in steps:
+                if step['sequence'] >= next_seq:
+                    self.graph.update_node(
+                        'OpStep', 
+                        ('sequence', step['sequence']), 
+                        {'sequence': step['sequence'] + 1}
+                    )
+            
+        # Create new OpStep
+        new_step = self.graph.create_node(
+            'OpStep',
+            {
+                'product_id': product_id,
+                'operation_id': operation_id,
+                'sequence': next_seq
+            }
         )
 
-        self.repo.insert_step(
-            product_id=product_id,
-            operation_id=operation_id,
-            sequence=next_seq
+        # Link to product
+        self.graph.create_edge(
+            'Product',
+            ('product_id', product_id),
+            'OpStep',
+            ('sequence', next_seq),
+            'HAS_STEP'
         )
 
-        # rebuild NEXT_OPERATION edges
-        self.repo.rebuild_next_operation_edges(product_id)
+        # Link to operation
+        self.graph.create_edge(
+            'OpStep',
+            ('sequence', next_seq),
+            'Operation',
+            ('operation_id', operation_id),
+            'DOES'
+        )
+
+        # Rebuild NEXT_OPERATION edges
+        self.rebuild_next_operation_edges(product_id)
 
         # validate
         self.validate_route(product_id)
@@ -112,17 +162,22 @@ class RouteService:
             product_id (int): The ID of the product.
             operation_id (int): The ID of the operation to remove.
         """
-        steps = self.repo.get_steps_for_product(product_id=product_id)
-
-        if sequence not in [s.sequence for s in steps]:
+        steps = self.graph.get_node('OpStep', {'product_id': product_id})
+        if sequence not in [step['sequence'] for step in steps]:
             raise ValueError("No step found with the given sequence number")
-        
-        # rebuild NEXT_OPERATION edges
-        self.repo.delete_step(product_id, sequence)
-        self.repo.shift_sequences_down(product_id, sequence)
-        self.repo.rebuild_next_operation_edges(product_id)
 
-        # validate
+        # Delete the step
+        self.graph.delete_node('OpStep', ('sequence', sequence))
+
+        # Shift remaining sequences down
+        for step in steps:
+            if step['sequence'] > sequence:
+                self.graph.update_node('OpStep', ('sequence', step['sequence']), {'sequence': step['sequence'] - 1})
+
+        # Rebuild NEXT_OPERATION edges
+        self.rebuild_next_operation_edges(product_id)
+
+        # Validate
         self.validate_route(product_id)
 
     def reorder_steps(self, product_id: int, new_order: List[int]) -> None:
@@ -133,24 +188,33 @@ class RouteService:
             product_id (int): The ID of the product.
             new_order (List[int]): List of operation_ids in the desired order.
         """
-        steps = self.repo.get_steps_for_product(product_id=product_id)
-        opIdToOldSequence = {
-            s.operation.operation_id: s.sequence for s in steps
-        }
+        steps = self.graph.get_node('OpStep', {'product_id': product_id})
+        if sorted([s['operation']['operation_id'] for s in steps]) != sorted(new_order):
+            raise ValueError("New order must contain the same operation IDs")
 
-        if sorted(opIdToOldSequence.keys()) != sorted(new_order):
-            raise ValueError("New order must contain the same operation IDs as the current route")
+        # Update sequences
+        op_to_step = {s['operation']['operation_id']: s for s in steps}
+        for idx, op_id in enumerate(new_order, start=1):
+            self.graph.update_node('OpStep', ('sequence', op_to_step[op_id]['sequence']), {'sequence': idx})
 
-        # Update sequences based on new order
-        mapping = {
-            opIdToOldSequence[op_id]: new_seq
-            for new_seq, op_id in enumerate(new_order, start=1)
-        }
-
-        self.repo.reassign_sequences(product_id, mapping)
-
-        # Rebuild NEXT_OPERATION edges
-        self.repo.rebuild_next_operation_edges(product_id)
-
-        # Validate
+        # Rebuild edges and validate
+        self.rebuild_next_operation_edges(product_id)
         self.validate_route(product_id)
+
+    def rebuild_next_operation_edges(self, product_id: int) -> None:
+        """
+        Delete old NEXT_OPERATION edges and recreate based on sequence.
+        """
+        steps = sorted(self.graph.get_node('OpStep', {'product_id': product_id}), key=lambda s: s['sequence'])
+        # Delete existing edges
+        for step in steps:
+            self.graph.delete_node('OpStep', ('sequence', step['sequence']))
+        # Recreate edges
+        for i in range(len(steps) - 1):
+            self.graph.create_edge(
+                'OpStep',
+                ('sequence', steps[i]['sequence']),
+                'OpStep',
+                ('sequence', steps[i + 1]['sequence']),
+                'NEXT_OPERATION'
+            )
