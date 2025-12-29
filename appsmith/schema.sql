@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict zh5mb8WgFbzAvC0KvJgfe7iiEfk3bY24EPD2XbCqdyGQf45PAfuPX5RoWmmghrm
+\restrict Iew6i0lVkMfUea3PqtFAULTv4OGpGcd6b6YoVMPIaNlhz9yVVacffhYCXoO4lNr
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
--- Dumped by pg_dump version 15.15 (Debian 15.15-1.pgdg13+1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -28,6 +28,15 @@ CREATE SCHEMA ag_catalog;
 ALTER SCHEMA ag_catalog OWNER TO "postgresUser";
 
 --
+-- Name: production_graph; Type: SCHEMA; Schema: -; Owner: postgresUser
+--
+
+CREATE SCHEMA production_graph;
+
+
+ALTER SCHEMA production_graph OWNER TO "postgresUser";
+
+--
 -- Name: age; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -46,6 +55,538 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: _ag_label_edge; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph._ag_label_edge (
+    id ag_catalog.graphid NOT NULL,
+    start_id ag_catalog.graphid NOT NULL,
+    end_id ag_catalog.graphid NOT NULL,
+    properties ag_catalog.agtype DEFAULT ag_catalog.agtype_build_map() NOT NULL
+);
+
+
+ALTER TABLE production_graph._ag_label_edge OWNER TO "postgresUser";
+
+--
+-- Name: CAN_RUN_ON; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."CAN_RUN_ON" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."CAN_RUN_ON" OWNER TO "postgresUser";
+
+--
+-- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."CAN_RUN_ON_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."CAN_RUN_ON_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."CAN_RUN_ON_id_seq" OWNED BY production_graph."CAN_RUN_ON".id;
+
+
+--
+-- Name: DOES; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."DOES" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."DOES" OWNER TO "postgresUser";
+
+--
+-- Name: DOES_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."DOES_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."DOES_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: DOES_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."DOES_id_seq" OWNED BY production_graph."DOES".id;
+
+
+--
+-- Name: HAS_OPERATION; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."HAS_OPERATION" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."HAS_OPERATION" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_OPERATION_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."HAS_OPERATION_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."HAS_OPERATION_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_OPERATION_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."HAS_OPERATION_id_seq" OWNED BY production_graph."HAS_OPERATION".id;
+
+
+--
+-- Name: HAS_SEQUENCE; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."HAS_SEQUENCE" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."HAS_SEQUENCE" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_SEQUENCE_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."HAS_SEQUENCE_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."HAS_SEQUENCE_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_SEQUENCE_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."HAS_SEQUENCE_id_seq" OWNED BY production_graph."HAS_SEQUENCE".id;
+
+
+--
+-- Name: HAS_STEP; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."HAS_STEP" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."HAS_STEP" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_STEP_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."HAS_STEP_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."HAS_STEP_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: HAS_STEP_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."HAS_STEP_id_seq" OWNED BY production_graph."HAS_STEP".id;
+
+
+--
+-- Name: _ag_label_vertex; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph._ag_label_vertex (
+    id ag_catalog.graphid NOT NULL,
+    properties ag_catalog.agtype DEFAULT ag_catalog.agtype_build_map() NOT NULL
+);
+
+
+ALTER TABLE production_graph._ag_label_vertex OWNER TO "postgresUser";
+
+--
+-- Name: Inventory; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Inventory" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Inventory" OWNER TO "postgresUser";
+
+--
+-- Name: Inventory_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Inventory_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Inventory_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Inventory_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Inventory_id_seq" OWNED BY production_graph."Inventory".id;
+
+
+--
+-- Name: Machine; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Machine" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Machine" OWNER TO "postgresUser";
+
+--
+-- Name: Machine_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Machine_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Machine_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Machine_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Machine_id_seq" OWNED BY production_graph."Machine".id;
+
+
+--
+-- Name: Materials; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Materials" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Materials" OWNER TO "postgresUser";
+
+--
+-- Name: Materials_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Materials_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Materials_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Materials_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Materials_id_seq" OWNED BY production_graph."Materials".id;
+
+
+--
+-- Name: NEXT_OPERATION; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."NEXT_OPERATION" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."NEXT_OPERATION" OWNER TO "postgresUser";
+
+--
+-- Name: NEXT_OPERATION_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."NEXT_OPERATION_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."NEXT_OPERATION_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: NEXT_OPERATION_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."NEXT_OPERATION_id_seq" OWNED BY production_graph."NEXT_OPERATION".id;
+
+
+--
+-- Name: OF_PRODUCT; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."OF_PRODUCT" (
+)
+INHERITS (production_graph._ag_label_edge);
+
+
+ALTER TABLE production_graph."OF_PRODUCT" OWNER TO "postgresUser";
+
+--
+-- Name: OF_PRODUCT_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."OF_PRODUCT_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."OF_PRODUCT_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: OF_PRODUCT_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."OF_PRODUCT_id_seq" OWNED BY production_graph."OF_PRODUCT".id;
+
+
+--
+-- Name: OpStep; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."OpStep" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."OpStep" OWNER TO "postgresUser";
+
+--
+-- Name: OpStep_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."OpStep_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."OpStep_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: OpStep_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."OpStep_id_seq" OWNED BY production_graph."OpStep".id;
+
+
+--
+-- Name: Operation; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Operation" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Operation" OWNER TO "postgresUser";
+
+--
+-- Name: Operation_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Operation_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Operation_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Operation_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Operation_id_seq" OWNED BY production_graph."Operation".id;
+
+
+--
+-- Name: Order; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Order" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Order" OWNER TO "postgresUser";
+
+--
+-- Name: Order_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Order_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Order_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Order_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Order_id_seq" OWNED BY production_graph."Order".id;
+
+
+--
+-- Name: Product; Type: TABLE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE TABLE production_graph."Product" (
+)
+INHERITS (production_graph._ag_label_vertex);
+
+
+ALTER TABLE production_graph."Product" OWNER TO "postgresUser";
+
+--
+-- Name: Product_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph."Product_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph."Product_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: Product_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph."Product_id_seq" OWNED BY production_graph."Product".id;
+
+
+--
+-- Name: _ag_label_edge_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph._ag_label_edge_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph._ag_label_edge_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: _ag_label_edge_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph._ag_label_edge_id_seq OWNED BY production_graph._ag_label_edge.id;
+
+
+--
+-- Name: _ag_label_vertex_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph._ag_label_vertex_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 281474976710655
+    CACHE 1;
+
+
+ALTER SEQUENCE production_graph._ag_label_vertex_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: _ag_label_vertex_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER SEQUENCE production_graph._ag_label_vertex_id_seq OWNED BY production_graph._ag_label_vertex.id;
+
+
+--
+-- Name: _label_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+--
+
+CREATE SEQUENCE production_graph._label_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    MAXVALUE 65535
+    CACHE 1
+    CYCLE;
+
+
+ALTER SEQUENCE production_graph._label_id_seq OWNER TO "postgresUser";
+
+--
 -- Name: inventory; Type: TABLE; Schema: public; Owner: postgresUser
 --
 
@@ -56,7 +597,8 @@ CREATE TABLE public.inventory (
     min_required integer NOT NULL,
     max_capacity integer NOT NULL,
     last_updated timestamp without time zone DEFAULT now(),
-    received_at timestamp without time zone DEFAULT now()
+    received_at timestamp without time zone DEFAULT now(),
+    material_id integer
 );
 
 
@@ -75,7 +617,7 @@ CREATE SEQUENCE public.inventory_item_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.inventory_item_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.inventory_item_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: inventory_item_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -111,13 +653,48 @@ CREATE SEQUENCE public.machines_machine_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.machines_machine_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.machines_machine_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: machines_machine_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
 --
 
 ALTER SEQUENCE public.machines_machine_id_seq OWNED BY public.machines.machine_id;
+
+
+--
+-- Name: materials; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public.materials (
+    material_id integer NOT NULL,
+    material_name text NOT NULL,
+    description text
+);
+
+
+ALTER TABLE public.materials OWNER TO "postgresUser";
+
+--
+-- Name: materials_material_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+--
+
+CREATE SEQUENCE public.materials_material_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.materials_material_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: materials_material_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+--
+
+ALTER SEQUENCE public.materials_material_id_seq OWNED BY public.materials.material_id;
 
 
 --
@@ -129,7 +706,7 @@ CREATE TABLE public.operations (
     name text NOT NULL,
     duration integer NOT NULL,
     required_machine_type text NOT NULL,
-    material_needed text
+    material_id integer
 );
 
 
@@ -148,7 +725,7 @@ CREATE SEQUENCE public.operations_operation_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.operations_operation_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.operations_operation_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: operations_operation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -166,7 +743,9 @@ CREATE TABLE public.orders (
     product_name text,
     priority integer,
     due_date date,
-    quantity integer DEFAULT 0 NOT NULL
+    quantity integer DEFAULT 0 NOT NULL,
+    product_id integer,
+    status text DEFAULT 'pending'::text
 );
 
 
@@ -185,7 +764,7 @@ CREATE SEQUENCE public.orders_order_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.orders_order_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.orders_order_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: orders_order_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -234,7 +813,7 @@ CREATE VIEW public.product_operations_view AS
   ORDER BY p.product_name;
 
 
-ALTER TABLE public.product_operations_view OWNER TO "postgresUser";
+ALTER VIEW public.product_operations_view OWNER TO "postgresUser";
 
 --
 -- Name: products_product_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
@@ -249,7 +828,7 @@ CREATE SEQUENCE public.products_product_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.products_product_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.products_product_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: products_product_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -291,7 +870,7 @@ CREATE SEQUENCE public.schedule_archive_archive_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.schedule_archive_archive_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.schedule_archive_archive_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: schedule_archive_archive_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -333,7 +912,7 @@ CREATE SEQUENCE public.schedule_results_schedule_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.schedule_results_schedule_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.schedule_results_schedule_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: schedule_results_schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -356,6 +935,216 @@ CREATE TABLE public.schedule_runs (
 ALTER TABLE public.schedule_runs OWNER TO "postgresUser";
 
 --
+-- Name: CAN_RUN_ON id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."CAN_RUN_ON" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'CAN_RUN_ON'::name))::integer, nextval('production_graph."CAN_RUN_ON_id_seq"'::regclass));
+
+
+--
+-- Name: CAN_RUN_ON properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."CAN_RUN_ON" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: DOES id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."DOES" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'DOES'::name))::integer, nextval('production_graph."DOES_id_seq"'::regclass));
+
+
+--
+-- Name: DOES properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."DOES" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: HAS_OPERATION id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_OPERATION" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'HAS_OPERATION'::name))::integer, nextval('production_graph."HAS_OPERATION_id_seq"'::regclass));
+
+
+--
+-- Name: HAS_OPERATION properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_OPERATION" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: HAS_SEQUENCE id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_SEQUENCE" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'HAS_SEQUENCE'::name))::integer, nextval('production_graph."HAS_SEQUENCE_id_seq"'::regclass));
+
+
+--
+-- Name: HAS_SEQUENCE properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_SEQUENCE" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: HAS_STEP id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_STEP" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'HAS_STEP'::name))::integer, nextval('production_graph."HAS_STEP_id_seq"'::regclass));
+
+
+--
+-- Name: HAS_STEP properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."HAS_STEP" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Inventory id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Inventory" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Inventory'::name))::integer, nextval('production_graph."Inventory_id_seq"'::regclass));
+
+
+--
+-- Name: Inventory properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Inventory" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Machine id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Machine" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Machine'::name))::integer, nextval('production_graph."Machine_id_seq"'::regclass));
+
+
+--
+-- Name: Machine properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Machine" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Materials id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Materials" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Materials'::name))::integer, nextval('production_graph."Materials_id_seq"'::regclass));
+
+
+--
+-- Name: Materials properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Materials" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: NEXT_OPERATION id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."NEXT_OPERATION" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'NEXT_OPERATION'::name))::integer, nextval('production_graph."NEXT_OPERATION_id_seq"'::regclass));
+
+
+--
+-- Name: NEXT_OPERATION properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."NEXT_OPERATION" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: OF_PRODUCT id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."OF_PRODUCT" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'OF_PRODUCT'::name))::integer, nextval('production_graph."OF_PRODUCT_id_seq"'::regclass));
+
+
+--
+-- Name: OF_PRODUCT properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."OF_PRODUCT" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: OpStep id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."OpStep" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'OpStep'::name))::integer, nextval('production_graph."OpStep_id_seq"'::regclass));
+
+
+--
+-- Name: OpStep properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."OpStep" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Operation id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Operation" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Operation'::name))::integer, nextval('production_graph."Operation_id_seq"'::regclass));
+
+
+--
+-- Name: Operation properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Operation" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Order id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Order" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Order'::name))::integer, nextval('production_graph."Order_id_seq"'::regclass));
+
+
+--
+-- Name: Order properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Order" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: Product id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Product" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Product'::name))::integer, nextval('production_graph."Product_id_seq"'::regclass));
+
+
+--
+-- Name: Product properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph."Product" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
+
+
+--
+-- Name: _ag_label_edge id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph._ag_label_edge ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, '_ag_label_edge'::name))::integer, nextval('production_graph._ag_label_edge_id_seq'::regclass));
+
+
+--
+-- Name: _ag_label_vertex id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph._ag_label_vertex ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, '_ag_label_vertex'::name))::integer, nextval('production_graph._ag_label_vertex_id_seq'::regclass));
+
+
+--
 -- Name: inventory item_id; Type: DEFAULT; Schema: public; Owner: postgresUser
 --
 
@@ -367,6 +1156,13 @@ ALTER TABLE ONLY public.inventory ALTER COLUMN item_id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.machines ALTER COLUMN machine_id SET DEFAULT nextval('public.machines_machine_id_seq'::regclass);
+
+
+--
+-- Name: materials material_id; Type: DEFAULT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.materials ALTER COLUMN material_id SET DEFAULT nextval('public.materials_material_id_seq'::regclass);
 
 
 --
@@ -405,6 +1201,22 @@ ALTER TABLE ONLY public.schedule_results ALTER COLUMN schedule_id SET DEFAULT ne
 
 
 --
+-- Name: _ag_label_edge _ag_label_edge_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph._ag_label_edge
+    ADD CONSTRAINT _ag_label_edge_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: _ag_label_vertex _ag_label_vertex_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: postgresUser
+--
+
+ALTER TABLE ONLY production_graph._ag_label_vertex
+    ADD CONSTRAINT _ag_label_vertex_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: inventory inventory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
 --
 
@@ -418,6 +1230,30 @@ ALTER TABLE ONLY public.inventory
 
 ALTER TABLE ONLY public.machines
     ADD CONSTRAINT machines_pkey PRIMARY KEY (machine_id);
+
+
+--
+-- Name: materials materials_material_name_key; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.materials
+    ADD CONSTRAINT materials_material_name_key UNIQUE (material_name);
+
+
+--
+-- Name: materials materials_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.materials
+    ADD CONSTRAINT materials_pkey PRIMARY KEY (material_id);
+
+
+--
+-- Name: operations operations_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.operations
+    ADD CONSTRAINT operations_name_unique UNIQUE (name);
 
 
 --
@@ -514,6 +1350,22 @@ ALTER TABLE ONLY public.product_operations
 
 
 --
+-- Name: inventory inventory_material_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.inventory
+    ADD CONSTRAINT inventory_material_id_fkey FOREIGN KEY (material_id) REFERENCES public.materials(material_id);
+
+
+--
+-- Name: operations operations_material_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.operations
+    ADD CONSTRAINT operations_material_id_fkey FOREIGN KEY (material_id) REFERENCES public.materials(material_id);
+
+
+--
 -- Name: product_operations product_operations_operation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgresUser
 --
 
@@ -533,5 +1385,5 @@ ALTER TABLE ONLY public.schedule_results
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zh5mb8WgFbzAvC0KvJgfe7iiEfk3bY24EPD2XbCqdyGQf45PAfuPX5RoWmmghrm
+\unrestrict Iew6i0lVkMfUea3PqtFAULTv4OGpGcd6b6YoVMPIaNlhz9yVVacffhYCXoO4lNr
 
