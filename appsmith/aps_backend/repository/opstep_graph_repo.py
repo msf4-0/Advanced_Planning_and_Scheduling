@@ -1,6 +1,6 @@
 # route_repository.py
 from typing import List, Optional
-from models import OperationRead, OpStepRead, ProductRouteRead
+from aps_backend.models import OperationRead, OpStepRead, ProductRouteRead
 
 class RouteRepository:
     def __init__(self, conn):
@@ -310,3 +310,40 @@ class RouteRepository:
             with self.conn.cursor() as cur:
                 cur.execute(sql, (product_id, old_seq, new_seq))
                 # No need to fetch results for this operation
+
+    def get_ready_opsteps(self) -> List[OpStepRead]:
+        """
+        Fetch all OpSteps that are ready to be scheduled.
+        An OpStep is ready if:
+        - It has no incoming BLOCKED_BY edges
+        - All previous steps (NEXT_OPERATION predecessors) are done
+        """
+        sql = """
+        SELECT s
+        FROM cypher('production_graph', $$
+            MATCH (s:OpStep)
+            WHERE NOT (s)<-[:BLOCKED_BY]-()
+            AND NOT EXISTS {
+                MATCH (prev:OpStep)-[:NEXT_OPERATION]->(s)
+                WHERE prev.status <> 'done'
+            }
+            RETURN s
+        $$) AS (s agtype);
+        """
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql)
+            rows = cur.fetchall()
+
+        ready_steps = []
+        for row in rows:
+            node = row["s"]
+            ready_steps.append(
+                OpStepRead(
+                    product_id=node["properties"]["product_id"],
+                    sequence=node["properties"]["sequence"],
+                    operation=node["properties"]["operation"]
+                )
+            )
+        return ready_steps
+

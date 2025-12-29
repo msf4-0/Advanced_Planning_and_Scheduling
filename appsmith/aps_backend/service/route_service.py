@@ -1,4 +1,4 @@
-from repository.route_repository import RouteRepository
+from appsmith.aps_backend.repository.opstep_graph_repo import RouteRepository
 from models import ProductRouteRead, OpStepRead
 from typing import Optional, Dict, List
 

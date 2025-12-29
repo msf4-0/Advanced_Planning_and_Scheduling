@@ -1,6 +1,25 @@
 from ortools.sat.python import cp_model
+from service import RouteService
+from repository import RouteRepository, GraphEditor, DBTable
 
 #TODO: change it to be encapsulated class later
+
+class Schedule():
+    def __init__(self):
+        self.all_done = False
+        self.completed_schedule = {}
+        self.model = cp_model.CpModel()
+        self.conn = DBTable().get_connection()
+        self.service = RouteService(RouteRepository(self.conn))
+        self.graph_editor = GraphEditor(self.conn)
+
+    def reset(self):
+        self.all_done = False
+        self.completed_schedule = {}
+        self.model = cp_model.CpModel()
+
+    
+
 
 def generate_schedule(orders, machines):
     """

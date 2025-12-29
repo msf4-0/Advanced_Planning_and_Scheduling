@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from models import RouteFilter, ProductRouteRead, OpStepCreate
 from service.route_service import RouteService
-from repository.route_repository import RouteRepository
+from appsmith.aps_backend.repository.opstep_graph_repo import RouteRepository
 from repository.db_repository import DBTable  # Make sure to import your connection getter
 
 router = APIRouter()
