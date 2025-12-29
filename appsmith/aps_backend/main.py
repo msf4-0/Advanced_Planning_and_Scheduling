@@ -14,7 +14,9 @@ from api import (
     machine_api,
     operation_api,
     order_api,
-    inventory_api
+    inventory_api,
+    product_api,
+    routes_api,
 )
 
 import os
@@ -27,6 +29,8 @@ app.include_router(machine_api.router)
 app.include_router(operation_api.router)
 app.include_router(order_api.router)
 app.include_router(inventory_api.router)
+app.include_router(product_api.router)
+app.include_router(routes_api.router)
 
 
 '''

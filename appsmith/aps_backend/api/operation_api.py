@@ -9,6 +9,11 @@ router = APIRouter()
 
 @router.get("/get/operations", response_model=List[OperationRead])
 def get_operations():
+    '''
+    Fetch the list of operations from the database.
+    
+    Location: appsmith/aps_backend/api/operation_api.py
+    '''
     db = DBTable()
     rows = db.fetch_operations()
     operations = [
@@ -25,7 +30,17 @@ def get_operations():
     return operations
 
 @router.post("/add/operation", response_model=OperationRead, status_code=201)
-def add_operation(name: str = Body(...), required_machine_type: str = Body(...), duration: int = Body(...), material_needed: Optional[str] = Body(None)):
+def add_operation(
+    name: str = Body(...), 
+    required_machine_type: str = Body(...), 
+    duration: int = Body(...), 
+    material_needed: Optional[str] = Body(None)
+    ):
+    '''
+    Add a new operation to the system.
+
+    Location: appsmith/aps_backend/api/operation_api.py
+    '''
     operation_service = OperationService(DBTable())
     
     operation = operation_service.add_operation(

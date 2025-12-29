@@ -12,6 +12,12 @@ def add_machine(
     machine_type: str = Body(...),
     capacity: int = Body(None)
 ):
+    '''
+    Add a new machine to the system.
+
+    Location: appsmith/aps_backend/api/machine_api.py
+    '''
+
     machine_service = MachineService(DBTable())
 
     try:

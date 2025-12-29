@@ -8,6 +8,11 @@ router = APIRouter()
 
 @router.get("/get/products", response_model=List[dict])
 def get_products():
+    '''
+    Fetch the list of products from the database.
+    
+    Location: appsmith/aps_backend/api/product_api.py
+    '''
     db = DBTable()
     rows = db.fetch_product()
     products = [
@@ -25,12 +30,22 @@ def get_products():
 
 @router.get("/get/product/{product_id}", response_model=dict)
 def get_product(product_id: int):
+    '''
+    Fetch a specific product by its ID.
+
+    Location: appsmith/aps_backend/api/product_api.py
+    '''
     db = DBTable()
     product = db.fetch_product(product_id=product_id)
     return product
 
 @router.post("/add/product", response_model=dict, status_code=201)
 def add_product(products: List[str] = Body(...)):
+    '''
+    Add new products to the database.
+
+    Location: appsmith/aps_backend/api/product_api.py
+    '''
     db = DBTable()
 
     products_added = 0

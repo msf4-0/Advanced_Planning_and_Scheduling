@@ -17,12 +17,8 @@ def get_service():
 def get_route(product_id: int, service: RouteService = Depends(get_service)):
     """
     Retrieve the full route for a product.
-    Args:
-        product_id (int): The ID of the product.
-        service (RouteService): The route service dependency.
-    
-    Returns:
-        ProductRouteRead: The product route data.
+
+    Location: appsmith/aps_backend/api/routes_api.py
     """
     return service.get_product_route(product_id)
 
@@ -34,13 +30,8 @@ def validate_route(
 ):
     """
     Validate that the sequence of OpSteps is continuous for a product.
-    Args:
-        product_id (int): The ID of the product.
-        filters (RouteFilter): Filters to apply for validation.
-        service (RouteService): The route service dependency.
 
-    Returns:
-        dict: Status of validation.
+    Location: appsmith/aps_backend/api/routes_api.py
     """
     service.validate_route(
         product_id, 
@@ -56,13 +47,8 @@ def add_step(
 ):
     """
     Add a new step to the product route.
-    
-    :param product_id: Description
-    :type product_id: int
-    :param payload: Description
-    :type payload: OpStepCreate
-    :param service: Description
-    :type service: RouteService
+
+    Location: appsmith/aps_backend/api/routes_api.py
     """
 
     service.add_step_to_route(

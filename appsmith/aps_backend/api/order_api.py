@@ -9,6 +9,11 @@ router = APIRouter()
 
 @router.get("/get/orders", response_model=List[OrderRead])
 def get_orders():
+    '''
+    Fetch the list of orders from the database.
+    
+    Location: appsmith/aps_backend/api/order_api.py
+    '''
     db = DBTable()
     rows = db.fetch_orders()
     orders = [
@@ -28,6 +33,11 @@ def get_orders():
 
 @router.post("/add/order", response_model=OrderRead, status_code=201)
 def add_order(payload: OrderCreate):
+    '''
+    Add a new order to the system.
+
+    Location: appsmith/aps_backend/api/order_api.py
+    '''
     db = DBTable()
     order_id = db.add_order(payload)
     

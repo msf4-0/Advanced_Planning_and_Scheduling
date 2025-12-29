@@ -9,6 +9,11 @@ router = APIRouter()
 
 @router.get("/get/inventory", response_model=List[InventoryItem])
 def get_inventory():
+    '''
+    Fetch the current inventory items from the database.
+
+    Location: appsmith/aps_backend/api/inventory_api.py
+    '''
     db = DBTable()
     rows = db.fetch_inventory()
     inventory = [
@@ -30,6 +35,11 @@ def get_inventory():
 
 @router.post("/update/inventory")
 def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
+    '''
+    Update the quantity of a specific inventory item.
+
+    Location: appsmith/aps_backend/api/inventory_api.py
+    '''
     db = DBTable()
     item_name = db.update_inventory_item(item_id, quantity)
     return {
@@ -48,6 +58,11 @@ def add_inventory(
     min_required: int = Body(...), 
     max_capacity: int = Body(...)
 ):
+    '''
+    Add a new inventory item to the database.
+    
+    Location: appsmith/aps_backend/api/inventory_api.py
+    '''
     db = DBTable()
     item_id = db.add_inventory_item(
         item_name=item_name, 
