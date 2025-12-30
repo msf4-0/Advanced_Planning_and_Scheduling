@@ -237,21 +237,22 @@ class DBTable:
 
     def add_order(self, order: OrderCreate):
         """
-        order: object with attributes product_name, priority, due_date, quantity
+        Add a new order to the database.
         """
         conn = self.get_connection()
         cur = conn.cursor()
         try:
             cur.execute(
                 """
-                INSERT INTO orders (product_name, priority, due_date, quantity)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO orders (product_id, user_priority, due_date, quantity, priority)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
                 (
                     order.product_id,
-                    order.priority,
+                    order.user_priority,
                     order.due_date,
-                    order.quantity
+                    order.quantity,
+                    order.priority
                 )    
             )
             conn.commit()

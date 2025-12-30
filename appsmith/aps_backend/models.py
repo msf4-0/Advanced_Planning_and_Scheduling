@@ -84,15 +84,17 @@ class OrderCreate(BaseModel):
     """
     Model for creating a new order.
     Attributes:
-        product_name (str): Name of the product to be ordered.
-        priority (int): Priority level of the order.
-        due_date (date): Due date for the order completion.
-        quantity (int): Quantity of the product to be ordered. Default is 1.
+        product_id (int): ID of the product being ordered.
+        user_priority (int): Priority assigned by the user.
+        due_date (date): Due date for the order.
+        quantity (int): Quantity of the product ordered.
+        priority (float): Internal priority used for scheduling.
     """
     product_id: int
-    priority: int
+    user_priority: int
     due_date: date
     quantity: int = 1
+    priority: float = 0.0  # Internal priority used for scheduling
 
 class OrderRead(OrderCreate):
     """
