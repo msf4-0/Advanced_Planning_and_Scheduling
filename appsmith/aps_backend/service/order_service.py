@@ -49,3 +49,19 @@ class OrderService:
             due_date=row['due_date'],
             status=row['status']
         )
+    
+    def get_order_until(self, date: datetime) -> List[OrderRead]:
+        rows = self.db.fetch_orders()
+        filtered_orders = [
+            OrderRead(
+                order_id=row['order_id'],
+                product_name=row['product_name'],
+                product_id=row['product_id'],
+                user_priority=row['priority'],
+                quantity=row['quantity'],
+                due_date=row['due_date'],
+                status=row['status']
+            )
+            for row in rows if row['due_date'] <= date
+        ]
+        return filtered_orders

@@ -59,9 +59,16 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         if order_id is not None:
-            cur.execute("SELECT * FROM orders WHERE order_id = %s;", (order_id,))
+            cur.execute("""
+                        SELECT * FROM orders 
+                        WHERE order_id = %s;
+                        ORDER BY priority, due_date;
+                        """, (order_id,))
         else:
-            cur.execute("SELECT * FROM orders;")
+            cur.execute("""
+                        SELECT * FROM orders
+                        ORDER BY priority, due_date;
+                        """)
         
         rows = cur.fetchall()
         cur.close()
