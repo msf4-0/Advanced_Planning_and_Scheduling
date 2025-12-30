@@ -88,7 +88,7 @@ class GraphEditor:
             ]  # Return list of node properties
         
 
-    def update_node(self, label: str, node_id: int, properties: dict) -> dict:
+    def update_node(self, node_id: int, properties: dict) -> dict:
         """
         Update a node's properties.
 

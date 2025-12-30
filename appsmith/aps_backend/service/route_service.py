@@ -133,7 +133,6 @@ class RouteService:
             for step in steps:
                 if step['sequence'] >= next_seq:
                     self.graph.update_node(
-                        'OpStep', 
                         step['id'], 
                         {'sequence': step['sequence'] + 1}
                     )
@@ -183,7 +182,7 @@ class RouteService:
             # Shift remaining sequences down
             for step in steps:
                 if step['sequence'] > sequence:
-                    self.graph.update_node('OpStep', step['id'], {'sequence': step['sequence'] - 1})
+                    self.graph.update_node(step['id'], {'sequence': step['sequence'] - 1})
 
             # Rebuild NEXT_OPERATION edges
             self.rebuild_next_operation_edges(product_id)
@@ -209,7 +208,7 @@ class RouteService:
         # Update sequences
         op_to_step = {step['operation_id']: step for step in steps}
         for idx, op_id in enumerate(new_order, start=1):
-            self.graph.update_node('OpStep', op_to_step[op_id]['id'], {'sequence': idx})
+            self.graph.update_node(op_to_step[op_id]['id'], {'sequence': idx})
 
         # Rebuild edges and validate
         self.rebuild_next_operation_edges(product_id)
