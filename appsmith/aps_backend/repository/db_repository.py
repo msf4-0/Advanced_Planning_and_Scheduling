@@ -491,149 +491,88 @@ class DBTable:
 
     # Save / Logging functions
 
-    def save_schedule(self, schedule: list[dict], base_date: Optional[date] = None, overwrite: bool = True):
+    def create_schedule_run(self, horizon: int) -> int:
+
         """
-        Save a production schedule to the database.
+        Create a new schedule run entry in the database.
 
         Args:
-            schedule (list[dict]): Each dict = {order_id, operation, machine, start, end} in hours.
-            base_date (datetime.date, optional): Base date to calculate timestamps. Defaults to today.
-            overwrite (bool): If True, clears the current live schedule before saving.
+            horizon (int): The time horizon for the schedule run.
 
         Returns:
-            uuid.UUID: Unique run ID for this schedule.
-        """
-
-        if base_date is None:
-            base_date = datetime.today().date()
-
-        run_id = uuid.uuid4()
-
-        conn = self.get_connection()
-        cur = conn.cursor()
-
-        try:
-            if overwrite:
-                cur.execute("DELETE FROM schedule_results;") # Clear existing schedule
-            
-            for s in schedule:
-                start_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=s['start'])
-                end_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=s['end'])
-
-                cur.execute(
-                    """
-                    INSERT INTO schedule_results
-                    (order_id, operation, machine, start_offset, end_offset, start_ts, end_ts, run_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-                    """,
-                    (
-                        s["order_id"],   # order_id first
-                        s["operation"],  # operation
-                        s["machine"],    # machine
-                        s["start"],      # start_offset
-                        s["end"],        # end_offset
-                        start_dt,        # start_ts
-                        end_dt,          # end_ts
-                        str(run_id)      # run_id last
-                    )
-                )
-
-            conn.commit()
-            logging.info("Schedule saved with run_id: %s", run_id)
-            return run_id
-        
-        except Exception as e:
-            conn.rollback()
-            logging.error("Error saving schedule: %s", e)
-            raise
-
-        finally:
-            cur.close()
-            conn.close()
-
-    def log_schedule_run(self, run_id: uuid.UUID, note=None):
-        """
-        Log a schedule run in the schedule_runs table.
-
-        :args:
-            run_id: UUID of the schedule run
-            note: optional note about the run
+            int: The ID of the newly created schedule run.
         """
 
         conn = self.get_connection()
         cur = conn.cursor()
-        
         try:
             cur.execute(
                 """
-                INSERT INTO schedule_runs (run_id, run_time, note)
-                VALUES (%s, NOW(), %s)
+                INSERT INTO schedule_runs (horizon, created_at)
+                VALUES (%s, NOW())
+                RETURNING schedule_run_id;
                 """,
-                (str(run_id), note)
+                (horizon,)
             )
+
+            schedule_run_id = cur.fetchone()[0]
             conn.commit()
-            logging.info("Logged schedule run: %s", run_id)
+            return schedule_run_id
         
         except Exception as e:
             conn.rollback()
-            logging.error("Error logging schedule run: %s", e)
-            raise
-
+            logging.error("Error creating schedule run: %s", e)
+            raise e
         finally:
             cur.close()
             conn.close()
 
-    def save_schedule_archive(self, schedule: list[dict], run_id: uuid.UUID, base_date=None):
+
+    def save_schedule_step(self, schedule_run_id: int, step: dict):
         """
-        Save a copy of the schedule to the archive table
-        
+        Save a scheduled step to the database.
+
         Args:
-            schedule (list[dict]): Each dict = {order_id, operation, machine, start, end} in hours.
-            run_id (uuid.UUID): Unique run ID for this schedule.
-            overwrite (bool): If True, clears the current live schedule before saving.
-
-        Returns:
-            uuid.UUID: Unique run ID for this schedule.
+            schedule_run_id (int): The ID of the schedule run.
+            step (dict): The scheduled step details.
         """
-
-        if base_date is None:
-            base_date = datetime.today().date()
 
         conn = self.get_connection()
         cur = conn.cursor()
-        
         try:
-            for s in schedule:
-                start_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=s['start'])
-                end_dt = datetime.combine(base_date, datetime.min.time()) + timedelta(hours=s['end'])
-
-                cur.execute(
-                    """
-                    INSERT INTO schedule_results
-                    (order_id, operation, machine, start_offset, end_offset, start_ts, end_ts, run_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-                    """,
-                    (
-                        s["order_id"],   # order_id first
-                        s["operation"],  # operation
-                        s["machine"],    # machine
-                        s["start"],      # start_offset
-                        s["end"],        # end_offset
-                        start_dt,        # start_ts
-                        end_dt,          # end_ts
-                        str(run_id)      # run_id last
-                    )
+            cur.execute(
+                """
+                INSERT INTO schedule_steps (
+                    schedule_run_id,
+                    order_id,
+                    product_id,
+                    op_sequence,
+                    operation_id,
+                    start_time,
+                    end_time,
+                    machine_type,
+                    machine_name,
+                    status
                 )
-
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    schedule_run_id,
+                    step['order_id'],
+                    step['product_id'],
+                    step['sequence'],
+                    step['operation_id'],
+                    step['start_time'],
+                    step['start_time'] + step['duration'],
+                    step['machine_type'],
+                    step.get('assigned_machine'),
+                    'PLANNED'
+                )
+            )
             conn.commit()
-            logging.info("Schedule (archive) saved with run_id: %s", run_id)
-            return run_id
         
         except Exception as e:
-            conn.rollback()
-            logging.error("Error saving schedule (archive): %s", e)
-            raise
-
+            logging.error("Error saving scheduled step: %s", e)
         finally:
             cur.close()
             conn.close()

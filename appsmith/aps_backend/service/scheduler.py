@@ -65,6 +65,9 @@ class Schedule():
         :type max_horizon: int
         """
 
+        schedule_run_id = self.db.create_schedule_run(max_horizon)
+        scheduled_steps = set()  # Track sequence_ids already scheduled
+
         while self.current_time < max_horizon:
             # Fetch ready OpSteps from AGE
             ready_steps = self.service.get_ready_opsteps()
@@ -77,13 +80,14 @@ class Schedule():
             # Flatten OpSteps into OR-Tools input
             step_data = []
             for step in ready_steps:
-                step_data.append({
-                    "order_id": step.order_id,
-                    "sequence_id": step.sequence,
-                    "duration": step.operation.duration,
-                    "machine_type": step.operation.machine_type,
-                    "material_id": step.operation.material_id,
-                    })
+                if step.sequence not in scheduled_steps:  # Only schedule once
+                    step_data.append({
+                        "order_id": step.order_id,
+                        "sequence_id": step.sequence,
+                        "duration": step.operation.duration,
+                        "machine_type": step.operation.machine_type,
+                        "material_id": step.operation.material_id,
+                        })
                 
             # Build OR-Tools model for this batch
             model = cp_model.CpModel()
@@ -124,25 +128,28 @@ class Schedule():
 
             if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                 for step in step_data:
+                    sequence_id = step['sequence_id']
                     start_time = solver.Value(step_vars[step['sequence_id']])
-                    # Mark step RUNNING
-                    self.graph_editor.update_node(
-                        step['sequence_id'], 
-                        {
-                        'status': 'running',
-                        'start_time': start_time
-                        }
-                    )
                     
-                    self.completed_schedule.append({
-                        'order_id': step['order_id'],
-                        'sequence_id': step['sequence_id'],
-                        'start_time': start_time,
-                        'duration': step['duration'],
-                        'machine_type': step['machine_type']
-                    })
+                    # Mark step RUNNING
+                    if sequence_id not in scheduled_steps:
+                        self.graph_editor.update_node(
+                            sequence_id, 
+                            {
+                            'status': 'running',
+                            'start_time': start_time
+                            }
+                        )
+                    
+                        self.completed_schedule.append({
+                            'order_id': step['order_id'],
+                            'sequence_id': step['sequence_id'],
+                            'start_time': start_time,
+                            'duration': step['duration'],
+                            'machine_type': step['machine_type']
+                        })
 
-                    print(f"Scheduled OpStep {step['sequence_id']} (Order {step['order_id']}) at time {start_time}")
+                        scheduled_steps.add(sequence_id)
             else:
                 print("No solution found for current ready steps.")
                 self.current_time += 1  # Advance time if no solution
@@ -157,16 +164,25 @@ class Schedule():
                 if self.current_time >= step['start_time'] + step['operation'].duration:
                     # Mark step DONE
                     self.graph_editor.update_node(step['id'], {'status': 'done'})
-                    print(f"Completed OpStep {step['id']} at time {self.current_time}")
 
             self.all_done = len(self.graph_editor.get_node('OpStep', {'status': 'pending'})) == 0
-            print(f"All done: {self.all_done}")
+            if self.all_done:
+                break
+
+        # Save completed schedule to DB
+        
+        self.machine_assigner()
+        for step in self.completed_schedule:
+            self.db.save_schedule_step(schedule_run_id, step)
+    
+        return schedule_run_id
+        
 
     def machine_assigner(self):
         """
         Assign machines to scheduled steps based on availability.
         """
-        
+
         machine_instance = self.machines
 
         # Track machine availability
