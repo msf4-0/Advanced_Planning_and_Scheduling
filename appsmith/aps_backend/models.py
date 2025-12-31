@@ -7,7 +7,7 @@ class ManufacturingStep(TypedDict):
     operation_id: int
     sequence: int
     depends_on: List[int]
-    
+
 class ProductRouteCreate(BaseModel):
     """
     Model for creating a new product route.
@@ -47,7 +47,7 @@ class OpStepRead(BaseModel):
     """
     model_config = ConfigDict(from_attributes=True)
 
-    product_id: int
+    order_id: int
     sequence: int
     operation: OperationRead
 

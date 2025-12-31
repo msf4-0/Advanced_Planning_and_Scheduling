@@ -76,8 +76,19 @@ class OpStepService:
                     edge_type=EdgeType.BLOCKED_BY.value
                 )
 
+        sorted_steps = sorted(opstep_nodes.items())
+        for index in range(len(sorted_steps) - 1):
+            _, current_step = sorted_steps[index]
+            _, next_step = sorted_steps[index + 1]
+
+            self.graph.create_edge(
+                from_id = current_step['id'], 
+                to_id = next_step['id'], 
+                edge_type=EdgeType.NEXT_OPERATION.value
+            )
+
      # Fetch steps
-    def fetch_order_blueprint(self, order_id: int) -> dict:
+    def fetch_order_plan(self, order_id: int) -> dict:
         """
         Fetch operations for a given order based on its product's manufacturing sequence.
 
@@ -89,12 +100,9 @@ class OpStepService:
         order_nodes = self.graph.get_node('Order', {'order_id': order_id})
         if not order_nodes:
             raise ValueError(f"No order found with order_id={order_id}")
-        product_id = order_nodes[0].get('product_id')
-        if product_id is None:
-            raise ValueError(f"Order {order_id} does not have a product_id")
 
         # Get OpSteps for the product, sorted by sequence
-        opsteps = self.graph.get_node('OpStep', {'product_id': product_id})
+        opsteps = self.graph.get_node('OpStep', {'order_id': order_id})
         id_to_step = {step['id']: step for step in opsteps}
 
         steps = []
@@ -124,7 +132,7 @@ class OpStepService:
         """
         Fetch all OpSteps (manufacturing steps) that are ready to be scheduled by ORTools.
         An OpStep is ready if:
-        - It has no incoming BLOCKED_BY edges
+        - It has no outgoing BLOCKED_BY edges
         - All previous steps (NEXT_OPERATION predecessors) are done
         """
         # Fetch all OpSteps
@@ -133,7 +141,7 @@ class OpStepService:
         ready_steps = []
 
         for step in id_to_step.values():
-            # Check for incoming BLOCKED_BY edges
+            # Check for outgoing BLOCKED_BY edges
             blocked_by_edges = self.graph.get_edges(
                 from_id=step['id'],
                 edge_type=EdgeType.BLOCKED_BY.value
@@ -160,7 +168,7 @@ class OpStepService:
             
             ready_steps.append(
                 OpStepRead(
-                    product_id=step['product_id'],
+                    order_id=step['order_id'],
                     sequence=step['sequence'],
                     operation=OperationRead(
                         operation_id=operation_id,
