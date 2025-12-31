@@ -1,32 +1,49 @@
+from collections import defaultdict
 from ortools.sat.python import cp_model
 from service import ProductBlueprintService, OpStepService
 from repository import GraphEditor, DBTable
 
 class Schedule():
-    def __init__(self, orders=None, operations=None, total_machines=0):
-        self.all_done = False
-        self.completed_schedule = {}
-        self.model = cp_model.CpModel()
-        self.conn = DBTable().get_connection()
-        self.graph_editor = GraphEditor(self.conn)
+    def __init__(self):
+        self.db = DBTable()
+        self.graph_editor = GraphEditor(self.db.get_connection())
         self.service = OpStepService(self.graph_editor)
-        self.orders = orders
-        self.operations = operations
-        self.total_machines = total_machines
-        self.current_time = 0
 
-        if orders and operations and total_machines > 0:
-            self.generate_initial_schedule()
-        else:
-            raise ValueError("Insufficient parameters to initialize Schedule")
+        self.current_time = 0
+        self.completed_schedule = []
+        self.machines = {}
+
+        for machine in self.db.fetch_machines():
+            machine_type = machine['type']
+            machine_name = machine['name']
+            if machine_type not in self.machines:
+                self.machines[machine_type] = []
+            self.machines[machine_type].append(machine_name)
 
     def reset(self):
-        self.all_done = False
-        self.completed_schedule = {}
-        self.model = cp_model.CpModel()
+        self.completed_schedule = []
+        self.machines = {}
         self.current_time = 0
 
-    def generate_initial_schedule(self, max_horizon: int = 480):
+    def get_final_schedule(self):
+        return self.completed_schedule
+    
+    def get_machines(self):
+        return self.machines
+    
+    def get_gantt_friendly_schedule(self):
+        self.machine_assigner()
+        gantt_data = []
+        for entry in self.completed_schedule:
+            gantt_data.append({
+                'Task': f"Order {entry['order_id']}",
+                'Start': entry['start_time'],
+                'Finish': entry['start_time'] + entry['duration'],
+                'Resource': entry.get('assigned_machine', 'Unassigned')
+            })
+        return gantt_data
+
+    def create_schedule(self, max_horizon: int = 480):
         """
         Main scheduling loop.
         
@@ -74,8 +91,10 @@ class Schedule():
                 interval = model.NewIntervalVar(start_var, duration, start_var + duration, f"interval_{step['sequence_id']}")
                 machines[step['machine_type']].append(interval)
 
-            for machine_intervals in machines.values():
-                model.AddNoOverlap(machine_intervals)
+            for machine_type, intervals in machines.items():
+                demands = [1] * len(intervals)
+                capacity = len(self.machines.get(machine_type, []))  # Assuming total_machines is the capacity for each machine
+                model.AddCumulative(intervals, demands, capacity)
 
             # Add NEXT_OPERATION constraints
             for step in step_data:
@@ -101,6 +120,15 @@ class Schedule():
                         'start_time': start_time
                         }
                     )
+                    
+                    self.completed_schedule.append({
+                        'order_id': step['order_id'],
+                        'sequence_id': step['sequence_id'],
+                        'start_time': start_time,
+                        'duration': step['duration'],
+                        'machine_type': step['machine_type']
+                    })
+
                     print(f"Scheduled OpStep {step['sequence_id']} (Order {step['order_id']}) at time {start_time}")
             else:
                 print("No solution found for current ready steps.")
@@ -121,4 +149,25 @@ class Schedule():
             self.all_done = len(self.graph_editor.get_node('OpStep', {'status': 'pending'})) == 0
             print(f"All done: {self.all_done}")
 
+    def machine_assigner(self):
+        machine_instance = self.machines
 
+        # Track machine availability
+        machine_available = {machine_type: [0] * len(names) for machine_type, names in self.machines.items()}
+
+        # Group steps by machine type and sort by start time
+        steps_by_type = defaultdict(list)
+        for step in self.completed_schedule:
+            steps_by_type[step['machine_type']].append(step)
+
+        for machine_type, steps in steps_by_type.items():
+            steps.sort(key=lambda step: step['start_time'])
+            for step in steps:
+                # Find the first available machine
+                for index, available_time in enumerate(machine_available[machine_type]):
+                    if available_time <= step['start_time']:
+                        assigned_machine = machine_instance[machine_type][index]
+                        step['assigned_machine'] = assigned_machine
+                        # Update machine availability
+                        machine_available[machine_type][index] = step['start_time'] + step['duration']
+                        break
