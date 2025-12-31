@@ -5,6 +5,9 @@ from repository import GraphEditor, DBTable
 
 class Schedule():
     def __init__(self):
+        """
+        Initialize the Schedule class.
+        """
         self.db = DBTable()
         self.graph_editor = GraphEditor(self.db.get_connection())
         self.service = OpStepService(self.graph_editor)
@@ -13,14 +16,18 @@ class Schedule():
         self.completed_schedule = []
         self.machines = {}
 
+        # Initialize machines from the database
         for machine in self.db.fetch_machines():
             machine_type = machine['type']
             machine_name = machine['name']
             if machine_type not in self.machines:
                 self.machines[machine_type] = []
-            self.machines[machine_type].append(machine_name)
+            self.machines[machine_type].append(machine_name) # Store machine names {machine_type: [machine_names]}
 
     def reset(self):
+        """
+        Reset the scheduling state.
+        """
         self.completed_schedule = []
         self.machines = {}
         self.current_time = 0
@@ -28,10 +35,16 @@ class Schedule():
     def get_final_schedule(self):
         return self.completed_schedule
     
-    def get_machines(self):
+    def get_machines(self) -> dict:
         return self.machines
     
-    def get_gantt_friendly_schedule(self):
+    def get_gantt_friendly_schedule(self) -> list:
+        """
+        Convert the completed schedule into a Gantt chart friendly format.
+
+        :return: List of dictionaries formatted for Gantt chart visualization
+        :rtype: List[Dict]
+        """
         self.machine_assigner()
         gantt_data = []
         for entry in self.completed_schedule:
@@ -48,7 +61,7 @@ class Schedule():
         Main scheduling loop.
         
         :param self: Description
-        :param max_horizon: Maximum time horizon for scheduling
+        :param max_horizon: Maximum time horizon for scheduling (make sure time scale is consistent)
         :type max_horizon: int
         """
 
@@ -150,6 +163,10 @@ class Schedule():
             print(f"All done: {self.all_done}")
 
     def machine_assigner(self):
+        """
+        Assign machines to scheduled steps based on availability.
+        """
+        
         machine_instance = self.machines
 
         # Track machine availability
