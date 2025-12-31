@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from models import RouteFilter, ProductRouteRead, OpStepCreate
-from service import RouteService
+from service import ProductBlueprintService
 from repository import DBTable, GraphEditor  # Make sure to import your connection getter
 
 router = APIRouter()
@@ -9,12 +9,12 @@ def get_service():
     conn = DBTable().get_connection()
     graph_editor = GraphEditor(conn)
     try:
-        yield RouteService(graph_editor)
+        yield ProductBlueprintService(graph_editor)
     finally:
         conn.close()
 
 @router.get("/products/{product_id}/route", response_model=ProductRouteRead)
-def get_route(product_id: int, service: RouteService = Depends(get_service)):
+def get_route(product_id: int, service: ProductBlueprintService = Depends(get_service)):
     """
     Retrieve the full route for a product.
 
@@ -26,7 +26,7 @@ def get_route(product_id: int, service: RouteService = Depends(get_service)):
 def validate_route(
     product_id: int,
     filters: RouteFilter,
-    service: RouteService = Depends(get_service)
+    service: ProductBlueprintService = Depends(get_service)
 ):
     """
     Validate that the sequence of OpSteps is continuous for a product.
@@ -43,7 +43,7 @@ def validate_route(
 def add_step(
     product_id: int,
     payload: OpStepCreate,
-    service: RouteService = Depends(get_service)
+    service: ProductBlueprintService = Depends(get_service)
 ):
     """
     Add a new step to the product route.
