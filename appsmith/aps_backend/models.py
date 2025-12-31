@@ -1,7 +1,25 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 from datetime import date, datetime
 
+# AGE Graph Models
+class ManufacturingStep(TypedDict):
+    operation_id: int
+    sequence: int
+    depends_on: List[int]
+    
+class ProductRouteCreate(BaseModel):
+    """
+    Model for creating a new product route.
+    Attributes:
+        product_id (int): ID of the product.
+        manufacturing_line (List[Tuple[int, int]]): List of tuples representing (operation_id, sequence).
+    """
+    product_id: int
+    manufacturing_line : list[ManufacturingStep]  # List of dicts with 'operation_id', 'sequence', 'depends_on'
+
+
+# ERD Models
 class OperationRead(BaseModel):
     """
     Model representing an operation in the manufacturing process.
