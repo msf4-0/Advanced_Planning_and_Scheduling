@@ -1,7 +1,7 @@
 from repository import GraphEditor, DBTable
 from models import ProductRouteRead, OpStepRead, OperationRead, ProductRouteCreate
 from typing import Optional, Dict, List
-from ..enums import EdgeType
+from enums import EdgeType
 
 class OpStepService:
     """
@@ -134,6 +134,9 @@ class OpStepService:
         An OpStep is ready if:
         - It has no outgoing BLOCKED_BY edges
         - All previous steps (NEXT_OPERATION predecessors) are done
+
+        Returns:
+            List[OpStepRead]: List of ready OpSteps with their associated Operation details.
         """
         # Fetch all OpSteps
         steps = self.graph.get_node('OpStep', {})
