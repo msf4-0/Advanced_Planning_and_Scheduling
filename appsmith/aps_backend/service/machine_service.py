@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing_extensions import Optional
 from repository.db_repository import DBTable
 
 class MachineService:

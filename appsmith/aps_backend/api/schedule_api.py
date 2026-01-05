@@ -1,4 +1,4 @@
-from typing import Optional
+from typing_extensions import Optional
 from fastapi import APIRouter, Body
 from service.scheduler import Schedule
 from repository import DBTable, GraphEditor  # Make sure to import your connection getter

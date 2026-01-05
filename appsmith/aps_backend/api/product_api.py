@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Body
-from typing import List, Optional
-from datetime import datetime
+from typing_extensions import List
 
 from repository.db_repository import DBTable
 

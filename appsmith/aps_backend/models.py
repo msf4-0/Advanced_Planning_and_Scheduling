@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Optional, TypedDict
+from typing_extensions import List, Optional, TypedDict
 from datetime import date, datetime
 
 # AGE Graph Models

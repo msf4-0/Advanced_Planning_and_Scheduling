@@ -1,10 +1,9 @@
 import os
 import psycopg2
 import logging
-import uuid
-from typing import Any, Dict, List, Optional
+from typing_extensions import Any, Optional
 from psycopg2.extras import RealDictCursor
-from datetime import datetime, timedelta, date
+from datetime import datetime
 
 from models import OrderCreate
 
@@ -36,7 +35,7 @@ class DBTable:
             item_id: Optional[int] = None, 
             item_name: Optional[str] = None,
             aggregate: bool = False
-        ) -> List[Dict[str, Any]]:
+        ) -> list[dict[str, Any]]:
         """
         Fetch inventory details for a specific item by ID or name.
         

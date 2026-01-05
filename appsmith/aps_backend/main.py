@@ -1,14 +1,4 @@
-from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel
-from typing import List
-from datetime import date, datetime
-from psycopg2.extras import execute_values
-'''
-from repository.db_repository import get_connection, save_schedule, add_order, fetch_orders, fetch_operations, fetch_machines, log_schedule_run, save_schedule_archive, fetch_inventory_for_item
-from service.scheduler import generate_schedule, pick_machine
-from routes import RouteService, RouteRepository
-from models import InventoryItem, OrderRead, OrderCreate, ScheduledOperation
-'''
+from fastapi import FastAPI
 
 from api import (
     machine_api,

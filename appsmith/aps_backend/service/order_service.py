@@ -1,4 +1,4 @@
-from typing import List
+from typing_extensions import List
 from datetime import datetime
 from repository.db_repository import DBTable
 from models import OrderCreate, OrderRead

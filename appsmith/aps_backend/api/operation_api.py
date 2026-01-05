@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body
-from typing import List, Optional
+from typing_extensions import List, Optional
 
 from repository.db_repository import DBTable
 from models import OperationRead

@@ -1,6 +1,6 @@
 from repository import GraphEditor, DBTable
-from models import ProductRouteRead, OpStepRead, OperationRead, ProductRouteCreate
-from typing import Optional, Dict, List
+from models import OpStepRead, OperationRead, ProductRouteCreate
+from typing_extensions import List
 from enums import EdgeType
 
 class OpStepService:
