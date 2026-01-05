@@ -8,7 +8,7 @@ services:
       APPSMITH_ENCRYPTION_PASSWORD: abcd
       APPSMITH_ENCRYPTION_SALT: abcd
     volumes:
-      - ./stacks:/appsmith-stacks
+      - appsmith-stacks:/appsmith-stacks
     restart: unless-stopped
 
   aps-backend:
@@ -28,6 +28,7 @@ services:
 
   postgres:
     image: apache/age:release_PG15_1.6.0
+    # image: apache/age:release_PG17_1.6.0
     container_name: postgres
     environment:
       POSTGRES_USER: postgresUser
@@ -41,3 +42,4 @@ services:
 
 volumes:
   postgres-data:
+  appsmith-stacks:

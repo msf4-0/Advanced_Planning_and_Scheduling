@@ -10,7 +10,6 @@ from api import (
     schedule_api,
 )
 
-import os
 import logging
 
 app = FastAPI()

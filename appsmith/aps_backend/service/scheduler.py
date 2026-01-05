@@ -49,10 +49,11 @@ class Schedule():
         gantt_data = []
         for entry in self.completed_schedule:
             gantt_data.append({
-                'Task': f"Order {entry['order_id']}",
-                'Start': entry['start_time'],
-                'Finish': entry['start_time'] + entry['duration'],
-                'Resource': entry.get('assigned_machine', 'Unassigned')
+                'label': f"Order {entry['order_id']}",
+                'start_ts': entry['start_time'],
+                'end_ts': entry['start_time'] + entry['duration'],
+                'machine': entry.get('assigned_machine', 'Unassigned'),
+                'order_id': entry['order_id']
             })
         return gantt_data
 

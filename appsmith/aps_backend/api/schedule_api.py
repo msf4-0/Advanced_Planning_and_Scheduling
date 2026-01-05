@@ -1,7 +1,6 @@
 from typing_extensions import Optional
 from fastapi import APIRouter, Body
 from service.scheduler import Schedule
-from repository import DBTable, GraphEditor  # Make sure to import your connection getter
 
 router = APIRouter()
 
@@ -14,5 +13,20 @@ def initiate_scheduling(schedule_horizon: Optional[int] = Body(...)):
     Location: appsmith/aps_backend/api/schedule_api.py
     """
     schedule = Schedule()
-    result = schedule.create_schedule()
+    default_horizon = 480  # Default horizon value
+    max_horizon = schedule_horizon if schedule_horizon is not None else default_horizon
+
+    result = schedule.create_schedule(max_horizon=max_horizon)
     return result
+
+@router.get("/schedule/gantt", response_model=list)
+def get_gantt_schedule():
+    """
+    Retrieves the Gantt chart friendly schedule.
+
+    Location: appsmith/aps_backend/api/schedule_api.py
+    """
+    schedule = Schedule()
+    gantt_schedule = schedule.get_gantt_friendly_schedule()
+    return gantt_schedule
+
