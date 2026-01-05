@@ -41,9 +41,18 @@ class MachineService:
                         continue
             final_name = f"{name}_{max_suffix}"
 
+        machine_type_id = self.db.fetch_machine_types(type_name=machine_type)
+
+        if not machine_type_id:
+            machine_type_id = self.db.add_machine_type(type_name=machine_type)
+            if machine_type_id == -1:
+                raise ValueError("Failed to input new machine type.")
+        else:
+            machine_type_id = machine_type_id[0]['type_id']
+
         machine_id = self.db.add_machine(
             name=final_name,
-            machine_type=machine_type,
+            type_id=machine_type_id,
             capacity=capacity
         )
 

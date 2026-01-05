@@ -16,6 +16,7 @@ POSTGRES_DB = os.getenv("POSTGRES_DB", "postgresDB")
 run_id = datetime.now().isoformat()
 
 class DBTable:
+        
     def __init__(self):
         self.db_params = {
             "host": POSTGRES_HOST,
@@ -232,6 +233,39 @@ class DBTable:
 
         return rows
 
+    def fetch_machine_types(self, type_name: Optional[str] = None, type_id: Optional[int] = None) -> list[dict[str, Any]]:
+        """
+        Fetch all machine types from the database.
+        Returns: list of machine types with 'type_id', 'type_name'
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if type_id is not None:
+            cur.execute("""
+            SELECT * FROM machine_types
+            WHERE type_id = %s
+            ORDER BY type_id
+        """, (type_id,))
+        elif type_name is not None:
+            cur.execute("""
+            SELECT * FROM machine_types
+            WHERE type_name = %s
+            ORDER BY type_id
+        """, (type_name,))
+        else:
+            cur.execute("""
+                SELECT * FROM machine_types
+                ORDER BY type_id
+            """)
+
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return rows
+
     # Add functions
 
     def add_order(self, order: OrderCreate):
@@ -341,13 +375,13 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def add_operation(self, name: str, required_machine_type: str, duration: int, material_id: Optional[int] = None):
+    def add_operation(self, name: str, type_id: int, duration: int, material_id: Optional[int] = None):
         """
         Add a new operation to the database.
 
         Args:
             name (str): The name of the operation.
-            required_machine_type (str): The type of machine required for the operation.
+            type_id (int): The type ID of the machine required for the operation.
             duration (int): The duration of the operation in minutes.
             material_needed (str): The material needed for the operation.
 
@@ -360,14 +394,14 @@ class DBTable:
         try:
             cur.execute(
                 """
-                INSERT INTO operations (name, required_machine_type, duration, material_needed)
+                INSERT INTO operations (name, type_id, duration, material_needed)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (name) DO UPDATE
-                SET required_machine_type = EXCLUDED.required_machine_type,
+                SET type_id = EXCLUDED.type_id,
                     duration = EXCLUDED.duration,
                     material_needed = EXCLUDED.material_needed
                 RETURNING operation_id;
-                """, (name, required_machine_type, duration, material_id)
+                """, (name, type_id, duration, material_id)
             )
 
             operation_id = cur.fetchone()['operation_id']
@@ -414,13 +448,13 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def add_machine(self, name: str, machine_type: str, capacity: Optional[int] = None):
+    def add_machine(self, name: str, type_id: int, capacity: Optional[int] = None):
         """
         Add a new machine to the database.
 
         Args:
             name (str): The name of the machine.
-            machine_type (str): The type/category of the machine.
+            type_id (int): The type/category ID of the machine (foreign key to machine_types).
             capacity (Optional[int]): The capacity of the machine.
 
         Returns:
@@ -432,11 +466,11 @@ class DBTable:
         try:
             cur.execute(
                 """
-                INSERT INTO machines (name, machine_type, capacity)
+                INSERT INTO machines (name, type_id, capacity)
                 VALUES (%s, %s, %s)
                 RETURNING machine_id;
                 """,
-                (name, machine_type, capacity)
+                (name, type_id, capacity)
             )
 
             machine_id = cur.fetchone()['machine_id']
@@ -448,6 +482,39 @@ class DBTable:
         finally:
             cur.close()
             conn.close()
+        
+    def add_machine_type(self, type_name: str) -> int:
+        """
+        Add a new machine type to the machine_types table, or get its id if it already exists.
+
+        Args:
+            type_name (str): The name of the machine type.
+
+        Returns:
+            int: The ID of the machine type.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                INSERT INTO machine_types (type_name)
+                VALUES (%s)
+                ON CONFLICT (type_name) DO UPDATE SET type_name = EXCLUDED.type_name
+                RETURNING type_id;
+                """,
+                (type_name,)
+            )
+            type_id = cur.fetchone()[0]
+            conn.commit()
+            return type_id
+        except Exception as e:
+            logging.error("Error adding machine type: %s", e)
+            return -1
+        finally:
+            cur.close()
+            conn.close()
+        
 
     # Update functions
 
@@ -518,7 +585,6 @@ class DBTable:
         finally:
             cur.close()
             conn.close()
-
 
     def save_schedule_step(self, schedule_run_id: int, step: dict):
         """
