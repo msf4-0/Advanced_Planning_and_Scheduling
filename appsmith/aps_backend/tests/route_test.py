@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 from service import ProductBlueprintService
-from api.routes_api import router
+from appsmith.aps_backend.api.blueprint_api import router
 from models import ProductRouteRead, OpStepRead, OperationRead, OpStepCreate, RouteFilter
 
 client = TestClient(router)
