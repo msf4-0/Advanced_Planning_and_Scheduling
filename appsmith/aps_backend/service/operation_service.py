@@ -36,9 +36,16 @@ class OperationService:
             else:
                 material_id = self.db.add_material(material_needed)
         
+        machine_type = self.db.fetch_machine_types(type_name=required_machine_type)
+
+        if not machine_type:
+            raise ValueError(f"Machine type '{required_machine_type}' does not exist.")
+        else:
+            type_id = machine_type[0]['type_id']
+
         operation_id = self.db.add_operation(
             name=name, 
-            required_machine_type=required_machine_type, 
+            type_id=type_id, 
             duration=duration,
             material_id=material_id
         )
