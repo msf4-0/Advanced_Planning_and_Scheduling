@@ -2,7 +2,7 @@ import os
 import psycopg2
 import logging
 import uuid
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta, date
 
@@ -31,22 +31,67 @@ class DBTable:
 
     # Fetch functions
 
-    def fetch_inventory(self):
+    def fetch_inventory(
+            self,
+            item_id: Optional[int] = None, 
+            item_name: Optional[str] = None,
+            aggregate: bool = False
+        ) -> List[Dict[str, Any]]:
         """
-        Fetch all inventory items from the database.
-        Returns: list of inventory items with 'item_id', 'item_name', 'quantity', 'min_required', 'max_capacity', 'last_updated', 'received_at', 'material_id'
+        Fetch inventory details for a specific item by ID or name.
+        
+        :param item_id: Description
+        :type item_id: Optional[int]
+        :param item_name: Description
+        :type item_name: Optional[str]
+        :param aggregate: Description
+        :type aggregate: bool
         """
-
+        
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-                    SELECT * 
-                    FROM inventory
-                    ORDER BY item_name, received_at;
-                    """)
+        
+        if item_id is not None:
+            cur.execute("""
+                        SELECT * FROM inventory 
+                        WHERE item_id = %s
+                        ORDER BY item_name, received_at;
+                        """, (item_id,)
+                        )
+        elif item_name is not None:
+            cur.execute("""
+                        SELECT * FROM inventory 
+                        WHERE item_name = %s
+                        ORDER BY item_name, received_at;
+                        """, (item_name,)
+                        )
+        else:
+            cur.execute("""
+                        SELECT * FROM inventory
+                        ORDER BY item_name, received_at;
+                        """
+                        )
         rows = cur.fetchall()
         cur.close()
         conn.close()
+
+        if aggregate:
+            total_qty = sum(rows['quantity'] for rows in rows) if rows else 0
+            min_required = max(rows['min_required'] for rows in rows) if rows else 0
+            max_capacity = sum(rows['max_capacity'] for rows in rows) if rows else 0
+            last_updated = max(rows['last_updated'] for rows in rows) if rows else None
+            received_at = min(rows['received_at'] for rows in rows) if rows else None
+
+            return [{
+                'item_id': rows[0]['item_id'] if rows else item_id,
+                'item_name': rows[0]['item_name'] if rows else item_name,
+                'total_quantity': total_qty,
+                'min_required': min_required,
+                'max_capacity': max_capacity,
+                'last_updated': last_updated,
+                'received_at': received_at,
+                'material_id': rows[0]['material_id'] if rows else None
+            }]
 
         return rows
 
@@ -136,59 +181,7 @@ class DBTable:
         conn.close()
 
         return rows
-
-    def fetch_inventory_for_item(
-            self,
-            item_id: Optional[int] = None, 
-            item_name: Optional[str] = None,
-            aggregate: bool = False
-        ):
-        """
-        Fetch inventory details for a specific item by ID or name.
-        
-        :param item_id: Description
-        :type item_id: Optional[int]
-        :param item_name: Description
-        :type item_name: Optional[str]
-        :param aggregate: Description
-        :type aggregate: bool
-        """
-
-        if item_id is None and item_name is None:
-            raise ValueError("Either item_id or item_name must be provided")
-        
-        conn = self.get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        if item_id is not None:
-            cur.execute("SELECT * FROM inventory WHERE item_id = %s", (item_id,))
-        else:
-            cur.execute("SELECT * FROM inventory WHERE item_name = %s", (item_name,))
-
-        rows = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if aggregate:
-            total_qty = sum(rows['quantity'] for rows in rows) if rows else 0
-            min_required = max(rows['min_required'] for rows in rows) if rows else 0
-            max_capacity = sum(rows['max_capacity'] for rows in rows) if rows else 0
-            last_updated = max(rows['last_updated'] for rows in rows) if rows else None
-            received_at = min(rows['received_at'] for rows in rows) if rows else None
-
-            return {
-                'item_id': rows[0]['item_id'] if rows else item_id,
-                'item_name': rows[0]['item_name'] if rows else item_name,
-                'total_quantity': total_qty,
-                'min_required': min_required,
-                'max_capacity': max_capacity,
-                'last_updated': last_updated,
-                'received_at': received_at,
-                'material_id': rows[0]['material_id'] if rows else None
-            }
-
-        return rows
-
+    
     def fetch_product(self, product_id: Optional[int] = None):
         """
         Fetch product details by ID or name if provided else fetch all products.
