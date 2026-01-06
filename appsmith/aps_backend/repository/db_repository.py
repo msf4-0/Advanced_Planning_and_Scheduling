@@ -27,7 +27,13 @@ class DBTable:
         }
 
     def get_connection(self):
-        return psycopg2.connect(**self.db_params)
+        conn = psycopg2.connect(**self.db_params)
+        with conn.cursor() as cur:
+            cur.execute("LOAD 'age';")
+            cur.execute("""SET search_path = ag_catalog, "$user", public;""")
+        
+        conn.commit()
+        return conn
 
     # Fetch functions
 
@@ -103,6 +109,7 @@ class DBTable:
 
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+
         if order_id is not None:
             cur.execute("""
                         SELECT * FROM orders 
