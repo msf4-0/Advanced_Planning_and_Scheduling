@@ -1,9 +1,12 @@
 from typing_extensions import Optional
+from repository import DBTable
+import json
 
 
 class GraphEditor:
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, table: DBTable):
+        self.table = table
+
 
     # Node Operations
     def create_node(self, label: str, properties: dict) -> dict:
@@ -34,13 +37,21 @@ class GraphEditor:
         $$) AS (node agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, tuple(properties.values()))
             result = cur.fetchone()
+
             return {
                 "id": result[0]["id"],
                 **result[0]["props"]
             }  # Return the node properties
+        
+        finally:
+            cur.close()
+            conn.close()
         
 
     def get_node(self,label: str, filters: dict) -> list[dict]:
@@ -66,7 +77,7 @@ class GraphEditor:
                 MATCH (n:{label})
                 WHERE {filter_str}
                 RETURN id(n) AS id, properties(n) AS props
-            $$) AS (node agtype);
+            $$) AS (id agtype, props agtype);
             """
             params = tuple(filters.values())
         else:
@@ -75,17 +86,28 @@ class GraphEditor:
             FROM cypher('production_graph', $$
                 MATCH (n:{label})
                 RETURN id(n) AS id, properties(n) AS props
-            $$) AS (node agtype);
+            $$) AS (id agtype, props agtype);
             """
             params = ()
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, params)
             rows = cur.fetchall()
+        
             return [
-                {"id": row[0], **row[1]["props"]}
+                {
+                    "id": row[0], 
+                    **json.loads(row[1])
+                }
                 for row in rows
             ]  # Return list of node properties
+        
+        finally:
+            cur.close()
+            conn.close()
         
 
     def update_node(self, node_id: int, properties: dict) -> dict:
@@ -116,16 +138,26 @@ class GraphEditor:
             WHERE id(n) = %s
             SET {set_str}
             RETURN id(n) AS id, properties(n) AS props
-        $$) AS (id bigint, props agtype);
+        $$) AS (id agtype, props agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, (node_id, *properties.values()))
             result = cur.fetchone()
             if not result:
                 raise ValueError(f"No node found with id {node_id}.")
             
-            return {"id": result[0], **result[1]["props"]}  # Return the updated node properties
+            return {
+                "id": result[0], 
+                **json.loads(result[1])
+                }  # Return the updated node properties
+
+        finally:
+            cur.close()
+            conn.close()
 
 
     def delete_node(self, node_id: int) -> None:
@@ -147,10 +179,16 @@ class GraphEditor:
         $$) AS (count agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, (node_id,))
             # No need to fetch results for this operation
 
+        finally:
+            cur.close()
+            conn.close()
     
     # Edge Operations
     def create_edge(self, from_id: int, to_id: int, edge_type: str) -> dict:
@@ -177,11 +215,17 @@ class GraphEditor:
         $$) AS (edge agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, (from_id, to_id))
             result = cur.fetchone()
             return result[0]['edge']  # Return the edge properties
     
+        finally:
+            cur.close()
+            conn.close()
 
     def get_edges(self, from_id: Optional[int] = None, to_id: Optional[int] = None, edge_type: Optional[str] = None) -> list[dict]:
         """
@@ -223,11 +267,17 @@ class GraphEditor:
         $$) AS (edge agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, tuple(params))
             rows = cur.fetchall()
             return [row[0]['edge'] for row in rows]  # Return list of edge properties
             
+        finally:
+            cur.close()
+            conn.close()
 
     def delete_edge(self, from_id: int, to_id: int, edge_type: Optional[str] = None) -> None:
         """
@@ -260,6 +310,13 @@ class GraphEditor:
         $$) AS (count agtype);
         """
 
-        with self.conn.cursor() as cur:
+        conn = self.table.get_connection()
+        cur = conn.cursor()
+
+        try:
             cur.execute(sql, tuple(params))
             # No need to fetch results for this operation
+
+        finally:
+            cur.close()
+            conn.close()
