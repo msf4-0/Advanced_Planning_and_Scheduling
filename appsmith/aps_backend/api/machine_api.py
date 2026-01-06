@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Body, HTTPException
-
 from repository import DBTable
 from service import MachineService
 

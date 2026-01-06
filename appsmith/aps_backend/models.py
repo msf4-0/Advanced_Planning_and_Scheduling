@@ -124,6 +124,9 @@ class OrderRead(OrderCreate):
     product_name: str
     status: str
 
+    class Config:
+        extra = "forbid"
+        
 class ScheduledOperation(BaseModel):
     """
     Model representing a scheduled operation in the production schedule.

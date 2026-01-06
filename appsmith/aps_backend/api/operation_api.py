@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Body
 from typing_extensions import List, Optional
-
 from repository import DBTable
 from models import OperationRead
 from service import OperationService
@@ -19,9 +18,9 @@ def get_operations():
     operations = [
         OperationRead(
             operation_id=row['operation_id'],
-            name=row['operation_name'],
+            name=row['name'],
             duration=row['duration'],
-            machine_type=row['machine_type'],
+            machine_type=row['required_machine_type'],
             material_id=row.get('material_id')
         )
         for row in rows

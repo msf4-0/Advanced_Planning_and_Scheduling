@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from models import ProductRouteCreate, ProductRouteRead
 from service import ProductBlueprintService
-from repository import DBTable, GraphEditor  # Make sure to import your connection getter
+from repository import DBTable, GraphEditor
 
 router = APIRouter()
 

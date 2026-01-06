@@ -17,10 +17,7 @@ def get_products():
     products = [
         {
             "product_id": row['product_id'],
-            "product_name": row['product_name'],
-            "description": row['description'],
-            "created_at": row['created_at'],
-            "updated_at": row['updated_at']
+            "product_name": row['product_name']
         }
         for row in rows
     ]

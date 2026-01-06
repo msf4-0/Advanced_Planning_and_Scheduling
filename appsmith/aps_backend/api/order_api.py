@@ -22,7 +22,7 @@ def get_orders():
             order_id=row['order_id'],
             product_name=row['product_name'],
             product_id=row['product_id'],
-            user_priority=row['priority'],
+            user_priority=row['user_priority'],
             quantity=row['quantity'],
             due_date=row['due_date'],
             status=row['status']

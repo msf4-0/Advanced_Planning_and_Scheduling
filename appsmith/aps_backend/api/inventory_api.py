@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Body
 from typing_extensions import List
 from datetime import datetime
-
-from repository.db_repository import DBTable
+from repository import DBTable
 from models import InventoryItem
 
 router = APIRouter()
