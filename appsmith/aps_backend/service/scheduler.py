@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Optional
 from ortools.sat.python import cp_model
 from service import ProductBlueprintService, OpStepService
 from repository import GraphEditor, DBTable
@@ -57,7 +58,7 @@ class Schedule():
             })
         return gantt_data
 
-    def create_schedule(self, max_horizon: int = 480):
+    def create_schedule(self, max_horizon: int) -> int:
         """
         Main scheduling loop.
         

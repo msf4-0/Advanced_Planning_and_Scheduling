@@ -159,3 +159,13 @@ class InventoryItem(BaseModel):
     received_at: datetime
     material_id: Optional[int]
     age_days: int
+
+# API Models
+
+class ScheduleRequest(BaseModel):
+    """
+    Model for scheduling request parameters.
+    Attributes:
+        schedule_horizon (Optional[int]): Time horizon for scheduling in hours.
+    """
+    schedule_horizon: Optional[int] = None

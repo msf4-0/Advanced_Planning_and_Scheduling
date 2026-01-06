@@ -1,11 +1,11 @@
-from typing_extensions import Optional
 from fastapi import APIRouter, Body
-from service.scheduler import Schedule
+from service import Schedule
+from models import ScheduleRequest
 
 router = APIRouter()
 
 @router.post("/schedule/run", response_model=dict)
-def initiate_scheduling(schedule_horizon: Optional[int] = Body(...)):
+def initiate_scheduling(schedule_horizon: ScheduleRequest = Body(None)):
     """
     Initiates the scheduling process by creating a Schedule object
     and calling its schedule method.
@@ -13,11 +13,11 @@ def initiate_scheduling(schedule_horizon: Optional[int] = Body(...)):
     Location: appsmith/aps_backend/api/schedule_api.py
     """
     schedule = Schedule()
-    default_horizon = 480  # Default horizon value
-    max_horizon = schedule_horizon if schedule_horizon is not None else default_horizon
 
-    result = schedule.create_schedule(max_horizon=max_horizon)
-    return result
+    max_horizon = schedule_horizon.schedule_horizon if schedule_horizon and schedule_horizon.schedule_horizon else 480
+
+    schedule_run_id = schedule.create_schedule(max_horizon=max_horizon)
+    return {"schedule_run_id": schedule_run_id}
 
 @router.get("/schedule/gantt", response_model=list)
 def get_gantt_schedule():
