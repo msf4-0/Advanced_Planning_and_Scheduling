@@ -25,6 +25,10 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
+    develop:
+      watch:
+        - path: ./aps_backend
+          action: rebuild
 
   postgres:
     image: apache/age:release_PG15_1.6.0
