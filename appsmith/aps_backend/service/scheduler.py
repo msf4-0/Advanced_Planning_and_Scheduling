@@ -10,7 +10,7 @@ class Schedule():
         Initialize the Schedule class.
         """
         self.db = DBTable()
-        self.graph_editor = GraphEditor(self.db.get_connection())
+        self.graph_editor = GraphEditor(self.db)
         self.service = OpStepService(self.graph_editor)
 
         self.current_time = 0

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException
 
-from repository.db_repository import DBTable
-from service.machine_service import MachineService
+from repository import DBTable
+from service import MachineService
 
 router = APIRouter()
 

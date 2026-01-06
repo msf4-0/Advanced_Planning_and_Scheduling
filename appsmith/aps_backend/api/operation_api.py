@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body
 from typing_extensions import List, Optional
 
-from repository.db_repository import DBTable
+from repository import DBTable
 from models import OperationRead
 from service import OperationService
 

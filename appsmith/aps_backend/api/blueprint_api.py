@@ -5,28 +5,24 @@ from repository import DBTable, GraphEditor  # Make sure to import your connecti
 
 router = APIRouter()
 
-def get_service():
-    conn = DBTable().get_connection()
-    graph_editor = GraphEditor(conn)
-    try:
-        yield ProductBlueprintService(graph_editor)
-    finally:
-        conn.close()
-
 @router.get("/blueprint/{product_id}/get", response_model=ProductRouteRead)
-def get_route(product_id: int, service: ProductBlueprintService = Depends(get_service)):
+def get_route(product_id: int):
     """
     Retrieve the full route for a product.
 
     Location: appsmith/aps_backend/api/routes_api.py
     """
+
+    db = DBTable()
+    graph_editor = GraphEditor(db)
+    service = ProductBlueprintService(graph_editor)
+
     return service.fetch_blueprint(product_id)
 
 
 @router.post("/blueprint/{product_id}/create")
 def generate_blueprint(
-    payload: ProductRouteCreate,
-    service: ProductBlueprintService = Depends(get_service)
+    payload: ProductRouteCreate
 ):
     """
     Add a new step to the product route.
@@ -34,5 +30,9 @@ def generate_blueprint(
     Location: appsmith/aps_backend/api/routes_api.py
     """
 
+    db = DBTable()
+    graph_editor = GraphEditor(db)
+    service = ProductBlueprintService(graph_editor)
     service.create_blueprint(payload)
+    
     return {"status": "step added"}
