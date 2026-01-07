@@ -201,7 +201,7 @@ class DBTable:
 
         return rows
     
-    def fetch_product(self, product_id: Optional[int] = None, product_name: Optional[str] = None):
+    def fetch_product(self, product_id: Optional[int] = None, product_name: Optional[str] = None) -> dict[str, Any]:
         """
         Fetch product details by ID or name if provided else fetch all products.
         
@@ -281,6 +281,34 @@ class DBTable:
                 SELECT * FROM machine_types
                 ORDER BY type_id
             """)
+
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return rows
+
+    def fetch_product_blueprint(self, product_id: int) -> list[dict[str, Any]]:
+        """
+        Fetch the blueprint (sequence of operations) for a specific product.
+        Returns:
+            list[dict]:
+                {
+                    'product_id': int,
+                    'sequence': int,
+                    'operation_id': int,
+                    'depends_on': List[int]
+                }
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT * FROM product_blueprint
+            WHERE product_id = %s
+            ORDER BY sequence;
+        """, (product_id,))
 
         rows = cur.fetchall()
         cur.close()
@@ -552,6 +580,37 @@ class DBTable:
             cur.close()
             conn.close()
         
+    def add_product_blueprint_step(self, product_id: int, sequence: int, operation_id: int, depends_on: Optional[list[int]] = None):
+        """
+        Add a new step to the product blueprint.
+
+        Args:
+            product_id (int): The ID of the product.
+            sequence (int): The sequence number of the operation in the blueprint.
+            operation_id (int): The ID of the operation.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+
+        try:
+            cur.execute(
+                """
+                INSERT INTO product_blueprint (product_id, sequence, operation_id, depends_on)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (product_id, sequence) 
+                DO UPDATE SET operation_id = EXCLUDED.operation_id, depends_on = EXCLUDED.depends_on;
+                """,
+                (product_id, sequence, operation_id, depends_on)
+            )
+
+            conn.commit()
+        
+        except Exception as e:
+            logging.error("[DBTable.add_product_blueprint_step] Err: %s", e)
+        finally:
+            cur.close()
+            conn.close()
 
     # Update functions
 

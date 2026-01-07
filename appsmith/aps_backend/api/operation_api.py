@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from typing_extensions import List, Optional
 from repository import DBTable
 from models import OperationRead
@@ -65,3 +65,23 @@ def add_operation(
         raise HTTPException(status_code=400, detail="Failed to create operation.")
     
     return operation
+
+@router.post(
+        "/generate/opnode/{operation_id}",
+        status_code=201,
+        tags=["Operations"]
+        )
+def generate_operation_node(operation_id: int):
+    '''
+    Generate an operation node for the given operation ID.
+    Location: appsmith/aps_backend/api/operation_api.py
+    '''
+
+    operation_service = OperationService(DBTable())
+
+    try:
+        operation_service.generate_operation_node(operation_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    return {"status": "operation node generated"}

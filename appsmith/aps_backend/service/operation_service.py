@@ -1,7 +1,7 @@
 from typing_extensions import Optional
 
 from models import OperationRead
-from repository.db_repository import DBTable
+from repository import DBTable, GraphEditor
 
 class OperationService:
     def __init__(self, db: DBTable):
@@ -70,3 +70,29 @@ class OperationService:
         )
 
         return operation
+    
+    def generate_operation_node(self, operation_id: int):
+        """
+        Generate an operation node for the given operation ID.
+
+        Args:
+            operation_id (int): The ID of the operation.
+        Returns:
+            dict: The operation node details.
+        """
+        operation = self.db.fetch_operations(operation_id=operation_id)
+        if not operation:
+            raise ValueError(f"Operation with ID {operation_id} does not exist.")
+        
+        operation_row = operation[0]
+        graph_editor = GraphEditor(self.db)
+
+        operation_node = {
+            "operation_id": operation_row['operation_id'],
+            "duration": operation_row['duration'],
+            "machine_type": operation_row['type_id'],
+            "material_id": operation_row.get('material_id')
+        }
+
+        graph_editor.create_node('Operation', operation_node)
+        return operation_node

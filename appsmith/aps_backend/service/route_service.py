@@ -1,3 +1,4 @@
+import logging
 from repository import GraphEditor, DBTable
 from models import OpStepRead, OperationRead, ProductRouteCreate
 from typing_extensions import List
@@ -176,8 +177,8 @@ class OpStepService:
                     operation=OperationRead(
                         operation_id=operation_id,
                         name=op_node.get('name') or "",
-                        duration=op_node.get('duration') or 0,
-                        machine_type=op_node.get('required_machine_type') or "",
+                        duration=op_node.get('duration') or -1,
+                        machine_type=op_node.get('required_machine_type') or -1,
                         material_id=op_node.get('material_needed')  # directly use value
                     )
                 )
@@ -190,7 +191,7 @@ class ProductBlueprintService:
     def __init__(self, graph: GraphEditor):
         self.graph = graph
 
-    def create_blueprint(self, payload: ProductRouteCreate) -> None:
+    def generate_blueprint_graph(self, product_id: int) -> None:
         """
         Create a manufacturing route for a product by adding OpSteps in sequence.
         
@@ -199,60 +200,66 @@ class ProductBlueprintService:
             steps (List[Dict]): List of steps, each with 'operation_id' and 'order_id'.
         """
 
-        product_node = self.graph.get_node('Product', {'product_id': payload.product_id})
+        try:
 
-        if not product_node:
             dbTemp = DBTable()
-            product = dbTemp.fetch_product(payload.product_id)
+            product = dbTemp.fetch_product(product_id)
+
             if not product:
-                raise ValueError(f"Product with id {payload.product_id} does not exist")
+                raise ValueError(f"Product with id {product_id} does not exist")
+                
+            payload = dbTemp.fetch_product_blueprint(product_id)
 
-        for step in payload.manufacturing_line:
-            operation_id = step['operation_id']
-            sequence = step['sequence']
-            depends_on = step.get('depends_on', [])
-            
-            operation_node = self.graph.get_node('Operation', {'operation_id': operation_id})
+            for step in payload:
+                operation_id = step['operation_id']
+                sequence = step['sequence']
+                depends_on = step.get('depends_on', [])
+                
+                operation_node = self.graph.get_node('Operation', {'operation_id': operation_id})
 
-            if not operation_node:
-                raise ValueError(f"Operation with id {operation_id} does not exist")
-            
-            routestep = self.graph.create_node(
-                'RouteStep',
-                {
-                    'product_id': payload.product_id,
-                    'operation_id': operation_id,
-                    'sequence': sequence,
-                }
-            )
+                if not operation_node:
+                    raise ValueError(f"Operation with id {operation_id} does not exist")
+                
+                routestep = self.graph.create_node(
+                    'RouteStep',
+                    {
+                        'product_id': product_id,
+                        'operation_id': operation_id,
+                        'sequence': sequence,
+                    }
+                )
 
-            # Link to Product
-            self.graph.create_edge(
-                from_id = payload.product_id, 
-                to_id = routestep['id'], 
-                edge_type=EdgeType.HAS_ROUTE_STEP.value
-            )
+                # Link to Product
+                self.graph.create_edge(
+                    from_id = product_id, 
+                    to_id = routestep['id'], 
+                    edge_type=EdgeType.HAS_ROUTE_STEP.value
+                )
 
-            # Link to Operation
-            self.graph.create_edge(
-                from_id = routestep['id'],
-                to_id = int(operation_id),
-                edge_type=EdgeType.DOES.value
-            )
+                # Link to Operation
+                self.graph.create_edge(
+                    from_id = routestep['id'],
+                    to_id = int(operation_id),
+                    edge_type=EdgeType.DOES.value
+                )
 
-            # Link dependencies (BLOCKED_BY edges)
-            for dep_sequence in depends_on:
-                dep_node = self.graph.get_node('RouteStep', {
-                    'product_id': payload.product_id,
-                    'sequence': dep_sequence
-                })
+                # Link dependencies (BLOCKED_BY edges)
+                for dep_sequence in depends_on:
+                    dep_node = self.graph.get_node('RouteStep', {
+                        'product_id': product_id,
+                        'sequence': dep_sequence
+                    })
 
-                if dep_node:
-                    self.graph.create_edge(
-                        from_id = routestep['id'], 
-                        to_id = dep_node[0]['id'], 
-                        edge_type=EdgeType.BLOCKED_BY.value
-                    )
+                    if dep_node:
+                        self.graph.create_edge(
+                            from_id = routestep['id'], 
+                            to_id = dep_node[0]['id'], 
+                            edge_type=EdgeType.BLOCKED_BY.value
+                        )
+
+        except Exception as e:
+            logging.error("ProductBlueprintService.create_blueprint: %s", e)
+            raise e
 
     def fetch_blueprint(self, product_id: int):
         """
@@ -308,3 +315,24 @@ class ProductBlueprintService:
         for step in route_steps:
             self.graph.delete_node(step['id'])
 
+    def insert_blueprint_toDB(self, product_id: int, payload: ProductRouteCreate) -> None:
+        """
+        Insert the manufacturing route of a product into the database.
+
+        Args:
+            product_id (int): The ID of the product.
+        """
+
+        dbTemp = DBTable()
+
+        try:
+            for step in payload.manufacturing_line:
+                dbTemp.add_product_blueprint_step(
+                    product_id=product_id,
+                    operation_id=step['operation_id'],
+                    sequence=step['sequence'],
+                    depends_on=step['depends_on']
+                )
+        except Exception as e:
+            logging.error("[ProductBlueprintService.insert_blueprint_toDB] Err: %s", e)
+            raise e
