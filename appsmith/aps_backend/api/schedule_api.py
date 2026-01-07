@@ -4,7 +4,11 @@ from models import ScheduleRequest
 
 router = APIRouter()
 
-@router.post("/schedule/run", response_model=dict)
+@router.post(
+        "/schedule/run", 
+        response_model=dict,
+        tags=["Scheduling"]
+        )
 def initiate_scheduling(schedule_horizon: ScheduleRequest = Body(None)):
     """
     Initiates the scheduling process by creating a Schedule object
@@ -19,7 +23,11 @@ def initiate_scheduling(schedule_horizon: ScheduleRequest = Body(None)):
     schedule_run_id = schedule.create_schedule(max_horizon=max_horizon)
     return {"schedule_run_id": schedule_run_id}
 
-@router.get("/schedule/gantt", response_model=list)
+@router.get(
+        "/schedule/gantt", 
+        response_model=list,
+        tags=["Scheduling"]
+        )
 def get_gantt_schedule():
     """
     Retrieves the Gantt chart friendly schedule.

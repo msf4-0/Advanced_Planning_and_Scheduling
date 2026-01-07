@@ -6,13 +6,18 @@ from service import OperationService
 
 router = APIRouter()
 
-@router.get("/get/operations", response_model=List[OperationRead])
+@router.get(
+        "/get/operations", 
+        response_model=List[OperationRead],
+        tags=["Operations"]
+        )
 def get_operations():
     '''
     Fetch the list of operations from the database.
     
     Location: appsmith/aps_backend/api/operation_api.py
     '''
+
     db = DBTable()
     rows = db.fetch_operations()
     operations = [
@@ -20,7 +25,7 @@ def get_operations():
             operation_id=row['operation_id'],
             name=row['name'],
             duration=row['duration'],
-            machine_type=row['required_machine_type'],
+            machine_type=row['type_id'],
             material_id=row.get('material_id')
         )
         for row in rows
@@ -28,7 +33,12 @@ def get_operations():
 
     return operations
 
-@router.post("/add/operation", response_model=OperationRead, status_code=201)
+@router.post(
+        "/add/operation", 
+        response_model=OperationRead, 
+        status_code=201,
+        tags=["Operations"]
+        )
 def add_operation(
     name: str = Body(...), 
     required_machine_type: str = Body(...), 
@@ -40,6 +50,7 @@ def add_operation(
 
     Location: appsmith/aps_backend/api/operation_api.py
     '''
+
     operation_service = OperationService(DBTable())
     
     operation = operation_service.add_operation(

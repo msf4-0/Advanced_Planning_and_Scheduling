@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing_extensions import List, Optional, TypedDict
-from datetime import date, datetime
+from datetime import datetime, timezone
 
 # AGE Graph Models
 class ManufacturingStep(TypedDict):
@@ -34,7 +34,7 @@ class OperationRead(BaseModel):
     operation_id: int
     name: str
     duration: int
-    machine_type: str
+    machine_type: int
     material_id: Optional[int] = None
 
 class OpStepRead(BaseModel):
@@ -110,9 +110,16 @@ class OrderCreate(BaseModel):
     """
     product_id: int
     user_priority: int
-    due_date: date
+    due_date: datetime
     quantity: int = 1
     priority: float = 0.0  # Internal priority used for scheduling
+
+    @field_validator('due_date', mode='before')
+    @classmethod
+    def ensure_utc_due_date(cls, v):
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
 class OrderRead(OrderCreate):
     """
@@ -126,6 +133,13 @@ class OrderRead(OrderCreate):
 
     class Config:
         extra = "forbid"
+    
+    @field_validator('due_date', mode='before')
+    @classmethod
+    def ensure_utc_due_date(cls, v):
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
         
 class ScheduledOperation(BaseModel):
     """

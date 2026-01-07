@@ -28,6 +28,10 @@ class DBTable:
 
     def get_connection(self):
         conn = psycopg2.connect(**self.db_params)
+        # Ensure PostgreSQL session uses UTC
+        with conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'UTC';")
+        conn.commit()
         with conn.cursor() as cur:
             cur.execute("LOAD 'age';")
             cur.execute("""SET search_path = ag_catalog, "$user", public;""")
@@ -101,31 +105,39 @@ class DBTable:
 
         return rows
 
-    def fetch_orders(self, order_id: Optional[int] = None):
+    def fetch_orders(self, order_id: Optional[int] = None) -> list[dict[str, Any]]:
         """
         Fetch all orders from the database or a specific order by ID.
         Returns: list of orders with 'order_id', 'product_name', 'priority', 'due_date', 'quantity', 'status'
         """
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        conn = self.get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        if order_id is not None:
-            cur.execute("""
-                        SELECT * FROM orders 
-                        WHERE order_id = %s;
-                        ORDER BY priority, due_date;
-                        """, (order_id,))
-        else:
-            cur.execute("""
-                        SELECT * FROM orders
-                        ORDER BY priority, due_date;
-                        """)
+            if order_id is not None:
+                cur.execute("""
+                            SELECT o.*, p.product_name
+                            FROM orders o
+                            JOIN products p ON o.product_id = p.product_id
+                            WHERE order_id = %s
+                            ORDER BY priority, due_date;
+                            """, (order_id,))
+            else:
+                cur.execute("""
+                            SELECT o.*, p.product_name 
+                            FROM orders o
+                            JOIN products p ON o.product_id = p.product_id
+                            ORDER BY priority, due_date;
+                            """)
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            return rows
         
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        return rows
+        except Exception as e:
+            logging.error("DBTable.fetch_orders (order_id = %s): %s", order_id, e)
+            return []
 
     def fetch_operations(self, operation_id: Optional[int] = None):
         """
@@ -189,7 +201,7 @@ class DBTable:
 
         return rows
     
-    def fetch_product(self, product_id: Optional[int] = None):
+    def fetch_product(self, product_id: Optional[int] = None, product_name: Optional[str] = None):
         """
         Fetch product details by ID or name if provided else fetch all products.
         
@@ -200,12 +212,15 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
             
-        if product_id is None:
-            cur.execute("SELECT * FROM products;")
-            rows = cur.fetchall()
-        elif product_id is not None:
+        if product_id is not None:
             cur.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
             rows = cur.fetchone()
+        elif product_name is not None:
+            cur.execute("SELECT * FROM products WHERE product_name = %s", (product_name,))
+            rows = cur.fetchone()
+        else:
+            cur.execute("SELECT * FROM products;")
+            rows = cur.fetchall()
 
         cur.close()
         conn.close()
@@ -280,12 +295,13 @@ class DBTable:
         Add a new order to the database.
         """
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             cur.execute(
                 """
                 INSERT INTO orders (product_id, user_priority, due_date, quantity, priority)
                 VALUES (%s, %s, %s, %s, %s)
+                RETURNING order_id;
                 """,
                 (
                     order.product_id,
@@ -295,11 +311,12 @@ class DBTable:
                     order.priority
                 )    
             )
+            order_id = cur.fetchone()
             conn.commit()
-            order_id = cur.fetchone()['order_id']
-            return order_id
+            return order_id['order_id'] if order_id else None
+        
         except Exception as e:
-            logging.error("Error adding order: %s", e)
+            logging.error("DBTable.add_order: %s", e)
         finally:
             cur.close()
             conn.close()
@@ -326,7 +343,7 @@ class DBTable:
         """
 
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             cur.execute(
                 """
@@ -355,11 +372,11 @@ class DBTable:
             product_name (str): The name of the product.
 
         Returns:
-            int: The ID of the newly added product.
+            tuple: (product_id, already_exists: bool)
         """
 
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         try:
             cur.execute(
@@ -371,13 +388,21 @@ class DBTable:
                 """,
                 (product_name,)
             )
+            result = cur.fetchone()
+            if result is not None:
+                product_id = result['product_id']
+                already_exists = False
+            else:
+                product = self.fetch_product(product_name=product_name)
+                product_id = product['product_id'] if product else None
+                already_exists = True
 
-            product_id = cur.fetchone()['product_id']
             conn.commit()
-            return product_id
+            return product_id, already_exists
         
         except Exception as e:
-            logging.error("Error adding product: %s", e)
+            logging.error("DBTable.add_product (%s): %s", product_name, e)
+            return None, None
         finally:
             cur.close()
             conn.close()
@@ -397,18 +422,19 @@ class DBTable:
         """
 
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         try:
             cur.execute(
                 """
-                INSERT INTO operations (name, type_id, duration, material_needed)
+                INSERT INTO operations (name, duration, material_id, type_id)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (name) DO UPDATE
-                SET type_id = EXCLUDED.type_id,
-                    duration = EXCLUDED.duration,
-                    material_needed = EXCLUDED.material_needed
+                SET duration = EXCLUDED.duration,
+                    material_id = EXCLUDED.material_id,
+                    type_id = EXCLUDED.type_id
                 RETURNING operation_id;
-                """, (name, type_id, duration, material_id)
+                """, (name, duration, material_id, type_id)
             )
 
             operation_id = cur.fetchone()['operation_id']
@@ -433,7 +459,8 @@ class DBTable:
         """
 
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         try:
             cur.execute(
                 """
@@ -469,7 +496,8 @@ class DBTable:
         """
 
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         try:
             cur.execute(
                 """
@@ -501,7 +529,8 @@ class DBTable:
             int: The ID of the machine type.
         """
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
         try:
             cur.execute(
                 """
@@ -512,7 +541,8 @@ class DBTable:
                 """,
                 (type_name,)
             )
-            type_id = cur.fetchone()[0]
+
+            type_id = cur.fetchone()['type_id']
             conn.commit()
             return type_id
         except Exception as e:
@@ -527,21 +557,22 @@ class DBTable:
 
     def update_inventory_item(self, item_id: int, quantity: int):
         """
-        Update the quantity of an inventory item.
+        Update the quantity of an inventory item and return the item name.
 
         Args:
-            item_id (int): The ID of the inventory item.
+            item_id (int): The ID of the inventory item to update.
             quantity (int): The new quantity to set.
         """
-
         conn = self.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
         try:
             cur.execute(
                 """
                 UPDATE inventory
                 SET quantity = %s, last_updated = NOW()
                 WHERE item_id = %s
+                RETURNING item_name;
                 """,
                 (quantity, item_id)
             )
@@ -551,6 +582,7 @@ class DBTable:
         
         except Exception as e:
             logging.error("Error updating inventory item: %s", e)
+            return None
         finally:
             cur.close()
             conn.close()

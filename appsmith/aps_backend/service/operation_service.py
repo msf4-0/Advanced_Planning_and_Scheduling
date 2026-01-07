@@ -29,15 +29,18 @@ class OperationService:
 
         material_id = None
 
-        if material_needed:
+        # Check and add material if needed
+        if material_needed and material_needed.strip():
             material = self.db.fetch_material(material_name=material_needed)
             if material:
                 material_id = material['material_id']
             else:
                 material_id = self.db.add_material(material_needed)
         
+        # Check machine type existence
         machine_type = self.db.fetch_machine_types(type_name=required_machine_type)
 
+        # Raise error if machine type does not exist
         if not machine_type:
             raise ValueError(f"Machine type '{required_machine_type}' does not exist.")
         else:
@@ -51,7 +54,7 @@ class OperationService:
         )
 
         if operation_id is None:
-            raise ValueError("Failed to create operation.")
+            raise ValueError("Failed to create operation. DB add_operation returned None.")
         
         row = self.db.fetch_operations(operation_id=operation_id)
         
@@ -60,9 +63,9 @@ class OperationService:
 
         operation = OperationRead(
             operation_id=row[0]['operation_id'],
-            name=row[0]['operation_name'],
+            name=row[0]['name'],
             duration=row[0]['duration'],
-            machine_type=row[0]['machine_type'],
+            machine_type=row[0]['type_id'],
             material_id=row[0].get('material_id')
         )
 

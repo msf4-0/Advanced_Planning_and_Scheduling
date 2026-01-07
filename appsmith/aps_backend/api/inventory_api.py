@@ -6,7 +6,11 @@ from models import InventoryItem
 
 router = APIRouter()
 
-@router.get("/get/inventory", response_model=List[InventoryItem])
+@router.get(
+        "/get/inventory", 
+        response_model=List[InventoryItem],
+        tags=["Inventory"]
+        )
 def get_inventory():
     '''
     Fetch the current inventory items from the database.
@@ -32,15 +36,24 @@ def get_inventory():
 
     return inventory
 
-@router.post("/update/inventory")
+@router.post(
+        "/update/inventory",
+        tags=["Inventory"]
+        )
 def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
     '''
     Update the quantity of a specific inventory item.
 
     Location: appsmith/aps_backend/api/inventory_api.py
     '''
+
     db = DBTable()
     item_name = db.update_inventory_item(item_id, quantity)
+
+    if item_name is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Failed to update inventory item.")
+
     return {
         "status": "success", 
         "item_id": item_id, 
@@ -50,7 +63,10 @@ def update_inventory(item_id: int = Body(...), quantity: int = Body(...)):
 
 # @router.post("/update/inventory/{item_id}") # this endpoint is future implementation
 
-@router.post("/add/inventory")
+@router.post(
+        "/add/inventory",
+        tags=["Inventory"]
+        )
 def add_inventory(
     item_name: str = Body(...), 
     quantity: int = Body(...), 
@@ -62,6 +78,7 @@ def add_inventory(
     
     Location: appsmith/aps_backend/api/inventory_api.py
     '''
+
     db = DBTable()
     item_id = db.add_inventory_item(
         item_name=item_name, 

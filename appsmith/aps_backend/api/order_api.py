@@ -4,11 +4,15 @@ from datetime import datetime
 
 from repository import DBTable
 from service import OrderService
-from models import OrderCreate, OrderRead
+from models import OrderRead
 
 router = APIRouter()
 
-@router.get("/get/orders", response_model=List[OrderRead])
+@router.get(
+        "/get/orders", 
+        response_model=List[OrderRead],
+        tags=["Orders"]
+        )
 def get_orders():
     '''
     Fetch the list of orders from the database.
@@ -32,7 +36,12 @@ def get_orders():
 
     return orders
 
-@router.post("/add/order", response_model=OrderRead, status_code=201)
+@router.post(
+        "/add/order", 
+        response_model=OrderRead, 
+        status_code=201, 
+        tags=["Orders"]
+        )
 def add_order(
     product_id: int = Body(...), 
     user_priority: int = Body(...), 

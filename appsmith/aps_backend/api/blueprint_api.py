@@ -5,7 +5,11 @@ from repository import DBTable, GraphEditor
 
 router = APIRouter()
 
-@router.get("/blueprint/{product_id}/get", response_model=ProductRouteRead)
+@router.get(
+        "/blueprint/{product_id}/get", 
+        response_model=ProductRouteRead,
+        tags=["Blueprints"]
+        )
 def get_route(product_id: int):
     """
     Retrieve the full route for a product.
@@ -20,7 +24,10 @@ def get_route(product_id: int):
     return service.fetch_blueprint(product_id)
 
 
-@router.post("/blueprint/{product_id}/create")
+@router.post(
+        "/blueprint/{product_id}/create",
+        tags=["Blueprints"]
+        )
 def generate_blueprint(
     payload: ProductRouteCreate
 ):

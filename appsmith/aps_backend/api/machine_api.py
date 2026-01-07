@@ -4,7 +4,12 @@ from service import MachineService
 
 router = APIRouter()
 
-@router.post("/add/machine", response_model=dict, status_code=201)
+@router.post(
+        "/add/machine", 
+        response_model=dict, 
+        status_code=201,
+        tags=["Machines"]
+        )
 def add_machine(
     name: str = Body(...),
     machine_type: str = Body(...),
