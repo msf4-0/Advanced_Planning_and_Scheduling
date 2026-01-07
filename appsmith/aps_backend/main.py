@@ -8,6 +8,7 @@ from api import (
     product_api,
     blueprint_api,
     schedule_api,
+    material_api
 )
 
 import logging
@@ -15,6 +16,7 @@ import logging
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
+app.include_router(material_api.router)
 app.include_router(machine_api.router)
 app.include_router(operation_api.router)
 app.include_router(order_api.router)

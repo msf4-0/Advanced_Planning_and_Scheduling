@@ -4,6 +4,7 @@ from .machine_service import MachineService
 from .order_service import OrderService
 from .scheduler import Schedule
 from .product_service import ProductService
+from .material_service import MaterialService
 
 __all__ = [
     "ProductBlueprintService",
@@ -12,5 +13,6 @@ __all__ = [
     "OrderService",
     "OpStepService",
     "Schedule",
-    "ProductService"
+    "ProductService",
+    "MaterialService"
 ]

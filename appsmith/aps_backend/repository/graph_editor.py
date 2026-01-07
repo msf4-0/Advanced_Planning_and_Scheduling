@@ -33,8 +33,8 @@ class GraphEditor:
         SELECT * 
         FROM cypher('production_graph', $$
             CREATE (n:{label} {{{props_str}}})
-            RETURN n
-        $$) AS (node agtype);
+            RETURN id(n) AS id, properties(n) AS props
+        $$) AS (id agtype, props agtype);
         """
 
         conn = self.table.get_connection()
@@ -45,8 +45,8 @@ class GraphEditor:
             result = cur.fetchone()
 
             return {
-                "id": result[0]["id"],
-                **result[0]["props"]
+                "id": json.loads(result[0]),
+                **json.loads(result[1])
             }  # Return the node properties
         
         finally:

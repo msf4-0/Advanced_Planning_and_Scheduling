@@ -242,14 +242,12 @@ class DBTable:
             
         if material_id is not None:
             cur.execute("SELECT * FROM materials WHERE material_id = %s", (material_id,))
-            rows = cur.fetchone()
         elif material_name is not None:
             cur.execute("SELECT * FROM materials WHERE material_name = %s", (material_name,))
-            rows = cur.fetchone()
         else:
             cur.execute("SELECT * FROM materials;")
-            rows = cur.fetchall()
 
+        rows = cur.fetchall()
         cur.close()
         conn.close()
 
@@ -475,7 +473,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def add_material(self, material_name: str):
+    def add_material(self, material_name: str) -> tuple[Optional[int], Optional[bool]]:
         """
         Add a new material to the database.
 
@@ -499,13 +497,27 @@ class DBTable:
                 """,
                 (material_name,)
             )
+            
+            result = cur.fetchone()
+            if result is not None:
+                material_id = result['material_id']
+                existed = False
+            else:
+                cur.execute(
+                    """
+                    SELECT material_id FROM materials WHERE material_name = %s;
+                    """,
+                    (material_name,)
+                )
+                material_id = cur.fetchone()['material_id']
+                existed = True
 
-            material_id = cur.fetchone()['material_id']
             conn.commit()
-            return material_id
+            return material_id, existed
         
         except Exception as e:
-            logging.error("Error adding material: %s", e)
+            logging.error("[DBTable.add_material] Err: %s", e)
+            return None, None
         finally:
             cur.close()
             conn.close()
