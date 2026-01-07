@@ -35,7 +35,7 @@ class OperationService:
             if material:
                 material_id = material['material_id']
             else:
-                material_id = self.db.add_material(material_needed)
+                material_id, _ = self.db.add_material(material_needed)
         
         # Check machine type existence
         machine_type = self.db.fetch_machine_types(type_name=required_machine_type)

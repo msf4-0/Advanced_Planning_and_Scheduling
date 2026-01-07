@@ -1,9 +1,20 @@
 from typing_extensions import Optional
-from repository.db_repository import DBTable
+from repository import DBTable, GraphEditor
 
 class MachineService:
     def __init__(self, db: DBTable):
         self.db = db
+
+    def fetch_machine(
+            self, 
+            machine_id: Optional[int] = None, 
+            machine_name: Optional[str] = None
+            ) -> list[dict]:
+        
+        return self.db.fetch_machines(
+            machine_id=machine_id, 
+            machine_name=machine_name
+        )
 
     def add_machine(
         self, 
@@ -60,3 +71,22 @@ class MachineService:
             raise ValueError("Failed to input new machine.")
         
         return machine_id
+    
+    def generate_machine_node(self, machine_id: int):
+        """
+        Generate a machine node for the given machine ID.
+
+        Args:
+            machine_id (int): The ID of the machine.
+        """
+
+        graph_editor = GraphEditor(self.db)
+        machine_property = self.db.fetch_machines(machine_id=machine_id)
+
+        if not machine_property:
+            raise FileNotFoundError(f"Machine with ID {machine_id} does not exist.")
+
+        success = graph_editor.create_node('Machines', machine_property[0])
+
+        if not success:
+            raise ValueError("[MachineService.generate_machine_node] Err: Failed to generate machine node.")
