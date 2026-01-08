@@ -1,6 +1,7 @@
 from typing_extensions import Optional
 from repository import DBTable
 import json
+import logging
 
 
 class GraphEditor:
@@ -21,7 +22,7 @@ class GraphEditor:
             dict: The created node's properties.
         """
 
-        import logging
+
         # Ensure properties is a plain dict
         if hasattr(properties, 'items') and not isinstance(properties, dict):
             properties = dict(properties)

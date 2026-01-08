@@ -81,18 +81,48 @@ class OperationService:
             dict: The operation node details.
         """
         operation = self.db.fetch_operations(operation_id=operation_id)
+        
         if not operation:
             raise ValueError(f"Operation with ID {operation_id} does not exist.")
         
         operation_row = operation[0]
         graph_editor = GraphEditor(self.db)
 
-        operation_node = {
-            "operation_id": operation_row['operation_id'],
-            "duration": operation_row['duration'],
-            "machine_type": operation_row['type_id'],
-            "material_id": operation_row.get('material_id')
-        }
+        operation_node = graph_editor.create_node(
+            label='Operation', 
+            properties={
+                "operation_id": operation_row['operation_id']
+            }
+        )
 
-        graph_editor.create_node('Operation', operation_node)
         return operation_node
+    
+    def regenerate_all_operation_nodes(self):
+        """
+        Regenerate operation nodes for all operations in the database.
+        """
+        operations = self.db.fetch_operations()
+        
+        if not operations:
+            raise FileNotFoundError("No operations found to generate nodes for.")
+        
+        graph_editor = GraphEditor(self.db)
+
+        for operation in operations:
+            operation_node = graph_editor.get_node(
+                label='Operation', 
+                filters={
+                    'operation_id': operation['operation_id']
+                    }
+                )
+
+            if operation_node:
+                continue
+
+            graph_editor.create_node(
+                label='Operation', 
+                properties={
+                    "operation_id": operation['operation_id']
+                }
+            )
+

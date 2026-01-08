@@ -67,7 +67,7 @@ def add_operation(
     return operation
 
 @router.post(
-        "/generate/opnode/{operation_id}",
+        "/generate/operation-node/{operation_id}",
         status_code=201,
         tags=["Operations"]
         )
@@ -85,3 +85,26 @@ def generate_operation_node(operation_id: int):
         raise HTTPException(status_code=400, detail=str(e))
     
     return {"status": "operation node generated"}
+
+@router.post(
+        "/regenerate-all-operation-nodes",
+        status_code=201,
+        tags=["Operations"]
+        )
+def regenerate_all_operation_nodes():
+    '''
+    Regenerate all operation nodes in the graph database.
+    Location: appsmith/aps_backend/api/operation_api.py
+    '''
+
+    operation_service = OperationService(DBTable())
+
+    try:
+        operation_service.regenerate_all_operation_nodes()
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "all operation nodes regenerated"}
