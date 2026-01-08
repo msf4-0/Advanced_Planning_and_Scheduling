@@ -1,4 +1,4 @@
-from repository import DBTable
+from repository import DBTable, GraphEditor
 from typing import Optional
 
 class ProductService:
@@ -22,3 +22,20 @@ class ProductService:
             "products_added": products_added,
             "products_already_there": products_already_there
         }
+    
+    def regenerate_all_product_nodes(self):
+        product_rows = self.db.fetch_product()
+        graph_editor = GraphEditor(self.db)
+
+        for row in product_rows:
+            product_id = row['product_id']
+            product_node = graph_editor.get_node(
+                label='Product',
+                filters={'product_id': product_id}
+            )
+
+            if not product_node:
+                graph_editor.create_node(
+                    label='Product',
+                    properties={'product_id': product_id}
+                )

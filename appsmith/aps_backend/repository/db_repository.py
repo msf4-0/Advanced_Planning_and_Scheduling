@@ -201,7 +201,7 @@ class DBTable:
 
         return rows
     
-    def fetch_product(self, product_id: Optional[int] = None, product_name: Optional[str] = None) -> dict[str, Any]:
+    def fetch_product(self, product_id: Optional[int] = None, product_name: Optional[str] = None) -> list[dict[str, Any]]:
         """
         Fetch product details by ID or name if provided else fetch all products.
         
@@ -214,10 +214,10 @@ class DBTable:
             
         if product_id is not None:
             cur.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
-            rows = cur.fetchone()
+            rows = cur.fetchall()
         elif product_name is not None:
             cur.execute("SELECT * FROM products WHERE product_name = %s", (product_name,))
-            rows = cur.fetchone()
+            rows = cur.fetchall()
         else:
             cur.execute("SELECT * FROM products;")
             rows = cur.fetchall()
@@ -420,7 +420,7 @@ class DBTable:
                 already_exists = False
             else:
                 product = self.fetch_product(product_name=product_name)
-                product_id = product['product_id'] if product else None
+                product_id = product[0]['product_id'] if product else None
                 already_exists = True
 
             conn.commit()
