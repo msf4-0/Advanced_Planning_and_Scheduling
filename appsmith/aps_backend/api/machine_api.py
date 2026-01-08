@@ -79,10 +79,33 @@ def generate_machine_node(machine_id: int):
     machine_service = MachineService(DBTable())
 
     try:
-        machine_service.generate_machine_node(machine_id)
+        machine_service.create_machine_node(machine_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     
     return {"status": "machine node generated"}
+
+@router.post(
+        "/regenerate-all-machine-nodes",
+        status_code=201,
+        tags=["Machines"]
+)
+def regenerate_all_machine_nodes():
+    '''
+    Regenerate all machine nodes in the graph database.
+
+    Location: appsmith/aps_backend/api/machine_api.py
+    '''
+
+    machine_service = MachineService(DBTable())
+    machine_list = machine_service.fetch_machine()
+
+    for machine in machine_list:
+        try:
+            machine_service.create_machine_node(machine['machine_id'])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate node for machine ID {machine['machine_id']}: {str(e)}")
+
+    return {"status": "all machine nodes regenerated"}

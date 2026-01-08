@@ -1,6 +1,8 @@
 from typing_extensions import Optional
 from repository import DBTable, GraphEditor
 
+import logging
+
 class MachineService:
     def __init__(self, db: DBTable):
         self.db = db
@@ -72,7 +74,7 @@ class MachineService:
         
         return machine_id
     
-    def generate_machine_node(self, machine_id: int):
+    def create_machine_node(self, machine_id: int):
         """
         Generate a machine node for the given machine ID.
 
@@ -86,7 +88,20 @@ class MachineService:
         if not machine_property:
             raise FileNotFoundError(f"Machine with ID {machine_id} does not exist.")
 
-        success = graph_editor.create_node('Machines', machine_property[0])
+        logging.info(f"[MachineService.create_machine_node] Info: Generating machine node for machine ID {machine_id} with properties {machine_property[0]}.")
 
-        if not success:
-            raise ValueError("[MachineService.generate_machine_node] Err: Failed to generate machine node.")
+        machine_node = graph_editor.get_node('Machines', {'machine_id': machine_id})
+
+        if machine_node:
+            logging.info(f"[MachineService.create_machine_node] Info: Machine node for machine ID {machine_id} already exists.")
+            return
+        
+        new_machine_node = graph_editor.create_node(
+            label='Machines', 
+            properties={
+                "machine_id": machine_property[0]['machine_id']
+                }
+            )
+
+        if not new_machine_node:
+            raise ValueError("[MachineService.create_machine_node] Err: Failed to generate machine node.")

@@ -21,6 +21,11 @@ class GraphEditor:
             dict: The created node's properties.
         """
 
+        import logging
+        # Ensure properties is a plain dict
+        if hasattr(properties, 'items') and not isinstance(properties, dict):
+            properties = dict(properties)
+
         if not properties:
             props_str = ''
         else:
@@ -41,15 +46,28 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
+            logging.info("[GraphEditor.create_node] Executing node creation.")
+            logging.info(f"SQL: {sql.strip()}")
+            logging.info(f"Params: {tuple(properties.values())}")
+
             cur.execute(sql, tuple(properties.values()))
+            conn.commit()
             result = cur.fetchone()
 
+            if not result:
+                logging.error("No result returned from cypher CREATE.")
+                return {}
+            
             return {
                 "id": json.loads(result[0]),
                 **json.loads(result[1])
             }  # Return the node properties
-        
+
+        except Exception as e:
+            logging.exception(f"Exception: {e}")
+            return {}
         finally:
+            logging.info("[GraphEditor.create_node] Finished node creation attempt.")
             cur.close()
             conn.close()
         
@@ -95,6 +113,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, params)
+            conn.commit()
             rows = cur.fetchall()
         
             return [
@@ -146,6 +165,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, (node_id, *properties.values()))
+            conn.commit()
             result = cur.fetchone()
             if not result:
                 raise ValueError(f"No node found with id {node_id}.")
@@ -184,6 +204,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, (node_id,))
+            conn.commit()
             # No need to fetch results for this operation
 
         finally:
@@ -220,6 +241,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, (from_id, to_id))
+            conn.commit()
             result = cur.fetchone()
             return result[0]['edge']  # Return the edge properties
     
@@ -272,6 +294,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, tuple(params))
+            conn.commit()
             rows = cur.fetchall()
             return [row[0]['edge'] for row in rows]  # Return list of edge properties
             
@@ -315,6 +338,7 @@ class GraphEditor:
 
         try:
             cur.execute(sql, tuple(params))
+            conn.commit()
             # No need to fetch results for this operation
 
         finally:

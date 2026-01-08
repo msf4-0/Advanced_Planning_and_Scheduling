@@ -77,3 +77,38 @@ def generate_material_node(material_id: int):
         raise HTTPException(status_code=400, detail=str(e))
 
     return {"status": "material node generated", "node": new_node}
+
+@router.post(
+    "/regenerate-all-material-nodes",
+    status_code=201,
+    tags=["Materials"]
+)
+def regenerate_all_material_nodes():
+    '''
+    Regenerate all material nodes in the graph database.
+
+    Location: appsmith/aps_backend/api/material_api.py
+    '''
+    service = MaterialService(DBTable())
+
+    materials = service.fetch_material()
+
+    failed_materials = []
+
+    for material in materials:
+        material_id = material['material_id']
+        try:
+            service.generate_material_node(material_id=material_id)
+        except Exception as e:
+            failed_materials.append({
+                "material_id": material_id,
+                "error": str(e)
+            })
+
+    if failed_materials:
+        return {
+            "status": "completed with errors",
+            "failed_materials": failed_materials
+        }
+
+    return {"status": "all material nodes generated successfully"}

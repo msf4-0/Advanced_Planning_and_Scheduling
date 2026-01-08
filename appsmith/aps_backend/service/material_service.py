@@ -58,7 +58,7 @@ class MaterialService:
             material_node = graph_editor.create_node(
                 label="Material",
                 properties={
-                    "material_id": material_prop['material_id']
+                    "material_id": material_prop[0]['material_id'],
                 }
             )
 
