@@ -10,6 +10,7 @@ class OpStepService:
     """
     def __init__(self, graph: GraphEditor):
         self.graph = graph
+        self.db = graph.get_table()
         self.blueprint_service = ProductBlueprintService(graph)
 
     def generate_opstep(
@@ -30,8 +31,9 @@ class OpStepService:
                              If None, appends to the end of the route.
         :type insert_after: Optional[int]
         """
+        conn = self.db.get_connection()
         
-        product_node = self.graph.get_node('Product', {'product_id': product_id})
+        product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn)
         if not product_node:
             raise ValueError(f"Product with id {product_id} does not exist")
         
@@ -51,7 +53,8 @@ class OpStepService:
                     'sequence': sequence,
                     'status': 'pending',
                     'order_id': order_id
-                }
+                },
+                conn=conn
             )
 
             opstep_nodes[sequence] = opstep_node
@@ -60,7 +63,8 @@ class OpStepService:
             self.graph.create_edge(
                 from_id = order_id, 
                 to_id = opstep_node['id'], 
-                edge_type=EdgeType.USES_STEP.value
+                edge_type=EdgeType.USES_STEP.value,
+                conn=conn
                 )
             
         # copy BLOCKED_BY edges from Blueprint to OpStep
@@ -74,7 +78,8 @@ class OpStepService:
                 self.graph.create_edge(
                     from_id = current['id'], 
                     to_id = dep_node['id'], 
-                    edge_type=EdgeType.BLOCKED_BY.value
+                    edge_type=EdgeType.BLOCKED_BY.value,
+                    conn=conn
                 )
 
         sorted_steps = sorted(opstep_nodes.items())
@@ -85,8 +90,12 @@ class OpStepService:
             self.graph.create_edge(
                 from_id = current_step['id'], 
                 to_id = next_step['id'], 
-                edge_type=EdgeType.NEXT_OPERATION.value
+                edge_type=EdgeType.NEXT_OPERATION.value,
+                conn=conn
             )
+
+        conn.commit()
+        conn.close()
 
      # Fetch steps
     def fetch_order_plan(self, order_id: int) -> dict:
@@ -97,13 +106,15 @@ class OpStepService:
             order_id (int): The ID of the order.
         Returns: list of operations with 'name', 'duration', 'machine_type', 'sequence'
         """
+        conn = self.db.get_connection()
+        
         # Get the product_id for the order
-        order_nodes = self.graph.get_node('Order', {'order_id': order_id})
+        order_nodes = self.graph.get_node('Order', {'order_id': order_id}, conn=conn)
         if not order_nodes:
             raise ValueError(f"No order found with order_id={order_id}")
 
         # Get OpSteps for the product, sorted by sequence
-        opsteps = self.graph.get_node('OpStep', {'order_id': order_id})
+        opsteps = self.graph.get_node('OpStep', {'order_id': order_id}, conn=conn)
         id_to_step = {step['id']: step for step in opsteps}
 
         steps = []
@@ -111,7 +122,8 @@ class OpStepService:
             # Get blocked_by edges to determine dependencies
             blocked_edges = self.graph.get_edges(
                 from_id = step['id'],
-                edge_type=EdgeType.BLOCKED_BY.value
+                edge_type=EdgeType.BLOCKED_BY.value,
+                conn=conn
             )
 
             depends_on = []
@@ -126,6 +138,8 @@ class OpStepService:
                 'depends_on': depends_on
             })
 
+        conn.commit()
+        conn.close()
         return {'order_id': order_id, 'manufacturing_line': steps}
     
 
@@ -139,8 +153,11 @@ class OpStepService:
         Returns:
             List[OpStepRead]: List of ready OpSteps with their associated Operation details.
         """
+        
+        conn = self.db.get_connection()
+
         # Fetch all OpSteps
-        steps = self.graph.get_node('OpStep', {})
+        steps = self.graph.get_node('OpStep', {}, conn=conn)
         id_to_step = {step['id']: step for step in steps}
         ready_steps = []
 
@@ -148,7 +165,8 @@ class OpStepService:
             # Check for outgoing BLOCKED_BY edges
             blocked_by_edges = self.graph.get_edges(
                 from_id=step['id'],
-                edge_type=EdgeType.BLOCKED_BY.value
+                edge_type=EdgeType.BLOCKED_BY.value,
+                conn=conn
             )
 
             all_deps_done = True
@@ -163,7 +181,7 @@ class OpStepService:
 
             op_node = step.get('operation')
             if not op_node:
-                op_nodes = self.graph.get_node('Operation', {'operation_id': step['operation_id']})
+                op_nodes = self.graph.get_node('Operation', {'operation_id': step['operation_id']}, conn=conn)
                 op_node = op_nodes[0] if op_nodes else {}
                 
             operation_id = op_node.get('operation_id')
@@ -184,12 +202,15 @@ class OpStepService:
                 )
             )
 
+        conn.commit()
+        conn.close()
         return ready_steps
 
      
 class ProductBlueprintService:
     def __init__(self, graph: GraphEditor):
         self.graph = graph
+        self.db = graph.get_table()
 
     def generate_blueprint_graph(self, product_id: int) -> None:
         """
@@ -201,61 +222,106 @@ class ProductBlueprintService:
         """
 
         try:
-
-            dbTemp = DBTable()
-            product = dbTemp.fetch_product(product_id)
+            conn = self.db.get_connection()
+            product = self.db.fetch_product(product_id)
 
             if not product:
                 raise ValueError(f"Product with id {product_id} does not exist")
                 
-            payload = dbTemp.fetch_product_blueprint(product_id)
+            payload = self.db.fetch_product_blueprint(product_id)
 
             for step in payload:
                 operation_id = step['operation_id']
                 sequence = step['sequence']
                 depends_on = step.get('depends_on', [])
                 
-                operation_node = self.graph.get_node('Operation', {'operation_id': operation_id})
+                operation_node = self.graph.get_node('Operation', {'operation_id': operation_id}, conn=conn)
+                product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn)
 
                 if not operation_node:
                     raise ValueError(f"Operation with id {operation_id} does not exist")
                 
-                routestep = self.graph.create_node(
-                    'RouteStep',
+                if not product_node:
+                    raise ValueError(f"Product with id {product_id} does not exist")
+                
+                routestep_node = self.graph.get_node(
+                    'RouteStep', 
                     {
                         'product_id': product_id,
                         'operation_id': operation_id,
-                        'sequence': sequence,
-                    }
+                        'sequence': sequence
+                    },
+                    conn=conn
                 )
 
-                # Link to Product
-                self.graph.create_edge(
-                    from_id = product_id, 
-                    to_id = routestep['id'], 
-                    edge_type=EdgeType.HAS_ROUTE_STEP.value
+                if routestep_node:
+                    routestep = routestep_node[0]
+                else:
+                    routestep = self.graph.create_node(
+                        'RouteStep',
+                        {
+                            'product_id': product_id,
+                            'operation_id': operation_id,
+                            'sequence': sequence,
+                        },
+                        conn=conn
+                    )
+
+                product_node_id = product_node[0]['id']
+
+                has_route_step_edges = self.graph.get_edges(
+                    from_id = product_node_id,
+                    to_id = routestep['id'],
+                    edge_type=EdgeType.HAS_ROUTE_STEP.value,
+                    conn=conn
                 )
 
-                # Link to Operation
-                self.graph.create_edge(
+                does_edges = self.graph.get_edges(
                     from_id = routestep['id'],
-                    to_id = int(operation_id),
-                    edge_type=EdgeType.DOES.value
+                    to_id = operation_node[0]['id'],
+                    edge_type=EdgeType.DOES.value,
+                    conn=conn
                 )
+
+                if not has_route_step_edges:
+                    # Link to Product
+                    self.graph.create_edge(
+                        from_id = product_node_id, 
+                        to_id = routestep['id'], 
+                        edge_type=EdgeType.HAS_ROUTE_STEP.value,
+                        conn=conn
+                    )
+
+                if not does_edges:
+                    # Link to Operation
+                    self.graph.create_edge(
+                        from_id = routestep['id'],
+                        to_id = operation_node[0]['id'],
+                        edge_type=EdgeType.DOES.value,
+                        conn=conn
+                    )
 
                 # Link dependencies (BLOCKED_BY edges)
                 for dep_sequence in depends_on:
-                    dep_node = self.graph.get_node('RouteStep', {
-                        'product_id': product_id,
-                        'sequence': dep_sequence
-                    })
+                    dep_node = self.graph.get_node(
+                        'RouteStep', 
+                        {
+                            'product_id': product_id,
+                            'sequence': dep_sequence
+                        }, 
+                        conn=conn
+                    )
 
                     if dep_node:
                         self.graph.create_edge(
                             from_id = routestep['id'], 
                             to_id = dep_node[0]['id'], 
-                            edge_type=EdgeType.BLOCKED_BY.value
+                            edge_type=EdgeType.BLOCKED_BY.value,
+                            conn=conn
                         )
+
+            conn.commit()
+            conn.close()
 
         except Exception as e:
             logging.error("ProductBlueprintService.create_blueprint: %s", e)
@@ -269,27 +335,35 @@ class ProductBlueprintService:
             product_id (int): The ID of the product.
         """
 
-        blueprint_node = self.graph.get_node('Product', {'product_id': product_id})
+        conn = self.db.get_connection()
+
+        blueprint_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn)
 
         if not blueprint_node:
             raise ValueError(f"Product with id {product_id} does not exist")
         
-        route_steps = self.graph.get_node('RouteStep', {'product_id': product_id})
-        id_to_step = {step['id']: step for step in route_steps}
+        route_steps = self.graph.get_node('RouteStep', {'product_id': product_id}, conn=conn)
+        id_to_step = {int(step['id']): step for step in route_steps}
 
         steps = []
 
         for step in route_steps:
             blocked_edges = self.graph.get_edges(
                 from_id = step['id'],
-                edge_type=EdgeType.BLOCKED_BY.value
+                edge_type=EdgeType.BLOCKED_BY.value,
+                conn=conn
             )
+            logging.info(f"Blocked edges for step {step['id']}: {blocked_edges}")
 
             depends_on = []
             for edge in blocked_edges:
-                depends_on_step = id_to_step.get(edge['to_id'])
+                dep_id = int(edge['end_id'])
+                logging.info(f"Checking dep_id: {dep_id}, id_to_step keys: {list(id_to_step.keys())}")
+                depends_on_step = id_to_step.get(dep_id)
                 if depends_on_step:
                     depends_on.append(depends_on_step['sequence'])
+                else:
+                    logging.warning(f"dep_id {dep_id} not found in id_to_step mapping.")
 
             steps.append({
                 'operation_id': step['operation_id'],
@@ -297,6 +371,9 @@ class ProductBlueprintService:
                 'depends_on': depends_on
             })
 
+        conn.commit()
+        conn.close()
+        logging.info(f"Fetched blueprint for product_id {product_id}: {steps}")
         return {
             'product_id': product_id,
             'manufacturing_line': steps
@@ -310,10 +387,15 @@ class ProductBlueprintService:
             product_id (int): The ID of the product.
         """
 
-        route_steps = self.graph.get_node('RouteStep', {'product_id': product_id})
+        conn = self.db.get_connection()
+
+        route_steps = self.graph.get_node('RouteStep', {'product_id': product_id}, conn=conn)
 
         for step in route_steps:
-            self.graph.delete_node(step['id'])
+            self.graph.delete_node(step['id'], conn=conn)
+
+        conn.commit()
+        conn.close()
 
     def insert_blueprint_toDB(self, product_id: int, payload: ProductRouteCreate) -> None:
         """
@@ -323,11 +405,9 @@ class ProductBlueprintService:
             product_id (int): The ID of the product.
         """
 
-        dbTemp = DBTable()
-
         try:
             for step in payload.manufacturing_line:
-                dbTemp.add_product_blueprint_step(
+                self.db.add_product_blueprint_step(
                     product_id=product_id,
                     operation_id=step['operation_id'],
                     sequence=step['sequence'],

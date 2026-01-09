@@ -27,15 +27,22 @@ class ProductService:
         product_rows = self.db.fetch_product()
         graph_editor = GraphEditor(self.db)
 
+        conn = self.db.get_connection()
+
         for row in product_rows:
             product_id = row['product_id']
             product_node = graph_editor.get_node(
                 label='Product',
-                filters={'product_id': product_id}
+                filters={'product_id': product_id},
+                conn=conn
             )
 
             if not product_node:
                 graph_editor.create_node(
                     label='Product',
-                    properties={'product_id': product_id}
+                    properties={'product_id': product_id},
+                    conn=conn
                 )
+
+        conn.commit()
+        conn.close()

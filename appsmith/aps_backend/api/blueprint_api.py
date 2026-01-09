@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Body, HTTPException
-from models import ProductRouteCreate, ProductRouteRead
+from models import ProductRouteCreate, ProductBlueprintRead
 from service import ProductBlueprintService
 from repository import DBTable, GraphEditor
 
 router = APIRouter()
 
 @router.get(
-        "/blueprint/{product_id}/get", 
-        response_model=ProductRouteRead,
-        tags=["Blueprints"]
-        )
+    "/get/blueprint/{product_id}", 
+    response_model=ProductBlueprintRead,
+    tags=["Blueprints"]
+    )
 def get_route(product_id: int):
     """
     Retrieve the full route for a product.
@@ -21,11 +21,16 @@ def get_route(product_id: int):
     graph_editor = GraphEditor(db)
     service = ProductBlueprintService(graph_editor)
 
-    return service.fetch_blueprint(product_id)
+    blueprint = service.fetch_blueprint(product_id)
+
+    if not blueprint:
+        raise HTTPException(status_code=404, detail="Blueprint not found")
+
+    return blueprint
 
 
 @router.post(
-        "/blueprint/{product_id}/generate",
+        "/generate/blueprint/{product_id}",
         tags=["Blueprints"]
         )
 def generate_blueprint(
@@ -45,7 +50,7 @@ def generate_blueprint(
     return {"status": "step added"}
 
 @router.post(
-        "/blueprint/{product_id}/upsert",
+        "/upsert/blueprint/{product_id}",
         tags=["Blueprints"]
         )
 def upsert_blueprint(
@@ -53,7 +58,7 @@ def upsert_blueprint(
     payload: ProductRouteCreate = Body(...)
 ):
     """
-    Upsert a step in the product route.
+    Upsert a step in the product route DB.
 
     Location: appsmith/aps_backend/api/routes_api.py
     """

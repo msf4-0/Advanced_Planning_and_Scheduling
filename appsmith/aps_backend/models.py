@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing_extensions import List, Optional, TypedDict
 from datetime import datetime, timezone
@@ -18,6 +19,15 @@ class ProductRouteCreate(BaseModel):
     product_id: int
     manufacturing_line : list[ManufacturingStep]  # List of dicts with 'operation_id', 'sequence', 'depends_on'
 
+class ProductBlueprintRead(BaseModel):
+    """
+    Model representing the blueprint response for a product.
+    Attributes:
+        product_id (int): ID of the product.
+        manufacturing_line (List[ManufacturingStep]): List of manufacturing steps.
+    """
+    product_id: int
+    manufacturing_line: list[ManufacturingStep]
 
 # ERD Models
 class OperationRead(BaseModel):
@@ -50,20 +60,6 @@ class OpStepRead(BaseModel):
     order_id: int
     sequence: int
     operation: OperationRead
-
-class ProductRouteRead(BaseModel):
-    """
-    Model representing the full route of a product.
-    Attributes:
-        product_id (int): ID of the product.
-        product_name (str): Name of the product.
-        steps (List[OpStepRead]): List of steps in the product route.
-    """
-    model_config = ConfigDict(from_attributes=True)
-
-    product_id: int
-    product_name: str
-    steps: List[OpStepRead]
 
 class RouteFilter(BaseModel):
     """

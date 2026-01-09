@@ -107,13 +107,15 @@ class OperationService:
             raise FileNotFoundError("No operations found to generate nodes for.")
         
         graph_editor = GraphEditor(self.db)
+        conn = self.db.get_connection()
 
         for operation in operations:
             operation_node = graph_editor.get_node(
                 label='Operation', 
                 filters={
                     'operation_id': operation['operation_id']
-                    }
+                    },
+                conn=conn
                 )
 
             if operation_node:
@@ -123,6 +125,10 @@ class OperationService:
                 label='Operation', 
                 properties={
                     "operation_id": operation['operation_id']
-                }
+                },
+                conn=conn
             )
+
+        conn.commit()
+        conn.close()
 
