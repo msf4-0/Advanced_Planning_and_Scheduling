@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Body
-from typing_extensions import List
+from fastapi import APIRouter, Body, Query, HTTPException
+from typing_extensions import List, Optional
 from datetime import datetime
 
 from repository import DBTable
@@ -54,8 +54,10 @@ def add_order(
     Location: appsmith/aps_backend/api/order_api.py
     '''
 
+    table = DBTable()
+
     try:
-        order_service = OrderService()
+        order_service = OrderService(table)
         order = order_service.add_order(
             product_id=product_id,
             user_priority=user_priority,
@@ -68,3 +70,33 @@ def add_order(
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=f"Error creating order: {e}")
+    
+@router.post(
+        "/generate-order-node/",
+        status_code=201,
+        tags=["Orders"]
+        )
+def generate_order_node(
+    order_id: Optional[int] = Query(None),
+):
+    '''
+    Generate an order node for the given order ID.
+    Location: appsmith/aps_backend/api/order_api.py
+    '''
+
+    table = DBTable()
+    order_service = OrderService(table)
+
+    try:
+        if order_id is None:
+            orders = table.fetch_orders()
+            for order in orders:
+                order_service.generate_order_node(order['order_id'])
+        else:
+            order_service.generate_order_node(order_id)
+            
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    return {"status": "order node(s) generated"}
+    

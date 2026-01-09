@@ -53,8 +53,8 @@ class GraphEditor:
         
         try:
             logging.info("[GraphEditor.create_node] Executing node creation.")
-            logging.info(f"SQL: {sql.strip()}")
-            logging.info(f"Params: {tuple(properties.values())}")
+            # logging.info(f"SQL: {sql.strip()}")
+            # logging.info(f"Params: {tuple(properties.values())}")
 
             cur.execute(sql, tuple(properties.values()))
             

@@ -1,13 +1,16 @@
 from typing_extensions import List
 from datetime import datetime, timezone
-from repository.db_repository import DBTable
+from repository import DBTable, GraphEditor
 from models import OrderCreate, OrderRead
 
 import logging
 
 class OrderService:
-    def __init__(self,):
-        self.db = DBTable()
+    def __init__(self, table: DBTable):
+        """
+        Initialize the OrderService with a database table.
+        """
+        self.db = table
 
     def get_orders(self) -> List[OrderRead]:
         rows = self.db.fetch_orders()
@@ -88,3 +91,41 @@ class OrderService:
             for row in rows if row['due_date'] <= date
         ]
         return filtered_orders
+    
+    def generate_order_node(self, order_id: int) -> dict:
+        """
+        Generate an order node for the given order ID.
+
+        Args:
+            order_id (int): The ID of the order.
+        Returns:
+            dict: The order node details.
+        """
+        order = self.db.fetch_orders(order_id=order_id)
+        graph = GraphEditor(self.db)
+
+        conn = self.db.get_connection()
+        
+        if not order:
+            raise ValueError(f"Order with ID {order_id} does not exist.")
+        
+        order_node_in_DB = graph.get_node('Order', {"order_id": order_id}, conn=conn)
+        
+        if order_node_in_DB:
+            logging.info(f"Order node for order_id {order_id} already exists in the graph.")
+            order_node = order_node_in_DB[0]
+        else:
+            order_node = graph.create_node(
+                label="Order",
+                properties= {
+                    "order_id": order[0]['order_id'],
+                    "product_id": order[0]['product_id'],
+                    "status": order[0]['status']
+                    },
+                conn=conn
+                )
+        
+        conn.commit()
+        conn.close()
+
+        return order_node
