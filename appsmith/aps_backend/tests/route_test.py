@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 from service import ProductBlueprintService
 from appsmith.aps_backend.api.blueprint_api import router
-from models import ProductRouteRead, OpStepRead, OperationRead, OpStepCreate, RouteFilter
 
 client = TestClient(router)
 
