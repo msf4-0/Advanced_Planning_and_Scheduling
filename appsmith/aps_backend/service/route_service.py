@@ -15,7 +15,6 @@ class OpStepService:
 
     def generate_opstep(
             self,
-            product_id: int,
             order_id: int
         ):
         """
@@ -23,17 +22,18 @@ class OpStepService:
         
         :param product_id: ID of the product
         :type product_id: int
-        :param operation_id: ID of the operation to add as a step
-        :type operation_id: int
         :param order_id: ID of the order associated with this step
         :type order_id: int
-        :param insert_after: Sequence number after which to insert the new step.
-                             If None, appends to the end of the route.
-        :type insert_after: Optional[int]
         """
         conn = self.db.get_connection()
         
-        product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn)
+        order_node = self.graph.get_node('Order', {'order_id': order_id}, conn=conn)
+        if not order_node:
+            raise ValueError(f"Order with id {order_id} does not exist")
+        
+        product_id = order_node[0]['product_id']
+
+        product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn) # If there's a node then there's a blueprint
         if not product_node:
             raise ValueError(f"Product with id {product_id} does not exist")
         
@@ -61,7 +61,7 @@ class OpStepService:
 
             # link OpStep to Order
             self.graph.create_edge(
-                from_id = order_id, 
+                from_id = order_node[0]['id'], 
                 to_id = opstep_node['id'], 
                 edge_type=EdgeType.USES_STEP.value,
                 conn=conn
@@ -82,6 +82,7 @@ class OpStepService:
                     conn=conn
                 )
 
+        # create NEXT_OPERATION edges
         sorted_steps = sorted(opstep_nodes.items())
         for index in range(len(sorted_steps) - 1):
             _, current_step = sorted_steps[index]
@@ -97,7 +98,7 @@ class OpStepService:
         conn.commit()
         conn.close()
 
-     # Fetch steps
+    # Fetch steps
     def fetch_order_plan(self, order_id: int) -> dict:
         """
         Fetch operations for a given order based on its product's manufacturing sequence.
@@ -171,7 +172,7 @@ class OpStepService:
 
             all_deps_done = True
             for edge in blocked_by_edges:
-                dep_step = id_to_step.get(edge['to_id'])
+                dep_step = id_to_step.get(edge['end_id'])
                 if dep_step and dep_step.get('status') != 'done':
                     all_deps_done = False
                     break

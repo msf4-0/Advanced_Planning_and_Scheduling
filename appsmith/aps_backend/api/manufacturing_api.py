@@ -11,8 +11,7 @@ router = APIRouter()
         tags=["Manufacturing Orders"]
         )
 def generate_operation_steps_for_order(
-    product_id: int = Body(...),
-    order_id: int = Body(...)
+    order_id: int = Query(None)
 ):
     '''
     Generate operation steps for a specific manufacturing order based on its blueprint.
@@ -22,7 +21,7 @@ def generate_operation_steps_for_order(
     opstep_service = OpStepService(GraphEditor(DBTable()))
 
     try:
-        opstep_service.generate_opstep(product_id=product_id, order_id=order_id)
+        opstep_service.generate_opstep(order_id=order_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

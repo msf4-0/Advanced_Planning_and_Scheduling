@@ -381,7 +381,7 @@ class GraphEditor:
                     logging.error(f"Failed to parse edge JSON: {e}")
 
             # logging.info(f"Retrieved: {rows}")
-            logging.info(f"Parsed Edges: {parsed_edges}")
+            # logging.info(f"Parsed Edges: {parsed_edges}")
             return parsed_edges  # Return list of parsed edge properties
         finally:
             logging.info("[GraphEditor.get_edges] Finished edge retrieval attempt.")

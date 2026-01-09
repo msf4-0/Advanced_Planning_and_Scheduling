@@ -171,7 +171,7 @@ class DBTable:
     def fetch_machines(self, machine_id: Optional[int] = None, machine_name: Optional[str] = None) -> list[dict[str, Any]]:
         """
         Fetch all machines from the database.
-        Returns: list of machines with 'machine_id', 'name', 'type', 'capacity'
+        Returns: list of machines with 'machine_id', 'name', 'type_id', 'capacity'
         """
 
         conn = self.get_connection()
