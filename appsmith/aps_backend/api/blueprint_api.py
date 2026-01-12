@@ -74,3 +74,28 @@ def upsert_blueprint(
     service.insert_blueprint_toDB(product_id, payload)
     
     return {"status": "blueprint added"}
+
+@router.delete(
+        "/delete/blueprint/{product_id}",
+        tags=["Blueprints"]
+        )
+def delete_blueprint(
+    product_id: int
+):
+    """
+    Delete the product route from the DB.
+
+    Location: appsmith/aps_backend/api/routes_api.py
+    """
+
+    db = DBTable()
+    graph_editor = GraphEditor(db)
+    service = ProductBlueprintService(graph_editor)
+    product = db.fetch_product(product_id)
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    service.reset_blueprint(product_id)
+    
+    return {"status": "blueprint deleted"}

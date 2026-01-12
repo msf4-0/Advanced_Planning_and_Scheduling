@@ -230,9 +230,14 @@ class ProductBlueprintService:
             payload = self.db.fetch_product_blueprint(product_id)
 
             for step in payload:
+
+                # logging.info(f"Processing step: {step}")
+
                 operation_id = step['operation_id']
                 sequence = step['sequence']
                 depends_on = step.get('depends_on', [])
+
+                # logging.info(f"Creating RouteStep for operation_id={operation_id},\n sequence={sequence},\n depends_on={depends_on}")
                 
                 operation_node = self.graph.get_node('Operation', {'operation_id': operation_id}, conn=conn)
                 product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn)
@@ -301,7 +306,9 @@ class ProductBlueprintService:
                     )
 
                 # Link dependencies (BLOCKED_BY edges)
+                # Link to sequence, not operation_id
                 for dep_sequence in depends_on:
+                    logging.info(f"Linking dependency for sequence {sequence} on dep_sequence {dep_sequence}")
                     dep_node = self.graph.get_node(
                         'RouteStep', 
                         {
@@ -310,14 +317,22 @@ class ProductBlueprintService:
                         }, 
                         conn=conn
                     )
-
+                    logging.info(f"Found dep_node: {dep_node}")
                     if dep_node:
-                        self.graph.create_edge(
-                            from_id = routestep['id'], 
-                            to_id = dep_node[0]['id'], 
-                            edge_type=EdgeType.BLOCKED_BY.value,
-                            conn=conn
-                        )
+                        existing_edges = self.graph.get_edges(
+                                            from_id = routestep['id'],
+                                            to_id = dep_node[0]['id'],
+                                            edge_type=EdgeType.BLOCKED_BY.value,
+                                            conn=conn
+                                        )
+                        
+                        if not existing_edges:
+                            self.graph.create_edge(
+                                from_id = routestep['id'], 
+                                to_id = dep_node[0]['id'], 
+                                edge_type=EdgeType.BLOCKED_BY.value,
+                                conn=conn
+                            )
 
             conn.commit()
             conn.close()
@@ -390,7 +405,10 @@ class ProductBlueprintService:
 
         route_steps = self.graph.get_node('RouteStep', {'product_id': product_id}, conn=conn)
 
+        logging.info(f"RouteSteps to delete for product_id {product_id}: {route_steps}")
+
         for step in route_steps:
+            logging.info(f"Deleting RouteStep with id {step['id']}")
             self.graph.delete_node(step['id'], conn=conn)
 
         conn.commit()

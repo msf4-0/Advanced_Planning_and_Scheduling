@@ -228,16 +228,16 @@ class GraphEditor:
         Delete a node with the given label and property.
 
         Args:
-            label (str): The label of the node.
-            property_key (str): The property key to identify the node.
-            property_value: The property value to identify the node.
+            node_id (int): The ID of the node to delete.
+        Returns:
+            None
         """
         
         sql = f"""
         SELECT * 
         FROM cypher('production_graph', $$
             MATCH (n)
-            WHERE id(n) = %s
+            WHERE id(n) = {node_id}
             DETACH DELETE n
         $$) AS (count agtype);
         """
@@ -250,6 +250,10 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
+            if self.debugging:
+                logging.info("[GraphEditor.delete_node] Executing node deletion.")
+                logging.info("Raw SQL:\n" + sql)
+                logging.info(f"Node ID: {node_id}")
             cur.execute(sql, (node_id,))
             # No need to fetch results for this operation
 
