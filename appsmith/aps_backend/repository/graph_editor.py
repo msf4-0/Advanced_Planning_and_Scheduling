@@ -7,9 +7,13 @@ import logging
 class GraphEditor:
     def __init__(self, table: DBTable):
         self.table = table
+        self.debugging = False
 
     def get_table(self) -> DBTable:
         return self.table
+
+    def set_debugging(self, debugging: bool) -> None:
+        self.debugging = debugging
 
     # Node Operations
     def create_node(
@@ -52,16 +56,18 @@ class GraphEditor:
         cur = conn.cursor()
         
         try:
-            logging.info("[GraphEditor.create_node] Executing node creation.")
-            # logging.info(f"SQL: {sql.strip()}")
-            # logging.info(f"Params: {tuple(properties.values())}")
+            if self.debugging:
+                logging.info("[GraphEditor.create_node] Executing node creation.")
+                # logging.info(f"SQL: {sql.strip()}")
+                # logging.info(f"Params: {tuple(properties.values())}")
 
             cur.execute(sql, tuple(properties.values()))
             
             result = cur.fetchone()
 
             if not result:
-                logging.error("No result returned from cypher CREATE.")
+                if self.debugging:
+                    logging.error("No result returned from cypher CREATE.")
                 return {}
             
             return {
@@ -70,10 +76,12 @@ class GraphEditor:
             }  # Return the node properties
 
         except Exception as e:
-            logging.exception(f"Exception: {e}")
+            if self.debugging:
+                logging.exception(f"Exception: {e}")
             return {}
         finally:
-            logging.info("[GraphEditor.create_node] Finished node creation attempt.")
+            if self.debugging:
+                logging.info("[GraphEditor.create_node] Finished node creation attempt.")
             cur.close()
             if close_conn:
                 conn.commit()
@@ -288,9 +296,11 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
-            logging.info("[GraphEditor.create_edge] Executing edge creation.")
+            if self.debugging:
+                logging.info("[GraphEditor.create_edge] Executing edge creation.")
+                logging.info("Raw SQL:\n" + sql)
+            
             cur.execute(sql)
-            logging.info("Raw SQL:\n" + sql)
 
             edges = self.get_edges(
                 from_id=from_id, 
@@ -302,7 +312,9 @@ class GraphEditor:
             return edges[0] if edges else {}  # Return the first matching edge or empty dict
 
         finally:
-            logging.info("[GraphEditor.create_edge] Finished edge creation attempt.")
+            if self.debugging:
+                logging.info("[GraphEditor.create_edge] Finished edge creation attempt.")
+            
             cur.close()
             if close_conn:
                 conn.commit()
@@ -357,15 +369,17 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
-            logging.info("[GraphEditor.get_edges] Executing edge retrieval. Edge Type: %s", edge_type)
-            # logging.info(f"SQL: {sql.strip()}")
+            if self.debugging:
+                logging.info("[GraphEditor.get_edges] Executing edge retrieval. Edge Type: %s", edge_type)
+                # logging.info(f"SQL: {sql.strip()}")
             
             cur.execute(sql)
             
             rows = cur.fetchall()
 
             if not rows:
-                logging.info("[GraphEditor.get_edges] No edges found matching criteria.")
+                if self.debugging:
+                    logging.info("[GraphEditor.get_edges] No edges found matching criteria.")
                 return []
             
             parsed_edges = []
@@ -380,11 +394,13 @@ class GraphEditor:
                 except json.JSONDecodeError as e:
                     logging.error(f"Failed to parse edge JSON: {e}")
 
-            # logging.info(f"Retrieved: {rows}")
-            # logging.info(f"Parsed Edges: {parsed_edges}")
+            if self.debugging:
+                logging.info(f"Retrieved: {rows}")
+                # logging.info(f"Parsed Edges: {parsed_edges}")
             return parsed_edges  # Return list of parsed edge properties
         finally:
-            logging.info("[GraphEditor.get_edges] Finished edge retrieval attempt.")
+            if self.debugging:
+                logging.info("[GraphEditor.get_edges] Finished edge retrieval attempt.")
             cur.close()
             if close_conn:
                 conn.commit()

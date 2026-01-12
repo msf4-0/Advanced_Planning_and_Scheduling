@@ -139,7 +139,7 @@ class DBTable:
             logging.error("DBTable.fetch_orders (order_id = %s): %s", order_id, e)
             return []
 
-    def fetch_operations(self, operation_id: Optional[int] = None):
+    def fetch_operations(self, operation_id: Optional[int] = None) -> list[dict[str, Any]]:
         """
         Fetch all operations from the database.
         Returns: list of operations with 'operation_id', 'name', 'duration'
@@ -154,8 +154,7 @@ class DBTable:
                 WHERE operation_id = %s
                 ORDER BY operation_id
             """, (operation_id,))
-            row = cur.fetchone()
-            rows = [row] if row else []
+            rows = cur.fetchall()
         else:
             cur.execute("""
                 SELECT * FROM operations
@@ -728,7 +727,7 @@ class DBTable:
                     schedule_run_id,
                     step['order_id'],
                     step['product_id'],
-                    step['sequence'],
+                    step['sequence_num'],
                     step['operation_id'],
                     step['start_time'],
                     step['start_time'] + step['duration'],

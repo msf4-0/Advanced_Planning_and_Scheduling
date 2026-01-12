@@ -56,9 +56,10 @@ class OpStepRead(BaseModel):
         operation (OperationRead): The operation associated with this step.
     """
     model_config = ConfigDict(from_attributes=True)
-
+    
+    op_step_id: int
     order_id: int
-    sequence: int
+    sequence_num: int
     operation: OperationRead
 
 class RouteFilter(BaseModel):

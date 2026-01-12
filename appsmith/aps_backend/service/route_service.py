@@ -170,6 +170,7 @@ class OpStepService:
                 conn=conn
             )
 
+            # Check if all dependencies are done
             all_deps_done = True
             for edge in blocked_by_edges:
                 dep_step = id_to_step.get(edge['end_id'])
@@ -177,28 +178,25 @@ class OpStepService:
                     all_deps_done = False
                     break
             
+            # If there are still BLOCKED_BY edges or dependencies not done, skip this step
             if not all_deps_done:
                 continue # Step is blocked, skip
 
-            op_node = step.get('operation')
-            if not op_node:
-                op_nodes = self.graph.get_node('Operation', {'operation_id': step['operation_id']}, conn=conn)
-                op_node = op_nodes[0] if op_nodes else {}
-                
-            operation_id = op_node.get('operation_id')
-            if operation_id is None:
-                raise ValueError(f"Operation node missing 'operation_id' for step {step['id']}")
+            # Fetch associated Operation details
+            op_node = step['operation_id']
+            op_data = self.db.fetch_operations(op_node)
             
             ready_steps.append(
                 OpStepRead(
+                    op_step_id=step['id'],
                     order_id=step['order_id'],
-                    sequence=step['sequence'],
+                    sequence_num=step['sequence'],
                     operation=OperationRead(
-                        operation_id=operation_id,
-                        name=op_node.get('name') or "",
-                        duration=op_node.get('duration') or -1,
-                        machine_type=op_node.get('required_machine_type') or -1,
-                        material_id=op_node.get('material_needed')  # directly use value
+                        operation_id=op_node,
+                        name=op_data[0]['name'] or "",
+                        duration=op_data[0]['duration'] or -1,
+                        machine_type=op_data[0]['type_id'] or -1,
+                        material_id=op_data[0]['material_id']  # directly use value
                     )
                 )
             )
