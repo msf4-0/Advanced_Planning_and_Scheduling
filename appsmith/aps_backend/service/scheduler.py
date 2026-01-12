@@ -40,26 +40,6 @@ class Schedule():
     
     def get_machines(self) -> dict:
         return self.machines
-    
-    def get_gantt_friendly_schedule(self) -> list:
-        """
-        Convert the completed schedule into a Gantt chart friendly format.
-
-        :return: List of dictionaries formatted for Gantt chart visualization
-        :rtype: List[Dict]
-        """
-        self.machine_assigner()
-        gantt_data = []
-        for entry in self.completed_schedule:
-            logging.info(f"Gantt Entry: {entry}")
-            gantt_data.append({
-                'label': f"Order {entry['order_id']}",
-                'start_ts': entry['start_time'],
-                'end_ts': entry['start_time'] + entry['duration'],
-                'machine': entry.get('assigned_machine', 'Unassigned'),
-                'order_id': entry['order_id']
-            })
-        return gantt_data
 
     def create_schedule(self, max_horizon: int) -> int:
         """
