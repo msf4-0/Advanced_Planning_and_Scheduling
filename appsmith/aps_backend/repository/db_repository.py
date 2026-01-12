@@ -313,6 +313,73 @@ class DBTable:
 
         return rows
 
+    def fetch_schedule_runs(
+            self, 
+            schedule_run_id: Optional[int] = None, 
+            status: Optional[str] = None
+        ) -> list[dict[str, Any]]:
+
+        """
+        Fetch all schedule runs from the database.
+        Returns: list of schedule runs with 'schedule_run_id', 'horizon', 'created_at'
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if schedule_run_id is not None:
+            cur.execute("""
+                SELECT * FROM schedule_runs
+                WHERE schedule_run_id = %s
+                ORDER BY schedule_run_id DESC
+            """, (schedule_run_id,))
+        elif status is not None:
+            cur.execute("""
+                SELECT sr.* FROM schedule_runs sr
+                JOIN schedule_steps ss ON sr.schedule_run_id = ss.schedule_run_id
+                WHERE ss.status = %s
+                GROUP BY sr.schedule_run_id
+                ORDER BY sr.schedule_run_id DESC
+            """, (status,))
+        else:
+            cur.execute("""
+                SELECT * FROM schedule_runs
+                ORDER BY schedule_run_id DESC
+            """)
+
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        return rows
+    
+    def fetch_schedule_steps(
+            self, 
+            schedule_run_id: Optional[int] = None
+        ) -> list[dict[str, Any]]:
+
+        """
+        Fetch all schedule steps from the database.
+        Returns: list of schedule steps with 'schedule_run_id', 'order_id', 'product_id', 'op_sequence', 'operation_id', 'start_time', 'end_time', 'machine_type', 'machine_name', 'status'
+        """
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if schedule_run_id is not None:
+            cur.execute("""
+                SELECT * FROM schedule_steps
+                WHERE schedule_run_id = %s
+                ORDER BY schedule_run_id, op_sequence;
+            """, (schedule_run_id,))
+        else:
+            cur.execute("""
+                SELECT * FROM schedule_steps
+                ORDER BY schedule_run_id, op_sequence;
+            """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+
     # Add functions
 
     def add_order(self, order: OrderCreate):

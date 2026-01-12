@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from service import Schedule
 from models import ScheduleRequest
+from repository import DBTable
 
 router = APIRouter()
 
@@ -34,7 +35,13 @@ def get_gantt_schedule():
 
     Location: appsmith/aps_backend/api/schedule_api.py
     """
-    schedule = Schedule()
-    gantt_schedule = schedule.get_gantt_friendly_schedule()
-    return gantt_schedule
+    
+    table = DBTable()
+    schedule_data = table.fetch_schedule_steps()
+
+    if not schedule_data:
+        raise HTTPException(status_code=404, detail="No schedule data found.")
+    
+    return schedule_data
+
 

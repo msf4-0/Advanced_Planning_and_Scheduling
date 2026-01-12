@@ -75,6 +75,10 @@ class Schedule():
         schedule_run_id = self.db.create_schedule_run(max_horizon)
         scheduled_steps = set()  # Track OpSteps already scheduled
 
+        running_id = self.db.fetch_schedule_runs(status='running')
+        if running_id:
+            raise Exception(f"Schedule run {running_id[0]['id']} is still running. Cannot start a new schedule.")
+
         logging.info(f"Starting scheduling with max_horizon: {max_horizon}")
 
         while self.current_time < max_horizon:
@@ -217,8 +221,13 @@ class Schedule():
         # Save completed schedule to DB
         
         self.machine_assigner()
+        # Prevent duplicate schedule steps from being saved
+        saved_steps = set()  # (schedule_run_id, sequence_num)
         for step in self.completed_schedule:
-            self.db.save_schedule_step(schedule_run_id, step)
+            key = (schedule_run_id, step['sequence_num'])
+            if key not in saved_steps:
+                self.db.save_schedule_step(schedule_run_id, step)
+                saved_steps.add(key)
 
         conn.commit()
         conn.close()
