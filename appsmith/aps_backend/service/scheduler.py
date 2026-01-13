@@ -190,7 +190,8 @@ class Schedule():
             op_detail = self.db.fetch_operations()
 
             for step in running_steps:
-                if self.current_time >= step['start_time'] + op_detail[0]['duration']:
+                step_duration = step.get('duration') or self.db.fetch_operations(step['operation_id'])[0]['duration']
+                if self.current_time >= step['start_time'] + step_duration:
                     # Mark step DONE
                     self.graph_editor.update_node(step['id'], {'status': 'done'}, conn=conn)
 
