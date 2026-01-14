@@ -41,6 +41,33 @@ class DBTable:
 
     # Fetch functions
 
+    def fetch_counts(self, table_name: str) -> int:
+        """
+        Fetch the count of records in a specified table.
+
+        Args:
+            table_name (str): The name of the table to count records from.
+        Returns:
+            int: The count of records in the table.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        ALLOWED_TABLES = {"inventory", "orders", "machines", "materials", "products"}  # add all allowed table names
+
+        try:
+            if table_name not in ALLOWED_TABLES:
+                raise ValueError("Invalid table name")
+            
+            cur.execute(f"SELECT COUNT(*) FROM {table_name};")
+            count = cur.fetchone()[0]
+            return count
+        except Exception as e:
+            logging.error("Error fetching counts from %s: %s", table_name, e)
+            return 0
+        finally:
+            cur.close()
+            conn.close()
+
     def fetch_inventory(
             self,
             item_id: Optional[int] = None, 
@@ -65,15 +92,30 @@ class DBTable:
             cur.execute("""
                         SELECT * FROM inventory 
                         WHERE item_id = %s
-                        ORDER BY item_name, received_at;
+                        ORDER BY item_id, item_name, received_at;
                         """, (item_id,)
                         )
         elif item_name is not None:
             cur.execute("""
-                        SELECT * FROM inventory 
+                        SELECT * FROM inventory
                         WHERE item_name = %s
-                        ORDER BY item_name, received_at;
+                        ORDER BY item_id, item_name, received_at;
                         """, (item_name,)
+                        )
+        elif aggregate:
+            cur.execute("""
+                        SELECT
+                        item_name,
+                        SUM(quantity) AS quantity,
+                        MAX(min_required) AS min_required,
+                        SUM(max_capacity) AS max_capacity,
+                        MAX(last_updated) AS last_updated,
+                        MIN(received_at) AS received_at,
+                        MAX(material_id) AS material_id
+                        FROM inventory
+                        GROUP BY item_name
+                        ORDER BY item_name, received_at;
+                        """
                         )
         else:
             cur.execute("""
@@ -84,24 +126,6 @@ class DBTable:
         rows = cur.fetchall()
         cur.close()
         conn.close()
-
-        if aggregate:
-            total_qty = sum(rows['quantity'] for rows in rows) if rows else 0
-            min_required = max(rows['min_required'] for rows in rows) if rows else 0
-            max_capacity = sum(rows['max_capacity'] for rows in rows) if rows else 0
-            last_updated = max(rows['last_updated'] for rows in rows) if rows else None
-            received_at = min(rows['received_at'] for rows in rows) if rows else None
-
-            return [{
-                'item_id': rows[0]['item_id'] if rows else item_id,
-                'item_name': rows[0]['item_name'] if rows else item_name,
-                'total_quantity': total_qty,
-                'min_required': min_required,
-                'max_capacity': max_capacity,
-                'last_updated': last_updated,
-                'received_at': received_at,
-                'material_id': rows[0]['material_id'] if rows else None
-            }]
 
         return rows
 
@@ -355,7 +379,8 @@ class DBTable:
     
     def fetch_schedule_steps(
             self, 
-            schedule_run_id: Optional[int] = None
+            schedule_run_id: Optional[int] = None,
+            latest_run: bool = True
         ) -> list[dict[str, Any]]:
 
         """
@@ -370,6 +395,14 @@ class DBTable:
                 WHERE schedule_run_id = %s
                 ORDER BY schedule_run_id, op_sequence;
             """, (schedule_run_id,))
+        elif latest_run:
+            cur.execute("""
+                SELECT * FROM schedule_steps
+                WHERE schedule_run_id = (
+                    SELECT MAX(schedule_run_id) FROM schedule_runs
+                )
+                ORDER BY schedule_run_id, op_sequence;
+            """)
         else:
             cur.execute("""
                 SELECT * FROM schedule_steps

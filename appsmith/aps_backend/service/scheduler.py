@@ -193,6 +193,7 @@ class Schedule():
                 step_duration = step.get('duration') or self.db.fetch_operations(step['operation_id'])[0]['duration']
                 if self.current_time >= step['start_time'] + step_duration:
                     # Mark step DONE
+                    logging.info(f"Marking step {step['id']} as done at time {self.current_time}")
                     self.graph_editor.update_node(step['id'], {'status': 'done'}, conn=conn)
 
             self.all_done = len(self.graph_editor.get_node('OpStep', {'status': 'pending'}, conn=conn)) == 0

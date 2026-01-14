@@ -164,7 +164,7 @@ class InventoryItem(BaseModel):
         min_required (int): Minimum required quantity for the item.
         max_capacity (int): Maximum capacity for the item in inventory.
     """
-    item_id: int
+    item_id: Optional[int]
     item_name: str
     quantity: int
     min_required: int

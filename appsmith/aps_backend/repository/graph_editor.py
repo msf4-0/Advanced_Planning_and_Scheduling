@@ -192,7 +192,7 @@ class GraphEditor:
         SELECT * 
         FROM cypher('production_graph', $$
             MATCH (n)
-            WHERE id(n) = %s
+            WHERE id(n) = {node_id}
             SET {set_str}
             RETURN id(n) AS id, properties(n) AS props
         $$) AS (id agtype, props agtype);
@@ -201,7 +201,7 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
-            cur.execute(sql, (node_id, *properties.values()))
+            cur.execute(sql, (*properties.values(),))
             
             result = cur.fetchone()
             if not result:

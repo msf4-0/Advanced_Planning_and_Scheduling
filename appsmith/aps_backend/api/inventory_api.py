@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Query
 from typing_extensions import List
 from datetime import datetime
 from repository import DBTable
@@ -11,17 +11,25 @@ router = APIRouter()
         response_model=List[InventoryItem],
         tags=["Inventory"]
         )
-def get_inventory():
+def get_inventory(
+    item_id: int = Query(None, description="Filter by item ID"),
+    item_name: str = Query(None, description="Filter by item name"),
+    aggregate: bool = Query(False, description="Whether to aggregate inventory data")
+):
     '''
     Fetch the current inventory items from the database.
 
     Location: appsmith/aps_backend/api/inventory_api.py
     '''
     db = DBTable()
-    rows = db.fetch_inventory()
+    rows = db.fetch_inventory(
+        item_id=item_id, 
+        item_name=item_name, 
+        aggregate=aggregate
+    )
     inventory = [
         InventoryItem(
-            item_id=row['item_id'],
+            item_id=row.get('item_id'),
             item_name=row['item_name'],
             quantity=row['quantity'],
             min_required=row['min_required'],
@@ -29,7 +37,7 @@ def get_inventory():
             last_updated=row['last_updated'],
             received_at=row['received_at'],
             material_id=row.get('material_id'),
-            age_days=(datetime.now() - row['received_at']).days
+            age_days=(datetime.now(row['received_at'].tzinfo) - row['received_at']).days
         )
         for row in rows
     ]
