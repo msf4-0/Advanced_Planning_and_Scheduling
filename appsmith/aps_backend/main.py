@@ -11,6 +11,7 @@ from api import (
     schedule_api,
     material_api,
     manufacturing_api,
+    constraint_api
 )
 
 import logging
@@ -42,3 +43,4 @@ app.include_router(order_api.router)
 app.include_router(manufacturing_api.router)
 app.include_router(blueprint_api.router)
 app.include_router(schedule_api.router)
+app.include_router(constraint_api.router)
