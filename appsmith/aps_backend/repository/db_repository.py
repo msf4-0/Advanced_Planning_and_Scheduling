@@ -4,6 +4,7 @@ import logging
 from typing_extensions import Any, Optional
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
+from enum import Enum
 
 from models import OrderCreate
 
@@ -14,6 +15,18 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgresPass")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "postgresDB")
 
 run_id = datetime.now().isoformat()
+
+class TableName(Enum):
+    INVENTORY = "inventory"
+    MACHINE_TYPES = "machine_types"
+    MACHINES = "machines"
+    MATERIALS = "materials"
+    OPERATIONS = "operations"
+    ORDERS = "orders"
+    PRODUCT_BLUEPRINT = "product_blueprint"
+    PRODUCTS = "products"
+    SCHEDULE_RUNS = "schedule_runs"
+    SCHEDULE_STEPS = "schedule_steps"
 
 class DBTable:
         
@@ -31,15 +44,218 @@ class DBTable:
         # Ensure PostgreSQL session uses UTC
         with conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'UTC';")
-        conn.commit()
-        with conn.cursor() as cur:
             cur.execute("LOAD 'age';")
             cur.execute("""SET search_path = ag_catalog, "$user", public;""")
-        
-        conn.commit()
         return conn
 
     # Fetch functions
+
+    def fetch(self, table_name: str, params: Optional[dict] = None) -> list[dict[str, Any]]:
+        """
+        Fetch all records from a specified table with optional filtering parameters.
+
+        Args:
+            table_name (str): The name of the table to fetch records from.
+            params (Optional[dict]): A dictionary of column-value pairs to filter the results.
+            
+            Example:
+                params = {"item_id": 1, "item_name": "Widget"}
+
+        Returns:
+            list[dict]: A list of records represented as dictionaries.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            if table_name not in {t.value for t in TableName}:
+                raise ValueError("Invalid table name")
+
+            query = f"SELECT * FROM {table_name}"
+            values = []
+            if params:
+                filters = []
+                for key, value in params.items():
+                    filters.append(f"{key} = %s")
+                    values.append(value)
+                query += " WHERE " + " AND ".join(filters)
+            query += ";"
+            cur.execute(query, tuple(values))
+            rows = cur.fetchall()
+            return rows
+        except Exception as e:
+            logging.error("Error fetching from %s: %s", table_name, e)
+            return []
+        finally:
+            cur.close()
+            conn.close()
+
+    def add(self, table_name: str, data: dict) -> list[dict[str, Any]]:
+        """
+        Add a new record to a specified table.
+
+        Args:
+            table_name (str): The name of the table to add the record to.
+            data (dict): A dictionary of column-value pairs representing the new record.
+
+            Example:
+                data = {"item_name": "Widget", "quantity": 100, "min_required": 10, "max_capacity": 500}
+
+        Returns:
+            list[dict]: A list containing the newly added record as a dictionary.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            if table_name not in {t.value for t in TableName}:
+                raise ValueError("Invalid table name")
+
+            columns = ', '.join(data.keys())
+            placeholders = ', '.join(['%s'] * len(data))
+            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING *;"
+            cur.execute(query, tuple(data.values()))
+            new_record = cur.fetchall()
+            conn.commit()
+            return new_record
+        except Exception as e:
+            logging.error("Error adding to %s: %s", table_name, e)
+            return []
+        finally:
+            cur.close()
+            conn.close()
+
+    def delete(self, table_name: str, conditions: dict) -> int:
+        """
+        Delete records from a specified table based on given conditions.
+
+        Args:
+            table_name (str): The name of the table to delete records from.
+            conditions (dict): A dictionary of column-value pairs to identify records to delete.
+
+            Example:
+                conditions = {"item_id": 1}
+
+        Returns:
+            int: The number of records deleted.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            if table_name not in {t.value for t in TableName}:
+                raise ValueError("Invalid table name")
+
+            query = f"DELETE FROM {table_name}"
+            values = []
+            if conditions:
+                filters = []
+                for key, value in conditions.items():
+                    filters.append(f"{key} = %s")
+                    values.append(value)
+                query += " WHERE " + " AND ".join(filters)
+            query += ";"
+            cur.execute(query, tuple(values))
+            deleted_count = cur.rowcount
+            conn.commit()
+            return deleted_count
+        except Exception as e:
+            logging.error("Error deleting from %s: %s", table_name, e)
+            return 0
+        finally:
+            cur.close()
+            conn.close()
+
+    def update(self, table_name: str, data: dict, conditions: dict) -> int:
+        """
+        Update records in a specified table based on given conditions.
+        Args:
+            table_name (str): The name of the table to update records in.
+            data (dict): A dictionary of column-value pairs representing the new data.
+            conditions (dict): A dictionary of column-value pairs to identify records to update.
+
+            Example:
+                data = {"quantity": 50, "status": "completed"}
+                conditions = {"order_id": 1}
+
+        Returns:
+            int: The number of records updated.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            if table_name not in {t.value for t in TableName}:
+                raise ValueError("Invalid table name")
+
+            set_clauses = []
+            values = []
+            for key, value in data.items():
+                set_clauses.append(f"{key} = %s")
+                values.append(value)
+            query = f"UPDATE {table_name} SET " + ", ".join(set_clauses)
+
+            if conditions:
+                filters = []
+                for key, value in conditions.items():
+                    filters.append(f"{key} = %s")
+                    values.append(value)
+                query += " WHERE " + " AND ".join(filters)
+            query += ";"
+            cur.execute(query, tuple(values))
+            updated_count = cur.rowcount
+            conn.commit()
+            return updated_count
+        except Exception as e:
+            logging.error("Error updating %s: %s", table_name, e)
+            return 0
+        finally:
+            cur.close()
+            conn.close()
+
+    def upsert(self, table_name: str, data: dict, conflict_columns: list[str]) -> list[dict[str, Any]]:
+        """
+        Upsert a record in a specified table based on conflict columns.
+        Args:
+            table_name (str): The name of the table to upsert the record in.
+            data (dict): A dictionary of column-value pairs representing the record.
+            conflict_columns (list[str]): A list of columns to check for conflicts.
+
+            Example:
+                data = {"item_id": 1, "item_name": "Widget", "quantity": 100}
+                conflict_columns = ["item_id"]
+
+        Returns:
+            list[dict]: A list containing the upserted record as a dictionary.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            if table_name not in {t.value for t in TableName}:
+                raise ValueError("Invalid table name")
+
+            columns = ', '.join(data.keys())
+            placeholders = ', '.join(['%s'] * len(data))
+            update_clauses = ', '.join([f"{key} = EXCLUDED.{key}" for key in data.keys() if key not in conflict_columns])
+            conflict_cols = ', '.join(conflict_columns)
+
+            query = f"""
+                INSERT INTO {table_name} ({columns})
+                VALUES ({placeholders})
+                ON CONFLICT ({conflict_cols}) DO UPDATE
+                SET {update_clauses}
+                RETURNING *;
+            """
+            cur.execute(query, tuple(data.values()))
+            upserted_record = cur.fetchall()
+            conn.commit()
+            return upserted_record
+        except Exception as e:
+            logging.error("Error upserting into %s: %s", table_name, e)
+            return []
+        finally:
+            cur.close()
+            conn.close()
 
     def fetch_counts(self, table_name: str) -> int:
         """
