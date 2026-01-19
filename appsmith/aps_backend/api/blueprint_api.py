@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Body, HTTPException
 from models import ProductRouteCreate, ProductBlueprintRead
 from service import ProductBlueprintService
@@ -49,16 +50,16 @@ def generate_blueprint(
     
     return {"status": "step added"}
 
-@router.post(
-        "/upsert/blueprint/{product_id}",
+@router.put(
+        "/add/blueprint/toDB/{product_id}",
         tags=["Blueprints"]
         )
-def upsert_blueprint(
+def add_blueprint_toDB(
     product_id: int,
     payload: ProductRouteCreate = Body(...)
 ):
     """
-    Upsert a step in the product route DB.
+    Add a blueprint of product route to the DB.
 
     Location: appsmith/aps_backend/api/routes_api.py
     """
@@ -99,3 +100,36 @@ def delete_blueprint(
     service.reset_blueprint(product_id)
     
     return {"status": "blueprint deleted"}
+
+@router.post(
+    "/update/blueprint/{product_id}",
+    tags=["Blueprints"]
+)
+def update_blueprint(
+    product_id: int,
+    payload: ProductRouteCreate = Body(...)
+):
+    """
+    Update the product route in the DB.
+
+    Location: appsmith/aps_backend/api/routes_api.py
+    """
+
+    db = DBTable()
+    graph_editor = GraphEditor(db)
+    service = ProductBlueprintService(graph_editor)
+    product = db.fetch_product(product_id)
+    
+    if not product:
+        logging.error(f"Product with ID {product_id} not found.")
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    try:
+        service.reset_blueprint(product_id)
+        service.insert_blueprint_toDB(product_id, payload)
+        service.generate_blueprint_graph(product_id)
+    except Exception as e:
+        logging.error(f"Error updating blueprint for product ID {product_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update blueprint")
+    
+    return {"status": "blueprint updated"}

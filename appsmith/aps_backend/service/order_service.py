@@ -38,6 +38,7 @@ class OrderService:
             now = datetime.now(timezone.utc)
 
             # Calculate internal priority based on user priority and due date
+            # scale user_priority to 1-10, 10 is highest priority 
             # basic formula: (priority + due date) / 2
             priority = ((user_priority / 10) + (1 / (max((due_date - now).days, 1))) + 1) / 2
 

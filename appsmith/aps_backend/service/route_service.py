@@ -35,7 +35,7 @@ class OpStepService:
 
         product_node = self.graph.get_node('Product', {'product_id': product_id}, conn=conn) # If there's a node then there's a blueprint
         if not product_node:
-            raise ValueError(f"Product with id {product_id} does not exist")
+            raise ValueError(f"Blueprint with id {product_id} does not exist, Please create a blueprint first.")
         
         blueprint = self.blueprint_service.fetch_blueprint(product_id)
 
@@ -162,30 +162,35 @@ class OpStepService:
         id_to_step = {step['id']: step for step in steps}
         ready_steps = []
 
-        for step in id_to_step.values():
-            # Check for outgoing BLOCKED_BY edges
+        def all_blockers_done(step_id, visited=None):
+            if visited is None:
+                visited = set()
+            if step_id in visited:
+                return True  # Prevent cycles
+            visited.add(step_id)
             blocked_by_edges = self.graph.get_edges(
-                from_id=step['id'],
+                from_id=step_id,
                 edge_type=EdgeType.BLOCKED_BY.value,
                 conn=conn
             )
-
-            # Check if all dependencies are done
-            all_deps_done = True
             for edge in blocked_by_edges:
-                dep_step = id_to_step.get(edge['end_id'])
-                if dep_step and dep_step.get('status') != 'done':
-                    all_deps_done = False
-                    break
-            
-            # If there are still BLOCKED_BY edges or dependencies not done, skip this step
-            if not all_deps_done:
-                continue # Step is blocked, skip
+                dep_id = edge['end_id']
+                dep_step = id_to_step.get(dep_id)
+                if dep_step:
+                    if dep_step.get('status') != 'done':
+                        return False
+                    # Recursively check blockers of this dependency
+                    if not all_blockers_done(dep_id, visited):
+                        return False
+            return True
+
+        for step in id_to_step.values():
+            if not all_blockers_done(step['id']):
+                continue  # Step is blocked, skip
 
             # Fetch associated Operation details
             op_node = step['operation_id']
             op_data = self.db.fetch_operations(op_node)
-            
             ready_steps.append(
                 OpStepRead(
                     op_step_id=step['id'],
@@ -423,6 +428,7 @@ class ProductBlueprintService:
         """
 
         try:
+            self.db.delete_product_blueprint(product_id)
             for step in payload.manufacturing_line:
                 self.db.add_product_blueprint_step(
                     product_id=product_id,

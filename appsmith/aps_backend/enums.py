@@ -23,3 +23,22 @@ class EdgeType(Enum):
     USES_MATERIAL = "USES_MATERIAL"
     BLOCKED_BY = "BLOCKED_BY"
 
+
+# Constraint node enums
+class ConstraintType(Enum):
+    MACHINE_BROKEN = "machine_broken"
+    MATERIAL_SHORTAGE = "material_shortage"
+    CUSTOM_RULE = "custom_rule"
+    MAINTENANCE = "maintenance"
+    QUALITY_HOLD = "quality_hold"
+
+class ConstraintStatus(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    RESOLVED = "resolved"
+
+class ConstraintSeverity(Enum):
+    CRITICAL = "critical"
+    WARNING = "warning"
+    INFO = "info"
+

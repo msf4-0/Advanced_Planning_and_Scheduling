@@ -723,6 +723,34 @@ class DBTable:
             cur.close()
             conn.close()
 
+    def delete_product_blueprint(self, product_id: int):
+        """
+        Delete the product blueprint for a specific product.
+
+        Args:
+            product_id (int): The ID of the product.
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+
+        try:
+            cur.execute(
+                """
+                DELETE FROM product_blueprint
+                WHERE product_id = %s;
+                """,
+                (product_id,)
+            )
+
+            conn.commit()
+        
+        except Exception as e:
+            logging.error("[DBTable.delete_product_blueprint] Err: %s", e)
+        finally:
+            cur.close()
+            conn.close()
+
     # Update functions
 
     def update_inventory_item(self, item_id: int, quantity: int):
@@ -807,6 +835,10 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
+            # Always use 'sequence_num' for op_sequence; raise error if missing
+            if 'sequence_num' not in step:
+                raise KeyError("Scheduled step must have 'sequence_num' for op_sequence column.")
+            op_sequence = step['sequence_num']
             cur.execute(
                 """
                 INSERT INTO schedule_steps (
@@ -827,7 +859,7 @@ class DBTable:
                     schedule_run_id,
                     step['order_id'],
                     step['product_id'],
-                    step['sequence_num'],
+                    op_sequence,
                     step['operation_id'],
                     step['start_time'],
                     step['start_time'] + step['duration'],
@@ -837,7 +869,6 @@ class DBTable:
                 )
             )
             conn.commit()
-        
         except Exception as e:
             logging.error("Error saving scheduled step: %s", e)
         finally:

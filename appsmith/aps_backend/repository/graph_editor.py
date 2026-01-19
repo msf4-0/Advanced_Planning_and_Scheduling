@@ -31,6 +31,10 @@ class GraphEditor:
 
         Returns:
             dict: The created node's properties.
+                {
+                    "id": int,
+                    ...properties
+                }
         """
         close_conn = False
         if conn is None:
@@ -58,10 +62,12 @@ class GraphEditor:
         try:
             if self.debugging:
                 logging.info("[GraphEditor.create_node] Executing node creation.")
-                # logging.info(f"SQL: {sql.strip()}")
-                # logging.info(f"Params: {tuple(properties.values())}")
+                logging.info(f"SQL: {sql.strip()}")
+                logging.info(f"Params: {tuple(properties.values())}")
 
-            cur.execute(sql, tuple(properties.values()))
+            params = [json.dumps(v) if isinstance(v, dict) else v for v in properties.values()]
+            cur.execute(sql, tuple(params))
+            # cur.execute(sql, tuple(properties.values()))
             
             result = cur.fetchone()
 
@@ -92,6 +98,7 @@ class GraphEditor:
             self,
             label: str, 
             filters: dict,
+            node_id: Optional[int] = None,
             conn = None
         ) -> list[dict]:
         """
@@ -110,30 +117,42 @@ class GraphEditor:
             conn = self.table.get_connection()
             close_conn = True
 
-        if filters:
-            for key in filters.keys():
-                if not isinstance(key, str):
-                    raise ValueError("All filter keys must be strings.")
-                
-            filter_str = ' AND '.join(f"n.{k} = %s" for k in filters.keys())
+        if node_id:
+            filters = {'id': node_id}
             sql = f"""
             SELECT * 
             FROM cypher('production_graph', $$
                 MATCH (n:{label})
-                WHERE {filter_str}
-                RETURN id(n) AS id, properties(n) AS props
-            $$) AS (id agtype, props agtype);
-            """
-            params = tuple(filters.values())
-        else:
-            sql = f"""
-            SELECT * 
-            FROM cypher('production_graph', $$
-                MATCH (n:{label})
+                WHERE id(n) = {node_id}
                 RETURN id(n) AS id, properties(n) AS props
             $$) AS (id agtype, props agtype);
             """
             params = ()
+        else:
+            if filters:
+                for key in filters.keys():
+                    if not isinstance(key, str):
+                        raise ValueError("All filter keys must be strings.")
+                    
+                filter_str = ' AND '.join(f"n.{k} = %s" for k in filters.keys())
+                sql = f"""
+                SELECT * 
+                FROM cypher('production_graph', $$
+                    MATCH (n:{label})
+                    WHERE {filter_str}
+                    RETURN id(n) AS id, properties(n) AS props
+                $$) AS (id agtype, props agtype);
+                """
+                params = tuple(filters.values())
+            else:
+                sql = f"""
+                SELECT * 
+                FROM cypher('production_graph', $$
+                    MATCH (n:{label})
+                    RETURN id(n) AS id, properties(n) AS props
+                $$) AS (id agtype, props agtype);
+                """
+                params = ()
 
         cur = conn.cursor()
 
@@ -167,8 +186,7 @@ class GraphEditor:
         Update a node's properties.
 
         Args:
-            label (str): The label of the node.
-            node_id (tuple[str, int]): A tuple of (property_key, property_value) to identify the node.
+            node_id (int): The ID of the node to update.
             properties (dict): A dictionary of properties to update.
 
         Returns:
@@ -201,7 +219,8 @@ class GraphEditor:
         cur = conn.cursor()
 
         try:
-            cur.execute(sql, (*properties.values(),))
+            params = [json.dumps(v) if isinstance(v, dict) else v for v in properties.values()]
+            cur.execute(sql, tuple(params))
             
             result = cur.fetchone()
             if not result:

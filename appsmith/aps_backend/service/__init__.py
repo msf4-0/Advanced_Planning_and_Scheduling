@@ -5,6 +5,7 @@ from .order_service import OrderService
 from .scheduler import Schedule
 from .product_service import ProductService
 from .material_service import MaterialService
+from .constraint_service import ConstraintService
 
 __all__ = [
     "ProductBlueprintService",
@@ -14,5 +15,6 @@ __all__ = [
     "OpStepService",
     "Schedule",
     "ProductService",
-    "MaterialService"
+    "MaterialService",
+    "ConstraintService"
 ]

@@ -20,243 +20,194 @@ Graph-Connections
 - (OpStep) - [NEXT_OPERATION] -> (OpStep)
 - (Operation) - [NEEDS] -> (Machine)
 - (Operation) - [USES] -> (Materials)
-- 
 
-TODO
-- Setup entities (data)
-  - tables
-  - graph-nodes
+docker exec -it postgres psql -U postgresUser -d postgresDB
+
+SET search_path = ag_catalog, "$user", public;
+
+SELECT * FROM cypher('production_graph', $$
+  MATCH (n:Order)
+  RETURN n
+  $$) AS (node agtype);
+
+Note:
+Task (machine, duration) = Operation (machine, duration)
+jobs [Task] = orders [Operation(machine, duration)]
+numMachine = total num of machines
+allMachines = machine ids
+
+3377699720527881
+
+1) Frontend creates order (done)
+2) ERD stores order (source of truth) (done)
+
+3) Service layer decides:
+   "This order is inside scheduling horizon" (filtering) (done)
+
+4) Service layer: (done)
+   - creates Product node (if not exists) (done)
+   - creates OpStep nodes (done)
+   - creates NEXT_OPERATION edges (done)
+   - creates initial BLOCKED_BY edges (done)
+   (AGE is now ready)
+
+5) LOOP: (done)
+   a) Query AGE for ready OpSteps
+   b) Flatten OpSteps → OR-Tools input
+   c) OR-Tools schedules time + machines
+   d) Update AGE:
+      - mark OpSteps RUNNING / DONE
+      - add/remove BLOCKED_BY edges
+   e) Advance time / horizon
+   f) Stop if no ready OpSteps
+
+6) Persist accepted schedule to ERD (done)
+7) Frontend shows Gantt / status
+
+Order priority algorithm:
+- get due date, priority, status
+- Priority order
+  - priority = int [1, 10] / 10 {1 = urgent}
+  - due date = 1/(due date - today() + 1) {1 = urgent}
+  - status = int [0, 2] / 2 {0 = complete/ignore}
+
+  - Formula
+    - if status != 0:
+      (priority + due date + status) / 3
 
 
-## 🎯 End Goal (mental anchor)
 
-* **GraphEditor** → *dumb graph plumbing*
-  CRUD nodes, CRUD edges, no business rules.
 
-* **RouteService** → *owns ALL route / OpStep logic*
-  Sequence, NEXT_OPERATION, BLOCKED_BY meaning, validation.
 
-* **RouteRepository** → ❌ **gone**
+gimme ideas, i have the veryyyyy veryy barebones of APS scheduling app. there's order, product (with the order of operation in how to make that product), inventory, and gantt chart to view which machine is occupied in creating the product. now since there could be issues or constraints, what should i name the tab and how should it look like?
 
----
+Nice! Classic APS pillars — orders, BOM/routing, inventory, Gantt.
+Next natural tab = **constraints/disruptions/what-ifs**.
 
-## ✅ TODO LIST (do these in order)
-
----
-
----
-
-# ✅ FINAL CLEAN TODO LIST (pin this)
-
-### 🔴 Must do now
-
-* [+] Fix `rebuild_next_operation_edges` (don’t delete nodes)
-* [+] Stop using `sequence` as node identity (add `opstep_id`)
-
-### 🟡 Next cleanup
-
-* [+] Delete redundant helper methods
-* [ ] Simplify RouteService public API
-* [ ] Make GraphEditor edge queries more explicit
-
-### 🟢 Later (scheduler phase)
-
-* [ ] OR-Tools consumes `get_ready_opsteps`
-* [ ] BLOCKED_BY edges added by inventory/machine services
-* [ ] Time becomes a solver concern, not graph concern
-
----
-
-## 1️⃣ Decide final responsibility boundaries (lock this in)
-
-**You already converged here, this is just confirmation:**
-
-### GraphEditor (keep)
-
-* create_node
-* get_node
-* update_node
-* delete_node
-* create_edge
-* get_edges
-* delete_edge
-
-🛑 **GraphEditor must NOT**
-
-* understand sequence
-* understand routes
-* understand “ready”
-* understand BLOCKED_BY semantics
+Here are good **names + purpose + what UI could show** 👇
 
 ---
 
-### RouteService (owns all logic)
+## 🔧 1) **Constraints**
 
-* What is a route
-* What is an OpStep order
-* What NEXT_OPERATION means
-* What BLOCKED_BY means
-* What “ready to schedule” means
+**When you want a clean, formal term**
+**What it shows**
 
----
+* Machine availability (downtime calendar)
+* Resource limits (labor shifts, tooling required)
+* Inventory safety stock rules
+* Lead times/vendor constraints
 
-## 2️⃣ Delete RouteRepository (after migration)
+**UI ideas**
 
-**Before deleting**, you must migrate these responsibilities:
-
-### From RouteRepository → RouteService
-
-* get_steps_for_product
-* shift_sequences_up / down
-* insert_step
-* delete_step
-* reassign_sequences
-* rebuild_next_operation_edges
-* get_ready_opsteps
-
-👉 **All of these become orchestration logic using GraphEditor**
-
-Once done:
-
-* ❌ delete `route_repository.py`
-* ❌ remove all imports of it
+* Table + “toggle constraint on/off”
+* Color-coded severity (soft vs hard constraint)
+* Mini calendar overlays (machine/labor)
 
 ---
 
-## 3️⃣ Define OpStep invariants (write this as comments first)
+## 🚫 2) **Issues**
 
-Put this at the top of `RouteService` 👇
+**When the focus is “things going wrong”**
+**What it shows**
 
-```python
-"""
-OpStep invariants:
-1. Each OpStep belongs to exactly one Product
-2. Each OpStep has a unique (product_id, sequence)
-3. NEXT_OPERATION edges reflect sequence order
-4. BLOCKED_BY edges represent non-sequential constraints
-"""
-```
+* Late orders
+* Materials running out
+* Overloaded machines
+* Alerts: “Machine X double-booked at 10:00”
 
-This becomes your **mental contract** while coding.
+**UI ideas**
 
----
-
-## 4️⃣ Normalize what each edge means (VERY important)
-
-Lock these definitions 👇
-
-### NEXT_OPERATION
-
-* Purely **sequence-based**
-* Auto-generated
-* Never user-created
-* Rebuilt whenever sequence changes
-
-### BLOCKED_BY
-
-* Manual or system-added constraint
-* Cross-product allowed
-* Cross-node-type allowed
-* Means: *“this OpStep cannot start until that node is satisfied”*
-
-⚠️ BLOCKED_BY is **NOT** about order
-⚠️ BLOCKED_BY is **NOT** part of route sequencing
+* A feed style alert list
+* Filter by urgency: critical / warning / info
+* Link directly back to Gantt order causing the issue
 
 ---
 
-## 5️⃣ Rewrite RouteService using GraphEditor ONLY
+## ⚠️ 3) **Exceptions**
 
-Do this step-by-step:
+(APS term of art — many pros call it this)
+**What it shows**
 
-### 5.1 Route read
+* Anything violating constraints:
 
-* Fetch OpSteps via `GraphEditor.get_node`
-* Sort in memory by `sequence`
-* Assemble DTOs
+  * Missed due date
+  * Requirement changes
+  * Machine conflicts
+  * Inventory below threshold
 
----
+**UI ideas**
 
-### 5.2 Add step
-
-* Decide new sequence
-* Shift affected OpSteps (loop + update_node)
-* Create OpStep
-* Create HAS_STEP + DOES edges
-* Rebuild NEXT_OPERATION
-* Validate
+* Rule summary → triggered exception → recommended action
+* Red/yellow icons on Gantt that expand into details
 
 ---
 
-### 5.3 Delete step
+## 🧪 4) **What-Ifs**
 
-* Delete OpStep
-* Shift remaining sequences down
-* Rebuild NEXT_OPERATION
-* Validate
+(For planners exploring alternatives)
+**What it shows**
 
----
+* Run multiple simulation scenarios:
 
-### 5.4 Reorder steps
+  * Add overtime
+  * Add temporary machine
+  * Delay job
+  * Substitute material
 
-* Validate same OpSteps
-* Rewrite sequences
-* Rebuild NEXT_OPERATION
-* Validate
+**UI ideas**
 
----
-
-## 6️⃣ Move NEXT_OPERATION rebuild OUT of GraphEditor
-
-🚨 This is subtle but important.
-
-### You should:
-
-* ❌ remove `rebuild_next_operation_edges` from GraphEditor
-* ✅ keep it inside RouteService
-
-Reason:
-
-> NEXT_OPERATION is **business meaning**, not graph plumbing
+* Scenario Selector dropdown + Save/Compare
+* KPI summary (delivery % | utilization | overtime $)
 
 ---
 
-## 7️⃣ Implement get_ready_opsteps as a SERVICE method
+## 🔄 5) **Rescheduling**
 
-**Do NOT put this in GraphEditor**
+**When you want to emphasize fixing things**
+**What it shows**
 
-Service logic:
+* Auto-schedule run button
+* Rules to choose scheduling priority:
 
-1. Fetch all OpSteps
-2. Exclude OpSteps with incoming BLOCKED_BY
-3. Exclude OpSteps whose previous NEXT_OPERATION step is not `done`
-4. Return remaining
+  * shortest job first, critical first, due date first, etc.
+* Suggestions list: “Move Job 34 to Machine B”
 
-GraphEditor only helps fetch nodes + edges.
+**UI ideas**
 
----
-
-## 8️⃣ (Optional but recommended) Rename things
-
-To reduce confusion:
-
-| Old name     | Better name          |
-| ------------ | -------------------- |
-| RouteService | `OpStepRouteService` |
-| GraphEditor  | `GraphRepository`    |
-| HAS_STEP     | `HAS_OPSTEP`         |
-
-This is optional but will save future-you pain.
+* Drag suggestions into Gantt
+* Accept all / accept selected
 
 ---
 
-## 9️⃣ Final cleanup pass
+## 🎛️ 6) **Plan Health** (dashboard-y)
 
-Checklist:
+**What it shows (metrics tile view)**
 
-* [ ] No RouteRepository imports left
-* [ ] GraphEditor has zero business logic
-* [ ] RouteService contains all sequencing logic
-* [ ] NEXT_OPERATION only created in one place
-* [ ] BLOCKED_BY only interpreted in services
+* Orders on time vs late
+* Capacity utilization %
+* Inventory at risk
+* Top bottleneck machines
+
+**UI ideas**
+
+* Cards + bar chart
+* Drill-down to cause
 
 ---
+
+### 👑 Recommended Naming ( Ranked )
+
+1. **Exceptions** – if your vibe is closest to ERP/APS language
+2. **Issues & Constraints** – if users are new to planning terms
+3. **Plan Health (with exceptions panel)** – if you want more dashboard feel
+
+### 🎁 Bonus UX Trick
+
+Place a **red notification bubble** on the tab when a new exception appears.
+Users then *always know where to click first* after scheduling.
+
+---
+
+If you want, describe who your users are (planner? supervisor? floor manager?), and I’ll tailor the naming + UI to their mental model.
+

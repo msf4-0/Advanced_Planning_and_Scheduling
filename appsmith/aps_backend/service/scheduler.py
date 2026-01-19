@@ -14,6 +14,7 @@ class Schedule():
         self.db = DBTable()
         self.graph_editor = GraphEditor(self.db)
         self.service = OpStepService(self.graph_editor)
+        self.debug = False
 
         self.current_time = 0
         self.completed_schedule = []
@@ -59,14 +60,14 @@ class Schedule():
         if running_id:
             raise Exception(f"Schedule run {running_id[0]['id']} is still running. Cannot start a new schedule.")
 
-        logging.info(f"Starting scheduling with max_horizon: {max_horizon}")
+        # logging.info(f"Starting scheduling with max_horizon: {max_horizon}")
 
         while self.current_time < max_horizon:
             # Fetch ready OpSteps from AGE
             logging.info(f"Current time: {self.current_time}")
             ready_steps = self.service.get_ready_opsteps()
-            logging.info(f"Ready steps fetched: {[step.sequence_num for step in ready_steps]}")
-            logging.info(f"Details\n%s", pprint.pformat([step for step in ready_steps]))
+            # logging.info(f"Ready steps fetched: {[step.op_step_id for step in ready_steps]}")
+            # logging.info(f"Details\n%s", pprint.pformat([step for step in ready_steps]))
 
             if not ready_steps:
                 logging.info(f"No ready steps at time {self.current_time}, advancing time...")
@@ -77,13 +78,13 @@ class Schedule():
             # Flatten OpSteps into OR-Tools input
             step_data = []
             for step in ready_steps:
-                if step.sequence_num not in scheduled_steps:  # Only schedule once
+                if step.op_step_id not in scheduled_steps:  # Only schedule once
                     step_data.append(step)
                     
-                    logging.info(f"Ready step added for scheduling: {step.sequence_num} (Order {step.order_id})")
+                    # logging.info(f"Ready step added for scheduling: {step.op_step_id} (Order {step.order_id})")
 
             logging.info(f"Total ready steps to schedule: {len(step_data)}")
-            logging.info(f"Steps\n%s", pprint.pformat([step for step in step_data]))
+            # logging.info(f"Steps\n%s", pprint.pformat([step for step in step_data]))
 
 
             # Build OR-Tools model for this batch
@@ -94,16 +95,16 @@ class Schedule():
             # Define variables
             horizon = max_horizon
             for step in step_data:
-                step_vars[step.sequence_num] = model.NewIntVar(0, horizon, f"start_{step.sequence_num}")
+                step_vars[step.op_step_id] = model.NewIntVar(0, horizon, f"start_{step.op_step_id}")
                 if step.operation.machine_type not in machines:
                     machines[step.operation.machine_type] = []
 
             # Add machine constraints
             for step in step_data:
-                start_var = step_vars[step.sequence_num]
+                start_var = step_vars[step.op_step_id]
                 duration = step.operation.duration
 
-                interval = model.NewIntervalVar(start_var, duration, start_var + duration, f"interval_{step.sequence_num}")
+                interval = model.NewIntervalVar(start_var, duration, start_var + duration, f"interval_{step.op_step_id}")
                 machines[step.operation.machine_type].append(interval)
 
             for machine_type, intervals in machines.items():
@@ -111,7 +112,10 @@ class Schedule():
                 capacity = len(self.machines.get(machine_type, []))  # Assuming total_machines is the capacity for each machine
                 model.AddCumulative(intervals, demands, capacity)
 
-            id_to_sequence = {step.op_step_id: step.sequence_num for step in step_data}
+            logging.info(f"Machine intervals: {machines}")
+            logging.info(f"Step variables: {step_vars}")
+
+            id_to_opStep = {step.op_step_id: step.op_step_id for step in step_data}
 
             # Add NEXT_OPERATION constraints
             for step in step_data:
@@ -121,15 +125,15 @@ class Schedule():
                     conn=conn
                 )
                 for edge in next_edges:
-                    logging.info(f"Processing NEXT_OPERATION edge: {edge} for step {step.sequence_num}")
-                    logging.info(f"Edge end_id: {edge['end_id']}")
-                    logging.info(f"Current id_to_sequence mapping: {id_to_sequence}")
-                    logging.info(edge['end_id'] in id_to_sequence)
+                    # logging.info(f"Processing NEXT_OPERATION edge: {edge} for step {step.op_step_id}")
+                    # logging.info(f"Edge end_id: {edge['end_id']}")
+                    # logging.info(f"Current id_to_sequence mapping: {id_to_sequence}")
+                    # logging.info(edge['end_id'] in id_to_sequence)
 
-                    if edge['end_id'] in id_to_sequence:
-                        logging.info(f"Adding NEXT_OPERATION constraint from step {step.sequence_num} to step {edge}")
-                        next_seq = id_to_sequence[edge['end_id']]
-                        model.Add(step_vars[step.sequence_num] + step.operation.duration <= step_vars[next_seq])
+                    if edge['end_id'] in id_to_opStep:
+                        # logging.info(f"Adding NEXT_OPERATION constraint from step {step.op_step_id} to step {edge}")
+                        next_id = id_to_opStep[edge['end_id']]
+                        model.Add(step_vars[step.op_step_id] + step.operation.duration <= step_vars[next_id])
 
             logging.info(f"Step variables: {step_vars}")
             logging.info(f"Machine constraints: {machines}")
@@ -143,14 +147,14 @@ class Schedule():
 
             if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                 for step in step_data:
-                    sequence_num = step.sequence_num
-                    start_time = solver.Value(step_vars[sequence_num])
+                    op_step_id = step.op_step_id
+                    start_time = solver.Value(step_vars[op_step_id])
 
-                    logging.info(f"Scheduling step {sequence_num} at time {start_time}")
+                    logging.info(f"Scheduling step {op_step_id} at time {start_time}")
                     
                     # Mark step RUNNING
-                    if sequence_num not in scheduled_steps:
-                        logging.info(f"Updating step {sequence_num} status to 'running' in AGE. \nRaw node: {step}")
+                    if op_step_id not in scheduled_steps:
+                        logging.info(f"Updating step {op_step_id} status to 'running' in AGE. \nRaw node: {step}")
                         updated_node = self.graph_editor.update_node(
                             step.op_step_id, 
                             {
@@ -160,7 +164,7 @@ class Schedule():
                             conn=conn
                         )
 
-                        logging.info(f"Step {sequence_num} updated node: {updated_node}")
+                        logging.info(f"Step {op_step_id} updated node: {updated_node}")
 
                         # Record in completed schedule
 
@@ -169,6 +173,7 @@ class Schedule():
                         self.completed_schedule.append({
                             'order_id': step.order_id,
                             'product_id': order[0]['product_id'] if order else None,
+                            'op_step_id': step.op_step_id,
                             'sequence_num': step.sequence_num,
                             'operation_id': step.operation.operation_id,
                             'start_time': start_time,
@@ -176,9 +181,9 @@ class Schedule():
                             'machine_type': step.operation.machine_type
                         })
 
-                        scheduled_steps.add(sequence_num)
+                        scheduled_steps.add(op_step_id)
             else:
-                print("No solution found for current ready steps.")
+                logging.info("No solution found for current ready steps.")
                 self.current_time += 1  # Advance time if no solution
                 continue
 
@@ -204,9 +209,9 @@ class Schedule():
         
         self.machine_assigner()
         # Prevent duplicate schedule steps from being saved
-        saved_steps = set()  # (schedule_run_id, sequence_num)
+        saved_steps = set()  # (schedule_run_id, op_step_id)
         for step in self.completed_schedule:
-            key = (schedule_run_id, step['sequence_num'])
+            key = (schedule_run_id, step['op_step_id'])
             if key not in saved_steps:
                 self.db.save_schedule_step(schedule_run_id, step)
                 saved_steps.add(key)
@@ -227,6 +232,8 @@ class Schedule():
         # Track machine availability
         machine_available = {machine_type: [0] * len(names) for machine_type, names in self.machines.items()}
 
+        logging.info("Assigning machines to scheduled steps...")
+        logging.info(f"Initial machine availability: {machine_available}")
         # Group steps by machine type and sort by start time
         steps_by_type = defaultdict(list)
         for step in self.completed_schedule:
