@@ -30,7 +30,7 @@ class SchedulerConstraint:
     # once function is added here with @staticmethod, user can register it via add_constraint
    
     @staticmethod
-    def no_overlap_constraint(model, job_vars, jobs):
+    def no_overlap_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Ensure no two jobs assigned to the same machine overlap in time.
         """
@@ -47,7 +47,7 @@ class SchedulerConstraint:
                 model.AddNoOverlap(intervals)
 
     @staticmethod
-    def precedence_constraint(model, job_vars, jobs):
+    def precedence_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Ensure that if a job has a 'predecessor', it starts after the predecessor ends.
         """
@@ -57,7 +57,7 @@ class SchedulerConstraint:
                 model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
 
     @staticmethod
-    def machine_availability_constraint(model, job_vars, jobs):
+    def machine_availability_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Ensure that jobs are only scheduled on their allowed machines.
         """

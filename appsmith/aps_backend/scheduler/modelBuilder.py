@@ -1,11 +1,16 @@
+from typing import Optional, Tuple, Optional
 from ortools.sat.python import cp_model
+
+from .dataInput import SchedulerDataInput
+from .objective import SchedulerObjective
+from .constraint import SchedulerConstraint
 
 class SchedulerModelBuilder:
     """
     Builds an OR-Tools CpModel using SchedulerDataInput, SchedulerConstraint, and SchedulerObjective.
     """
 
-    def __init__(self, data_input, constraints, objective=None):
+    def __init__(self, data_input: SchedulerDataInput, constraints: SchedulerConstraint, objective: Optional[SchedulerObjective] = None):
         """
         :param data_input: SchedulerDataInput instance
         :param constraints: SchedulerConstraint instance
@@ -15,7 +20,7 @@ class SchedulerModelBuilder:
         self.constraints = constraints
         self.objective = objective
 
-    def build_model(self):
+    def build_model(self) -> Tuple[cp_model.CpModel, dict]:
         """
         Build and return the OR-Tools CpModel and job variables.
         """
@@ -36,21 +41,27 @@ class SchedulerModelBuilder:
 
     # Built-in job variable creation
     @staticmethod
-    def create_job_vars_default(model, jobs):
+    def create_job_vars_default(model, jobs: dict) -> dict:
         job_vars = {}
 
         # Create variables for each job
-        for job_name, props in jobs.jobs.items():
+        for job_name, props in jobs.items():
             duration = props.get('duration', 1)
             domain = props.get('domain', (0, 1000))
             start = model.NewIntVar(domain[0], domain[1], f"{job_name}_start")
             end = model.NewIntVar(domain[0], domain[1], f"{job_name}_end")
             interval = model.NewIntervalVar(start, duration, end, f"{job_name}_interval")
+            machine = model.NewIntVarFromDomain(
+                    cp_model.Domain.FromValues(props.get('allowed_machines', [1])),
+                    f"{job_name}_machine"
+                )
+            
             job_vars[job_name] = {
                 'start': start,
                 'end': end,
                 'interval': interval,
-                'duration': duration
+                'duration': duration,
+                'machine': machine
             }
 
         return job_vars

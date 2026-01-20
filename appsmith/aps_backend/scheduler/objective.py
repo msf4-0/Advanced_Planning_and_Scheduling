@@ -56,7 +56,7 @@ class SchedulerObjective:
     # Built-in objectives
 
     @staticmethod
-    def minimize_makespan(model, job_vars, jobs):
+    def minimize_makespan(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Objective: Minimize the makespan (maximum job end time).
         """
@@ -66,7 +66,7 @@ class SchedulerObjective:
         return makespan
 
     @staticmethod
-    def minimize_total_completion_time(model, job_vars, jobs):
+    def minimize_total_completion_time(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Objective: Minimize the sum of all job end times.
         """
@@ -76,7 +76,7 @@ class SchedulerObjective:
         return total_completion
 
     @staticmethod
-    def minimize_total_tardiness(model, job_vars, jobs):
+    def minimize_total_tardiness(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
         Objective: Minimize total tardiness (lateness beyond due date).
         Assumes each job has a 'due_date' property.

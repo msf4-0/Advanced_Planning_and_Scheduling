@@ -1,4 +1,9 @@
+from typing import Optional
+
 from ortools.sat.python import cp_model
+from .dataInput import SchedulerDataInput
+from .modelBuilder import SchedulerModelBuilder
+from .objective import SchedulerObjective
 
 class Scheduler:
     """
@@ -6,7 +11,7 @@ class Scheduler:
     to solve manufacturing scheduling problems using OR-Tools CP-SAT.
     """
 
-    def __init__(self, data_input, constraints, model_builder, objective=None):
+    def __init__(self, data_input: SchedulerDataInput, constraints, model_builder: SchedulerModelBuilder, objective: Optional[SchedulerObjective]=None):
         """
         :param data_input: SchedulerDataInput instance
         :param constraints: SchedulerConstraint instance
