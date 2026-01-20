@@ -56,3 +56,17 @@ class SchedulerConstraint:
             if pred and pred in job_vars:
                 model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
 
+    @staticmethod
+    def machine_availability_constraint(model, job_vars, jobs):
+        """
+        Ensure that jobs are only scheduled on their allowed machines.
+        """
+        for job, props in jobs.items():
+            allowed_machines = props.get('allowed_machines')
+            if allowed_machines is not None:
+                machine_var = model.NewIntVarFromDomain(
+                    cp_model.Domain.FromValues(allowed_machines),
+                    f"{job}_machine"
+                )
+                # Assuming job_vars has a 'machine' variable
+                model.Add(job_vars[job]['machine'] == machine_var)
