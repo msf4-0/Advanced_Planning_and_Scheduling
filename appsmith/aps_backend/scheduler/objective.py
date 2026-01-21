@@ -1,3 +1,29 @@
+"""
+Scheduler objectives module for job scheduling using OR-Tools.
+Defines various objective functions that can be applied to the scheduling model.
+Designed to work with SchedulerDataInput and SchedulerConstraint.
+
+Create custom objectives by adding static methods and registering them via add_objective.
+Example:
+    objective = SchedulerObjective()
+    objective.add_objective(SchedulerObjective.minimize_makespan)
+    objective.add_objective(SchedulerObjective.<your_custom_objective>)
+
+
+Template for objective functions:
+
+    @staticmethod # Add @staticmethod decorator if inside the class else omit it
+    def your_custom_objective(model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        '''
+        Describe what this objective does.
+        Example: "Minimize total tardiness of all jobs."
+        '''
+        # Define and return an IntVar representing the objective
+        objective_var = model.NewIntVar(0, int(1e9), 'your_objective_name')
+        # Add constraints to define objective_var based on job_vars and jobs
+        return objective_var
+"""
+
 
 
 from ortools.sat.python import cp_model
