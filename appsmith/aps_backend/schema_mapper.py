@@ -27,13 +27,13 @@ class SchemaMapper:
 	Handles dynamic schema mapping and discovery for both relational (PostgreSQL) and graph (Apache AGE) data sources.
 	Allows loading/saving mapping config from file or DB, and schema introspection for both data models.
 	"""
-	def __init__(self, db_params: dict, config_path: str = "config.json"):
+	def __init__(self, conn: psycopg2.extensions.connection, config_path: str = "config.json"):
 		"""
 		Args:
 			db_params: dict with PostgreSQL connection params
 			config_path: path to mapping config file (default: config.json)
 		"""
-		self.db_params = db_params
+		self.conn = conn
 		self.config_path = config_path
 		self.config = self.load_mapping_from_file()
 
@@ -68,12 +68,12 @@ class SchemaMapper:
 		Load mapping config from the mapping_config table in the database.
 		Returns: dict mapping config, or empty dict if not found.
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+			
+		cur = self.conn.cursor()
 		cur.execute("SELECT config FROM mapping_config ORDER BY updated_at DESC LIMIT 1;")
 		row = cur.fetchone()
 		cur.close()
-		conn.close()
+		self.conn.close()
 		if row:
 			return row[0]
 		return {}
@@ -85,8 +85,8 @@ class SchemaMapper:
 		Args:
 			mapping: dict to save
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+
+		cur = self.conn.cursor()
 		cur.execute(
 			"""
 			INSERT INTO mapping_config (config, updated_at)
@@ -94,9 +94,9 @@ class SchemaMapper:
 			""",
 			(json.dumps(mapping),)
 		)
-		conn.commit()
+		self.conn.commit()
 		cur.close()
-		conn.close()
+		self.conn.close()
 		self.config = mapping
 
 	# --- SCHEMA DISCOVERY (PostgreSQL) ---
@@ -106,15 +106,15 @@ class SchemaMapper:
 		List all user tables in the public schema of PostgreSQL.
 		Returns: list of table names
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+
+		cur = self.conn.cursor()
 		cur.execute("""
 			SELECT table_name FROM information_schema.tables
 			WHERE table_schema = 'public';
 		""")
 		tables = [row[0] for row in cur.fetchall()]
 		cur.close()
-		conn.close()
+		self.conn.close()
 		return tables
 
 
@@ -125,57 +125,116 @@ class SchemaMapper:
 			table_name: name of the table
 		Returns: list of (column_name, data_type)
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+		cur = self.conn.cursor()
 		cur.execute("""
 			SELECT column_name, data_type FROM information_schema.columns
 			WHERE table_name = %s;
 		""", (table_name,))
 		columns = cur.fetchall()
 		cur.close()
-		conn.close()
+		self.conn.close()
 		return columns
 
 	# --- SCHEMA DISCOVERY (Apache AGE Graph) ---
 
-	def list_graph_labels(self, graph_name: str = 'production_graph') -> list:
+	def list_graph_label_with_properties(self, graph_name: str = 'production_graph') -> list[dict]:
+		"""
+		Get all node labels and their properties in the given Apache AGE graph.
+		Args:
+			graph_name: name of the graph (default: production_graph)
+		Returns: list of dicts: [{"label": ..., "properties": [...]}, ...]
+		"""
+
+		cur = self.conn.cursor()
+		cur.execute(f"""
+			SELECT DISTINCT labels(n)[1] as label FROM cypher('{graph_name}', $$
+				MATCH (n) RETURN labels(n)
+			$$) AS (labels agtype);
+		""")
+		labels = [row[0] for row in cur.fetchall()]
+
+		result = []
+		for label in labels:
+			# Get properties for this label
+			cur.execute(f"""
+				SELECT DISTINCT jsonb_object_keys(properties(n)) FROM cypher('{graph_name}', $$
+					MATCH (n:{label}) RETURN properties(n)
+				$$) AS (props jsonb);
+			""")
+			props = [row[0] for row in cur.fetchall()]
+			result.append({"label": label, "properties": props})
+		cur.close()
+		self.conn.close()
+		return result
+	
+	def list_graph_labels(self, graph_name: str = 'production_graph') -> list[str]:
 		"""
 		List all node labels in the given Apache AGE graph.
 		Args:
 			graph_name: name of the graph (default: production_graph)
 		Returns: list of node labels
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+		cur = self.conn.cursor()
 		cur.execute(f"""
-			SELECT * FROM cypher('{graph_name}', $$
-				MATCH (n) RETURN DISTINCT labels(n)
+			SELECT DISTINCT labels(n)[1] as label FROM cypher('{graph_name}', $$
+				MATCH (n) RETURN labels(n)
 			$$) AS (labels agtype);
 		""")
 		labels = [row[0] for row in cur.fetchall()]
 		cur.close()
-		conn.close()
+		self.conn.close()
 		return labels
 
 
-	def list_graph_edge_types(self, graph_name: str = 'production_graph') -> list:
+	def list_graph_edge_types(self, graph_name: str = 'production_graph') -> list[dict]:
 		"""
-		List all edge types in the given Apache AGE graph.
+		List all edge types, their properties, and source/target node labels in the given Apache AGE graph.
 		Args:
 			graph_name: name of the graph (default: production_graph)
-		Returns: list of edge types
+		Returns: list of dicts: [{"edge_type": ..., "properties": [...], "source_labels": [...], "target_labels": [...]}, ...]
 		"""
-		conn = psycopg2.connect(**self.db_params)
-		cur = conn.cursor()
+		cur = self.conn.cursor()
 		cur.execute(f"""
-			SELECT * FROM cypher('{graph_name}', $$
-				MATCH ()-[r]->() RETURN DISTINCT type(r)
+			SELECT DISTINCT type(r) as edge_type FROM cypher('{graph_name}', $$
+				MATCH ()-[r]->() RETURN type(r)
 			$$) AS (type agtype);
 		""")
 		edge_types = [row[0] for row in cur.fetchall()]
+		result = []
+		for edge_type in edge_types:
+			# Get properties for this edge type
+			cur.execute(f"""
+				SELECT DISTINCT jsonb_object_keys(properties(r)) FROM cypher('{graph_name}', $$
+					MATCH ()-[r:{edge_type}]->() RETURN properties(r)
+				$$) AS (props jsonb);
+			""")
+			props = [row[0] for row in cur.fetchall()]
+
+			# Get source labels
+			cur.execute(f"""
+				SELECT DISTINCT labels(a)[1] FROM cypher('{graph_name}', $$
+					MATCH (a)-[r:{edge_type}]->(b) RETURN labels(a)
+				$$) AS (labels agtype);
+			""")
+			source_labels = [row[0] for row in cur.fetchall()]
+
+			# Get target labels
+			cur.execute(f"""
+				SELECT DISTINCT labels(b)[1] FROM cypher('{graph_name}', $$
+					MATCH (a)-[r:{edge_type}]->(b) RETURN labels(b)
+				$$) AS (labels agtype);
+			""")
+			target_labels = [row[0] for row in cur.fetchall()]
+
+			result.append({
+				"edge_type": edge_type,
+				"properties": props,
+				"source_labels": source_labels,
+				"target_labels": target_labels
+			})
 		cur.close()
-		conn.close()
-		return edge_types
+		self.conn.close()
+		return result
 
 	# --- MAPPING ACCESS ---
 
