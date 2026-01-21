@@ -50,7 +50,7 @@ class DBTable:
 
     # Fetch functions
 
-    def fetch(self, table_name: str, params: Optional[dict] = None) -> list[dict[str, Any]]:
+    def fetch(self, table_name: str, params: Optional[dict] = None, table_list: Optional[list[str]] = None) -> list[dict[str, Any]]:
         """
         Fetch all records from a specified table with optional filtering parameters.
 
@@ -68,8 +68,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
-            if table_name not in {t.value for t in TableName}:
-                raise ValueError("Invalid table name")
+            if table_list:
+                if table_name not in table_list:
+                    raise ValueError("Table name not in allowed table list")
 
             query = f"SELECT * FROM {table_name}"
             values = []
@@ -90,7 +91,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def add(self, table_name: str, data: dict) -> list[dict[str, Any]]:
+    def add(self, table_name: str, data: dict, table_list: Optional[list[str]] = None) -> list[dict[str, Any]]:
         """
         Add a new record to a specified table.
 
@@ -108,8 +109,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
-            if table_name not in {t.value for t in TableName}:
-                raise ValueError("Invalid table name")
+            if table_list:
+                if table_name not in table_list:
+                    raise ValueError("Table name not in allowed table list")
 
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['%s'] * len(data))
@@ -125,7 +127,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def delete(self, table_name: str, conditions: dict) -> int:
+    def delete(self, table_name: str, conditions: dict, table_list: Optional[list[str]] = None) -> int:
         """
         Delete records from a specified table based on given conditions.
 
@@ -142,8 +144,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            if table_name not in {t.value for t in TableName}:
-                raise ValueError("Invalid table name")
+            if table_list:
+                if table_name not in table_list:
+                    raise ValueError("Table name not in allowed table list")
 
             query = f"DELETE FROM {table_name}"
             values = []
@@ -165,7 +168,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def update(self, table_name: str, data: dict, conditions: dict) -> int:
+    def update(self, table_name: str, data: dict, conditions: dict, table_list: Optional[list[str]] = None) -> int:
         """
         Update records in a specified table based on given conditions.
         Args:
@@ -184,8 +187,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            if table_name not in {t.value for t in TableName}:
-                raise ValueError("Invalid table name")
+            if table_list:
+                if table_name not in table_list:
+                    raise ValueError("Table name not in allowed table list")
 
             set_clauses = []
             values = []
@@ -212,7 +216,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def upsert(self, table_name: str, data: dict, conflict_columns: list[str]) -> list[dict[str, Any]]:
+    def upsert(self, table_name: str, data: dict, conflict_columns: list[str], table_list: Optional[list[str]] = None) -> list[dict[str, Any]]:
         """
         Upsert a record in a specified table based on conflict columns.
         Args:
@@ -231,8 +235,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
-            if table_name not in {t.value for t in TableName}:
-                raise ValueError("Invalid table name")
+            if table_list:
+                if table_name not in table_list:
+                    raise ValueError("Table name not in allowed table list")
 
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['%s'] * len(data))
