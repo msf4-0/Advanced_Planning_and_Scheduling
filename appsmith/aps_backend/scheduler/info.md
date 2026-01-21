@@ -17,7 +17,9 @@ Scheduler (high-level)
       - Interface
       - Error Handling & Validation
 
-#Abstract Data Input
+---
+
+# Abstract Data Input
 
 Class: SchedulerDataInput
 - init(self, data_source)
@@ -26,18 +28,28 @@ Class: SchedulerDataInput
 - get_domains(self)
 - validate_input(self)
 
-#Pluggable Constraints
+# Pluggable Constraints
 
 Class: SchedulerConstraint
 - init(self)
 - add_constraint(self, constraint_fn)
 - apply_constraints(self, model, variables)
 
-#Optional Objective
+# Optional Objective
 
 Class: SchedulerObjective
 - init(self, objective_fn)
 - set_objective(self, model, variables)
+
+# Flexible Model Builder
+
+Class: SchedulerModelBuilder
+- init(self, data_input, constraints, objective=None)
+- build_model(self)
+- set_output_handler(self, handler_fn)
+- validate_model(self)
+
+# Main Scheduler
 
 Class: Scheduler
 
@@ -46,13 +58,7 @@ Class: Scheduler
 - get_output(self, format='dict')
 - handle_errors(self)
 
-#Flexible Model Builder
-
-Class: SchedulerModelBuilder
-- init(self, data_input, constraints, objective=None)
-- build_model(self)
-- set_output_handler(self, handler_fn)
-- validate_model(self)
+---
 
 Scheduler (main entry point)
 |- Receives: SchedulerDataInput, SchedulerConstraint, SchedulerModelBuilder, (optional) SchedulerObjective
