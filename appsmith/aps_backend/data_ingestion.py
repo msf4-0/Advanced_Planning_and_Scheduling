@@ -12,8 +12,7 @@ from repository import DBTable, GraphEditor
 
 
 class DataIngestion:
-	def __init__(self, db_params, schema_mapper: SchemaMapper):
-		self.db_params = db_params
+	def __init__(self, schema_mapper: SchemaMapper):
 		self.mapper = schema_mapper
 		self.db = DBTable()
 		self.graph = GraphEditor(self.db)
