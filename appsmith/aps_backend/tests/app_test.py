@@ -61,7 +61,7 @@ def test_main_no_jobs_exits(mock_dbtable_class, mock_data_ingestion_class):
         "jobs": {}
     }
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         app.main()
 
 
