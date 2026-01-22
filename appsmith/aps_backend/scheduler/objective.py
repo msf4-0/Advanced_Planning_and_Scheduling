@@ -118,3 +118,29 @@ class SchedulerObjective:
         total_tardiness = model.NewIntVar(0, int(1e9), 'total_tardiness')
         model.Add(total_tardiness == sum(tardiness_vars))
         return total_tardiness
+    
+    @staticmethod
+    def minimize_total_deviation_from_planned(model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the total deviation from planned quantity (P vs A) for all jobs/blocks.
+        Assumes each job has a 'qty_ordered' property and job_vars[job]['qty_initialized'] variable.
+        If qty_initialized is not a variable, you may need to adapt this to your model.
+        """
+        deviation_vars = []
+        for job, props in jobs.items():
+            planned = props.get('qty_ordered', 0)
+            # If qty_initialized is a variable in your model, use it; otherwise, use duration or another proxy
+            actual = job_vars[job].get('qty_initialized', None)
+            if actual is None:
+                # Fallback: use duration as proxy for produced quantity
+                actual = job_vars[job]['duration'] if 'duration' in job_vars[job] else None
+            else:
+                diff = model.NewIntVar(0, int(1e9), f'deviation_{job}')
+                model.Add(diff == abs(planned - actual))
+                deviation_vars.append(diff)
+        total_deviation = model.NewIntVar(0, int(1e9), 'total_deviation')
+        if deviation_vars:
+            model.Add(total_deviation == sum(deviation_vars))
+        else:
+            model.Add(total_deviation == 0)
+        return total_deviation

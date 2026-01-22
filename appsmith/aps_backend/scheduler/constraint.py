@@ -79,12 +79,15 @@ class SchedulerConstraint:
     @staticmethod
     def precedence_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
-        Ensure that if a job has a 'predecessor', it starts after the predecessor ends.
-        property key in config: 'predecessor'
+        Enforce sequencing: if a job (or product block) has a 'predecessor', it must start after the predecessor ends.
+        This can be used for both within-product operation sequences (e.g., cut → sand → paint)
+        and for sequencing product blocks on a machine (e.g., produce ProductA, then ProductB).
+        property key in config or job dict: 'predecessor' (should be the job/product id to follow)
         """
         for job, props in jobs.items():
             pred = props.get('predecessor')
             if pred and pred in job_vars:
+                # Enforce: job starts after predecessor ends
                 model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
 
     @staticmethod
@@ -102,3 +105,32 @@ class SchedulerConstraint:
                 )
                 # Assuming job_vars has a 'machine' variable
                 model.Add(job_vars[job]['machine'] == machine_var)
+
+    @staticmethod
+    def machine_downtime_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Prevent jobs from being scheduled during machine downtime periods.
+        property key in config or job dict: 'downtime' (list of (start, end) tuples)
+        """
+        for job, props in jobs.items():
+            downtime_periods = props.get('downtime', [])
+            for (down_start, down_end) in downtime_periods:
+                # Job must end before downtime starts or start after downtime ends
+                model.AddBoolOr([
+                    job_vars[job]['end'] <= down_start,
+                    job_vars[job]['start'] >= down_end
+                ])
+
+    @staticmethod
+    def lock_sequence_constraint(model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Lock the start time and/or machine assignment for jobs/blocks that are marked as 'locked' (frozen zone).
+        property key in job dict: 'locked' (bool), 'locked_start' (int, optional), 'locked_machine' (int, optional)
+        If 'locked' is True, the job's start time and/or machine assignment will not be changed by the scheduler.
+        """
+        for job, props in jobs.items():
+            if props.get('locked'):
+                if 'locked_start' in props:
+                    model.Add(job_vars[job]['start'] == props['locked_start'])
+                if 'locked_machine' in props and 'machine' in job_vars[job]:
+                    model.Add(job_vars[job]['machine'] == props['locked_machine'])
