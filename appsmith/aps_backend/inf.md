@@ -14,7 +14,21 @@ Below is a step-by-step example of how the system works when using a graph-based
 **3. Schema Discovery & Mapping:**
 - User (or admin) uses the API to list all graph labels, properties, and edge types to understand the current schema.
 - User configures the mapping (via API or config file) to specify which graph labels and properties correspond to jobs, machines, materials, and relationships for the scheduler.
-	 
+
+**Config Structure and Levels:**
+The config is organized by top-level entities (e.g., `job_mapping`, `machine_mapping`, `material_mapping`). Each top-level key defines how to extract and interpret that entity from your data source (SQL or graph).
+
+Within each entity mapping (such as inside `job_mapping`), you specify:
+  - The source type (`source`: "sql" or "graph")
+  - The table or graph label (`table` or `graph_label`)
+  - The unique identifier (`id_col` for SQL, `id_prop` for graph)
+  - The `fields` dict, which maps scheduler field names to actual columns or properties in your data source
+  - Any relevant relationship keys (e.g., `machine_edge`, `dependency_edge` for graph; `machine_col` for SQL)
+
+All keys and fields defined in the config are used during extraction and are made available to the scheduler, constraints, and objectives. This allows constraints/objectives to be fully dynamic and schema-agnostic, as they reference only the keys present in the config.
+
+If you add new fields or relationships to your schema, simply update the config mapping—no code changes are needed for extraction, only for new constraint/objective logic that uses those fields.
+
 - Example mapping for a graph-based setup:
 
 	```json
