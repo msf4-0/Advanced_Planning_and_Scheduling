@@ -78,6 +78,8 @@ class DataIngestion:
 		Returns: dict with all entities for scheduler
 		"""
 		jobs = self.extract_jobs()
+		# jobs = self.extract_graph_jobs()
+
 		# You can add extract_machines(), extract_materials(), etc. similarly
 		return {
 			'jobs': jobs,
@@ -86,7 +88,6 @@ class DataIngestion:
 		}
 
 # Example usage:
-# db_params = {...}
-# mapper = SchemaMapper(db_params)
-# ingestion = DataIngestion(db_params, mapper)
-# jobs = ingestion.extract_jobs()
+# mapper = SchemaMapper(db.get_connection())
+# ingestion = DataIngestion(mapper)
+# jobs = ingestion.extract_graph_jobs()
