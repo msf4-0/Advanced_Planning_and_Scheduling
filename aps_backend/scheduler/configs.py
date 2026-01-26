@@ -1,0 +1,199 @@
+from ortools.sat.python import cp_model
+from typing import Callable
+from .constraint import SchedulerConstraint
+from .objective import SchedulerObjective
+
+
+class Configs:
+    """
+    Create custom constraints by adding static methods and registering them via add_constraint.
+    Example:
+        constraint = SchedulerConstraint()
+        constraint.add_constraint(SchedulerConstraint.no_overlap_constraint)
+        constraint.add_constraint(SchedulerConstraint.<your_custom_constraint>)
+
+    Template for constraint functions:
+
+    def your_custom_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        '''
+        Describe what this constraint does.
+        Example: "Ensure job X starts after job Y ends."
+        '''
+        for job, props in jobs.items():
+            # Example: Only apply to jobs with a certain property
+            if props.get('some_property') == 'some_value':
+                # Add your constraint logic here
+                # Example: model.Add(job_vars[job]['start'] >= 10)
+                pass  # Replace with your logic
+                
+    Similarly, create custom objectives by adding static methods and registering them via add_objective.
+    Template for objective functions:
+
+    def your_custom_objective(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        '''
+        Describe what this objective does.
+        Example: "Minimize total tardiness of all jobs."
+        '''
+        # Define and return an IntVar representing the objective
+        objective_var = model.NewIntVar(0, int(1e9), 'your_objective_name')
+        # Add constraints to define objective_var based on job_vars and jobs
+        return objective_var
+    """
+    def __init__(self, constraintClass: SchedulerConstraint, objectiveClass: SchedulerObjective):
+        self.constraintClass = constraintClass
+        self.objectiveClass = objectiveClass
+
+        self.constraintClass.add_constraint(self.precedence_constraint)
+        self.constraintClass.add_constraint(self.no_overlap_constraint)
+        self.constraintClass.add_constraint(self.machine_availability_constraint)
+        # self.constraintClass.add_constraint(self.machine_downtime_constraint)
+        # self.constraintClass.add_constraint(self.lock_sequence_constraint)
+
+        self.objectiveClass.add_objective(self.minimize_makespan)
+        self.objectiveClass.add_objective(self.minimize_total_tardiness)
+        self.objectiveClass.add_objective(self.minimize_total_completion_time)
+
+
+    # --------------- CONSTRAINTS ---------------
+    # Built-in constraints (User can add more)
+    # once function is added here with , user can register it via add_constraint
+
+    
+    def no_overlap_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Ensure no two jobs assigned to the same machine overlap in time.
+        property key in config: 'machine'
+        """
+        # Collect intervals for each machine
+        machine_to_intervals = {}
+        for job, props in jobs.items():
+            machine = props.get('machine')
+            if machine is not None:
+                if machine not in machine_to_intervals:
+                    machine_to_intervals[machine] = []
+                machine_to_intervals[machine].append(job_vars[job]['interval'])
+        for intervals in machine_to_intervals.values():
+            if len(intervals) > 1:
+                model.AddNoOverlap(intervals)
+
+    def precedence_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Enforce sequencing: if a job (or product block) has a 'predecessor', it must start after the predecessor ends.
+        This can be used for both within-product operation sequences (e.g., cut → sand → paint)
+        and for sequencing product blocks on a machine (e.g., produce ProductA, then ProductB).
+        property key in config or job dict: 'predecessor' (should be the job/product id to follow)
+        """
+        for job, props in jobs.items():
+            pred = props.get('predecessor')
+            if pred and pred in job_vars:
+                # Enforce: job starts after predecessor ends
+                model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
+
+    def machine_availability_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Ensure that jobs are only scheduled on their allowed machines.
+        property key in config: 'allowed_machines' (list of machine IDs)
+        """
+        for job, props in jobs.items():
+            allowed_machines = props.get('allowed_machines')
+            if allowed_machines is not None:
+                machine_var = model.NewIntVarFromDomain(
+                    cp_model.Domain.FromValues(allowed_machines),
+                    f"{job}_machine"
+                )
+                # Assuming job_vars has a 'machine' variable
+                model.Add(job_vars[job]['machine'] == machine_var)
+
+    def machine_downtime_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Prevent jobs from being scheduled during machine downtime periods.
+        property key in config or job dict: 'downtime' (list of (start, end) tuples)
+        """
+        for job, props in jobs.items():
+            downtime_periods = props.get('downtime', [])
+            for (down_start, down_end) in downtime_periods:
+                # Job must end before downtime starts or start after downtime ends
+                model.AddBoolOr([
+                    job_vars[job]['end'] <= down_start,
+                    job_vars[job]['start'] >= down_end
+                ])
+
+    def lock_sequence_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Lock the start time and/or machine assignment for jobs/blocks that are marked as 'locked' (frozen zone).
+        property key in job dict: 'locked' (bool), 'locked_start' (int, optional), 'locked_machine' (int, optional)
+        If 'locked' is True, the job's start time and/or machine assignment will not be changed by the scheduler.
+        """
+        for job, props in jobs.items():
+            if props.get('locked'):
+                if 'locked_start' in props:
+                    model.Add(job_vars[job]['start'] == props['locked_start'])
+                if 'locked_machine' in props and 'machine' in job_vars[job]:
+                    model.Add(job_vars[job]['machine'] == props['locked_machine'])
+
+
+    # --------------- OBJECTIVES ---------------
+
+    # Built-in objectives (User can add more)
+    # once function is added here with , user can register it via add_objective
+
+    def minimize_makespan(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the makespan (maximum job end time).
+        """
+        end_vars = [job_vars[job]['end'] for job in jobs]
+        makespan = model.NewIntVar(0, int(1e9), 'makespan')
+        model.AddMaxEquality(makespan, end_vars)
+        return makespan
+
+    
+    def minimize_total_completion_time(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the sum of all job end times.
+        """
+        end_vars = [job_vars[job]['end'] for job in jobs]
+        total_completion = model.NewIntVar(0, int(1e9), 'total_completion')
+        model.Add(total_completion == sum(end_vars))
+        return total_completion
+
+    def minimize_total_tardiness(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize total tardiness (lateness beyond due date).
+        Assumes each job has a 'due_date' property.
+        """
+        tardiness_vars = []
+        for job, props in jobs.items():
+            due = props.get('due_date', 0)
+            end = job_vars[job]['end']
+            tardiness = model.NewIntVar(0, int(1e9), f'tardiness_{job}')
+            model.Add(tardiness >= end - due)
+            model.Add(tardiness >= 0)
+            tardiness_vars.append(tardiness)
+        total_tardiness = model.NewIntVar(0, int(1e9), 'total_tardiness')
+        model.Add(total_tardiness == sum(tardiness_vars))
+        return total_tardiness
+    
+    def minimize_total_deviation_from_planned(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the total deviation from planned quantity (P vs A) for all jobs/blocks.
+        Assumes each job has a 'qty_ordered' property and job_vars[job]['qty_initialized'] variable.
+        If qty_initialized is not a variable, you may need to adapt this to your model.
+        """
+        deviation_vars = []
+        for job, props in jobs.items():
+            planned = props.get('qty_ordered', 0)
+            # If qty_initialized is a variable in your model, use it; otherwise, use duration or another proxy
+            actual = job_vars[job].get('qty_initialized', None)
+            if actual is None:
+                # Fallback: use duration as proxy for produced quantity
+                actual = job_vars[job]['duration'] if 'duration' in job_vars[job] else None
+            else:
+                diff = model.NewIntVar(0, int(1e9), f'deviation_{job}')
+                model.Add(diff == abs(planned - actual))
+                deviation_vars.append(diff)
+        total_deviation = model.NewIntVar(0, int(1e9), 'total_deviation')
+        if deviation_vars:
+            model.Add(total_deviation == sum(deviation_vars))
+        else:
+            model.Add(total_deviation == 0)
+        return total_deviation

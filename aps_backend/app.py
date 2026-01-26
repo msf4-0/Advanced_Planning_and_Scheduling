@@ -3,11 +3,7 @@ import sys
 from repository import DBTable
 from schema_mapper import SchemaMapper
 from data_ingestion import DataIngestion
-from scheduler.dataInput import SchedulerDataInput
-from scheduler.modelBuilder import SchedulerModelBuilder
-from scheduler.constraint import SchedulerConstraint
-from scheduler.objective import SchedulerObjective
-from scheduler.scheduler import Scheduler
+from scheduler import SchedulerDataInput, SchedulerModelBuilder, SchedulerConstraint, SchedulerObjective, Scheduler, Configs
 
 lock = False
 
@@ -36,17 +32,9 @@ def main():
 
 	# Set up constraints and objectives (add more as needed)
 	constraints = SchedulerConstraint()
-	constraints.add_constraint(SchedulerConstraint.no_overlap_constraint)
-	constraints.add_constraint(SchedulerConstraint.machine_downtime_constraint)
-	constraints.add_constraint(SchedulerConstraint.precedence_constraint)
-	
-	if lock:
-		constraints.add_constraint(SchedulerConstraint.lock_sequence_constraint)
-
 	objective = SchedulerObjective()
-	objective.add_objective(SchedulerObjective.minimize_makespan)
-	objective.add_objective(SchedulerObjective.minimize_total_tardiness)
-	objective.add_objective(SchedulerObjective.minimize_total_completion_time)
+	
+	Configs(constraints, objective)  # Register built-in constraints and objectives
 
 	# Build model and run scheduler
 	model_builder = SchedulerModelBuilder(data_input, constraints, objective)
