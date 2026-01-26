@@ -12,12 +12,18 @@ class SchedulerInput(BaseModel):
 	data: Dict[str, Any]
 
 # Health check endpoint
-@router.get("/status")
+@router.get(
+		"/status",
+		tags=["Schedule"]
+		)
 def status():
 	return {"status": "ok"}
 
 # Run the scheduler
-@router.post("/run_scheduler")
+@router.post(
+		"/run_scheduler",
+		tags=["Schedule"]
+		)
 def run_scheduler_endpoint(input: SchedulerInput):
 	try:
 		result = scheduler_main()

@@ -3,7 +3,6 @@ from .dataInput import SchedulerDataInput
 from .modelBuilder import SchedulerModelBuilder
 from .objective import SchedulerObjective
 from .scheduler import Scheduler
-from .configs import Configs
 
 
 __all__ = [
@@ -12,5 +11,4 @@ __all__ = [
     "SchedulerModelBuilder",
     "SchedulerObjective",
     "Scheduler",
-    "Configs",
 ]

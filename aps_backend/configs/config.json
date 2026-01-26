@@ -5,7 +5,7 @@
     "id_col": "operation_id",         
     "duration_col": "duration",       
     "machine_col": "machine_id",      
-    "domain_col": "domain",           
+    "domain_col": "domain",
 
     "graph_label": "Operation",      
     "duration_prop": "duration",     

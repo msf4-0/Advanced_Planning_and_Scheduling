@@ -16,33 +16,31 @@ class DataIngestion:
 		self.mapper = schema_mapper
 		self.db = DBTable()
 		self.graph = GraphEditor(self.db)
+		# Extract job fields mapping for dynamic property access
+		mapping = self.mapper.get_job_mapping() or {}
+		self.job_fields = mapping.get('fields', {})
 
 	def extract_jobs(self):
 		"""
 		Extract jobs from the mapped table/columns in PostgreSQL using DBTable.
 		Returns: dict of jobs for SchedulerDataInput
+		Uses dynamic job_fields for consistency with config.json and configs.py.
 		"""
 		mapping = self.mapper.get_job_mapping()
 		if not mapping:
 			return {}
 		table = mapping.get('table')
-		fields = mapping.get('fields', {})
+		fields = self.job_fields
 		id_col = mapping.get('id_col')
-		# Fetch all rows using DBTable
-		
 		if not table or not id_col:
 			return {}
-		
 		if not isinstance(fields, dict) or not fields:
 			return {}
-        
 		rows = self.db.fetch(table)
 		jobs = {}
 		for props in rows:
 			job_id = props.get(id_col)
-			job_props = {}
-			for key, col in fields.items():
-				job_props[key] = props.get(col)
+			job_props = {key: props.get(col) for key, col in fields.items()}
 			jobs[job_id] = job_props
 		return jobs
 
@@ -50,25 +48,21 @@ class DataIngestion:
 		"""
 		Extract jobs from graph nodes in Apache AGE using GraphEditor.
 		Returns: dict of jobs for SchedulerDataInput
+		Uses dynamic job_fields for consistency with config.json and configs.py.
 		"""
 		mapping = self.mapper.get_job_mapping()
 		if not mapping:
 			return {}
 		job_label = mapping.get('graph_label')
-		fields = mapping.get('fields')
+		fields = self.job_fields
 		id_prop = mapping.get('id_prop')
-
-		# All must be present and valid
 		if not job_label or not isinstance(fields, dict) or not fields or not id_prop:
 			return {}
-
 		nodes = self.graph.get_node(label=job_label, filters={})
 		jobs = {}
 		for node in nodes:
 			job_id = node.get(id_prop)
-			job_props = {}
-			for key, prop in fields.items():
-				job_props[key] = node.get(prop)
+			job_props = {key: node.get(prop) for key, prop in fields.items()}
 			jobs[job_id] = job_props
 		return jobs
 
@@ -76,11 +70,13 @@ class DataIngestion:
 		"""
 		Extract all mapped entities (jobs, machines, materials, etc.)
 		Returns: dict with all entities for scheduler
+		Uses only internal keys from config.json for consistency.
 		"""
 		jobs = self.extract_jobs()
 		# jobs = self.extract_graph_jobs()
-
-		# You can add extract_machines(), extract_materials(), etc. similarly
+		# You can add extract_machines(), extract_materials(), etc. using the same pattern:
+		# - Use mapping.get('fields') for internal keys
+		# - Build dicts with those keys for consistency
 		return {
 			'jobs': jobs,
 			# 'machines': self.extract_machines(),
