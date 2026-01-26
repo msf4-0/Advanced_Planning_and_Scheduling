@@ -101,24 +101,25 @@ poetry.lock
 *.seed
 *.pid.lock
 
-# Ignore Appsmith and Frepple data and logs
-appsmith/stacks/data/
-appsmith/stacks/logs/
+
+# Ignore stacks and Frepple data and logs (after moving up)
+stacks/data/
+stacks/logs/
 frepple/apache-logs/
 frepple/frepple-logs/
 
 # Ignore environment files
-appsmith/stacks/configuration/docker.env
+stacks/configuration/docker.env
 
 # Ignore backup and restore folders
-appsmith/stacks/data/backup/
-appsmith/stacks/data/restore/
+stacks/data/backup/
+stacks/data/restore/
 
 # Ignore SSL
-appsmith/stacks/ssl/
+stacks/ssl/
 
 # Ignore git storage
-appsmith/stacks/git-storage/
+stacks/git-storage/
 
 # Ignore any other sensitive or generated files
 *.db
