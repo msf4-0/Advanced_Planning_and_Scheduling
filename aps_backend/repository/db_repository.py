@@ -37,13 +37,20 @@ class DBTable:
             "dbname": POSTGRES_DB
         }
 
-    def get_connection(self):
+    def get_connection_graph(self):
         conn = psycopg2.connect(**self.db_params)
         # Ensure PostgreSQL session uses UTC
         with conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'UTC';")
             cur.execute("LOAD 'age';")
             cur.execute("""SET search_path = ag_catalog, "$user", public;""")
+        return conn
+    
+    def get_connection(self):
+        conn = psycopg2.connect(**self.db_params)
+        # Ensure PostgreSQL session uses UTC
+        with conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'UTC';")
         return conn
 
     # Fetch functions
@@ -287,16 +294,28 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def create_table(self, table_name: str, columns: list[tuple]) -> bool:
+    def create_table(self, table_name: str) -> bool:
         """
         Create a new table in the database with the specified schema.
 
         Args:
             table_name (str): The name of the table to create.
-            columns (list[tuple]): A list of tuples where each tuple contains a column name and its SQL data type.
+            columns (list[dict]): A list of dicts, each with keys:
+                - name (str): column name
+                - type (str): SQL data type
+                - default (optional): default value
+                - nullable (optional): bool
+                - primary_key (optional): bool
+                - unique (optional): bool
+                - foreign_key (optional): str, e.g. 'other_table(other_id)'
 
             Example:
-                columns = [("item_id", "SERIAL PRIMARY KEY"), ("item_name", "VARCHAR(100)"), ("quantity", "INT")]
+                columns = [
+                    {"name": "item_id", "type": "SERIAL", "primary_key": True},
+                    {"name": "item_name", "type": "VARCHAR(100)", "nullable": False},
+                    {"name": "quantity", "type": "INT", "default": 0, "nullable": True},
+                    {"name": "category_id", "type": "INT", "foreign_key": "categories(category_id)"}
+                ]
 
         Returns:
             bool: True if the table was created successfully, False otherwise.
@@ -304,19 +323,101 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            col_defs = []
-            for col in columns:
-                if len(col) == 3:
-                    col_defs.append(f"{col[0]} {col[1]} DEFAULT {col[2]}")
-                else:
-                    col_defs.append(f"{col[0]} {col[1]}")
-            schema = "(" + ", ".join(col_defs) + ")"
-            query = f"CREATE TABLE IF NOT EXISTS {table_name} {schema};"
+            query = f"CREATE TABLE IF NOT EXISTS {table_name};"
+            logging.info("Creating table with query: %s", query)
             cur.execute(query)
             conn.commit()
             return True
         except Exception as e:
             logging.error("Error creating table %s: %s", table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    def add_table_column(self,
+                         table_name: str,
+                         column: list[dict]
+                        ) -> bool:
+        """
+        Add one or more columns to an existing table.
+
+        Args:
+            table_name (str): The name of the table to alter.
+            column (list[dict]): List of column definitions (same format as create_table).
+
+        Returns:
+            bool: True if columns added successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            for col in column:
+                name = col.get("name")
+                type_ = col.get("type")
+                default = col.get("default")
+                nullable = col.get("nullable", True)
+                unique = col.get("unique", False)
+                primary_key = col.get("primary_key", False)
+                foreign_key = col.get("foreign_key")
+                if not name or not type_:
+                    logging.warning("Column name or type missing, skipping column: %s", col)
+                    continue
+                col_def = f"{name} {type_}"
+                if not nullable:
+                    col_def += " NOT NULL"
+                if unique:
+                    col_def += " UNIQUE"
+                if default not in (None, ""):
+                    col_def += f" DEFAULT {default}"
+                # Add column
+                query = f"ALTER TABLE {table_name} ADD COLUMN {col_def};"
+                logging.info("Adding column with query: %s", query)
+                cur.execute(query)
+                # Add primary key (only possible if table has no PK yet, otherwise skip)
+                if primary_key:
+                    try:
+                        pk_query = f"ALTER TABLE {table_name} ADD PRIMARY KEY ({name});"
+                        cur.execute(pk_query)
+                    except Exception as pk_e:
+                        logging.warning("Could not add primary key for column %s: %s", name, pk_e)
+                # Add foreign key
+                if foreign_key:
+                    try:
+                        fk_query = f"ALTER TABLE {table_name} ADD FOREIGN KEY ({name}) REFERENCES {foreign_key};"
+                        cur.execute(fk_query)
+                    except Exception as fk_e:
+                        logging.warning("Could not add foreign key for column %s: %s", name, fk_e)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error adding column(s) to table %s: %s", table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    def remove_table_column(self,
+                            table_name: str,
+                            column_name: str
+                            ) -> bool:
+        """
+        Remove a column from a specified table.
+        Args:
+            table_name (str): The name of the table from which to remove the column.
+            column_name (str): The name of the column to remove.
+        Returns:
+            bool: True if the column was removed successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+            cur.execute(query)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error removing column %s from table %s: %s", column_name, table_name, e)
             return False
         finally:
             cur.close()

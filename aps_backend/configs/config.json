@@ -1,8 +1,8 @@
 {
   "job_mapping": {
     "source": "graph",                
-    "table": "operations",            
-    "id_col": "operation_id",         
+    "table_name": "operations",            
+    "column_id": "operation_id",         
     "duration_col": "duration",       
     "machine_col": "machine_id",      
     "domain_col": "domain",
@@ -15,16 +15,16 @@
 
   "machine_mapping": {
     "source": "sql",
-    "table": "machines",
-    "id_col": "machine_id",
+    "table_name": "machines",
+    "column_id": "machine_id",
     "type_col": "type",
     "capacity_col": "capacity"
   },
 
   "material_mapping": {
     "source": "sql",
-    "table": "materials",
-    "id_col": "material_id",
+    "table_name": "materials",
+    "column_id": "material_id",
     "name_col": "material_name"
   },
 

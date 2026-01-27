@@ -25,46 +25,63 @@ class DataIngestion:
 		Extract jobs from the mapped table/columns in PostgreSQL using DBTable.
 		Returns: dict of jobs for SchedulerDataInput
 		Uses dynamic job_fields for consistency with config.json and configs.py.
+		Steps:
+		1. Get job mapping from SchemaMapper (contains table/column info).
+		2. Validate mapping and required fields.
+		3. Fetch all rows from the mapped table.
+		4. For each row, build a job dict using internal keys mapped to DB columns.
+		5. Return a dict of jobs keyed by job_id.
 		"""
-		mapping = self.mapper.get_job_mapping()
+		mapping = self.mapper.get_job_mapping()  # Get job mapping config (table/column info)
 		if not mapping:
-			return {}
-		table = mapping.get('table')
-		fields = self.job_fields
-		id_col = mapping.get('id_col')
+			return {}  # No mapping found, return empty
+		table = mapping.get('table_name')	# Table name in DB
+		fields = self.job_fields	# Internal-to-DB column mapping
+		id_col = mapping.get('column_id')	# Primary key column name
 		if not table or not id_col:
-			return {}
+			return {}  # Required info missing
 		if not isinstance(fields, dict) or not fields:
-			return {}
-		rows = self.db.fetch(table)
+			return {}  # No field mapping found
+		rows = self.db.fetch(table)  # Fetch all rows from the table
 		jobs = {}
 		for props in rows:
-			job_id = props.get(id_col)
+			job_id = props.get(id_col)  # Get the job's unique ID from the row
+
+			# Build a dict of job properties using internal keys mapped to DB columns
 			job_props = {key: props.get(col) for key, col in fields.items()}
-			jobs[job_id] = job_props
-		return jobs
+			jobs[job_id] = job_props  # Add to jobs dict
+			
+		return jobs  # Return all jobs as a dict
 
 	def extract_graph_jobs(self, graph_name: str = 'production_graph'):
 		"""
 		Extract jobs from graph nodes in Apache AGE using GraphEditor.
 		Returns: dict of jobs for SchedulerDataInput
 		Uses dynamic job_fields for consistency with config.json and configs.py.
+		Steps:
+		1. Get job mapping from SchemaMapper (contains graph label/property info).
+		2. Validate mapping and required fields.
+		3. Fetch all nodes with the mapped label from the graph.
+		4. For each node, build a job dict using internal keys mapped to node properties.
+		5. Return a dict of jobs keyed by job_id.
 		"""
-		mapping = self.mapper.get_job_mapping()
+		mapping = self.mapper.get_job_mapping()  # Get job mapping config (graph label/property info)
 		if not mapping:
-			return {}
-		job_label = mapping.get('graph_label')
-		fields = self.job_fields
-		id_prop = mapping.get('id_prop')
+			return {}  # No mapping found, return empty
+		job_label = mapping.get('graph_label')  # Node label in the graph
+		fields = self.job_fields                # Internal-to-graph property mapping
+		id_prop = mapping.get('id_property')    # Unique property name for node ID
 		if not job_label or not isinstance(fields, dict) or not fields or not id_prop:
-			return {}
-		nodes = self.graph.get_node(label=job_label, filters={})
+			return {}  # Required info missing
+		
+		nodes = self.graph.get_node(label=job_label, filters={})  # Fetch all nodes with the label
 		jobs = {}
 		for node in nodes:
-			job_id = node.get(id_prop)
+			job_id = node.get(id_prop)  # Get the job's unique ID from the node
+			# Build a dict of job properties using internal keys mapped to node properties
 			job_props = {key: node.get(prop) for key, prop in fields.items()}
-			jobs[job_id] = job_props
-		return jobs
+			jobs[job_id] = job_props  # Add to jobs dict
+		return jobs  # Return all jobs as a dict
 
 	def extract_all(self):
 		"""
