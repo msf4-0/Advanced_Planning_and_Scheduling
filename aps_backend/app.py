@@ -39,7 +39,27 @@ mock_data = {
 			'locked': True,
 			'locked_start': 2,
 			'locked_machine': 1
-		}
+		},
+		'jobD': {
+			'duration': 10,
+			'allowed_machines': [2, 3],
+			'domain': (0, 20),
+			'predecessor': None,
+			'due_date': 15,
+			'qty_ordered': 100,
+			'qty_initialized': 90,
+			'locked': False
+		},
+		'jobE': {
+			'duration': 15,
+			'allowed_machines': [3],
+			'domain': (0, 20),
+			'predecessor': None,
+			'due_date': 15,
+			'qty_ordered': 100,
+			'qty_initialized': 90,
+			'locked': False
+		},
 	},
 	'machines': {
 		1: {
@@ -48,6 +68,10 @@ mock_data = {
 		},
 		2: {
 			'type': 'Lathe',
+			'capacity': 1
+		},
+		3: {
+			'type': 'Milling',
 			'capacity': 1
 		}
 	},

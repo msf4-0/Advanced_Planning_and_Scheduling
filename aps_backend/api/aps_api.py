@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Body
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 # Import your scheduler logic (adjust as needed)
@@ -11,20 +11,13 @@ class SchedulerInput(BaseModel):
 	config: Dict[str, Any]
 	data: Dict[str, Any]
 
-# Health check endpoint
-@router.get(
-		"/status",
-		tags=["Schedule"]
-		)
-def status():
-	return {"status": "ok"}
 
 # Run the scheduler
 @router.post(
 		"/run_scheduler",
 		tags=["Schedule"]
 		)
-def run_scheduler_endpoint(input: SchedulerInput):
+def run_scheduler_endpoint(input: SchedulerInput = Body(None)):
 	try:
 		result = scheduler_main()
 		return {"success": True, "result": result}

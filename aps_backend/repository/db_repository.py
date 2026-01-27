@@ -286,3 +286,80 @@ class DBTable:
         finally:
             cur.close()
             conn.close()
+
+    def create_table(self, table_name: str, columns: list[tuple]) -> bool:
+        """
+        Create a new table in the database with the specified schema.
+
+        Args:
+            table_name (str): The name of the table to create.
+            columns (list[tuple]): A list of tuples where each tuple contains a column name and its SQL data type.
+
+            Example:
+                columns = [("item_id", "SERIAL PRIMARY KEY"), ("item_name", "VARCHAR(100)"), ("quantity", "INT")]
+
+        Returns:
+            bool: True if the table was created successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            col_defs = []
+            for col in columns:
+                if len(col) == 3:
+                    col_defs.append(f"{col[0]} {col[1]} DEFAULT {col[2]}")
+                else:
+                    col_defs.append(f"{col[0]} {col[1]}")
+            schema = "(" + ", ".join(col_defs) + ")"
+            query = f"CREATE TABLE IF NOT EXISTS {table_name} {schema};"
+            cur.execute(query)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error creating table %s: %s", table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    def edit_table_column(self, 
+                          table_name: str, 
+                          old_column_name: str, 
+                          new_column_name: str, 
+                          new_data_type: str,
+                          default_value: Optional[Any] = None
+                          ) -> bool:
+        """
+        Edit the data type of an existing column in a specified table.
+
+        Args:
+            table_name (str): The name of the table containing the column to edit.
+            old_column_name (str): The current name of the column to edit.
+            new_column_name (str): The new name for the column.
+            new_data_type (str): The new SQL data type for the column.
+            default_value (Optional[Any]): The default value for the column, if any.
+            Example:
+                new_data_type = "VARCHAR(200)"
+
+        Returns:
+            bool: True if the column was edited successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            query = f"ALTER TABLE {table_name} RENAME COLUMN {old_column_name} TO {new_column_name};"
+            cur.execute(query)
+            query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} TYPE {new_data_type};"
+            cur.execute(query)
+            if default_value is not None:
+                query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} SET DEFAULT %s;"
+                cur.execute(query, (default_value,))
+
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error editing column %s in table %s: %s", old_column_name, table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()

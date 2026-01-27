@@ -58,7 +58,7 @@ def list_graph_labels():
 	return labels
 
 @router.get(
-	"/admin/graph/edge_types",
+	"/admin/graph/edge-types",
 	response_model=List[Dict],
 	tags=["Admin"]
 )
@@ -104,3 +104,48 @@ def set_mapping(mapping: Dict = Body(...)):
 	
 	schema_mapper.update_mapping(mapping)
 	return {"status": "Mapping updated successfully."}
+
+
+# Table Schema Operations Endpoints
+@router.put(
+		"/admin/new-table/{table_name}",
+		response_model=Dict,
+		tags=["Admin"]
+		)
+def get_table_schema(table_name: str, columns: List[tuple] = Body(...)):
+	'''
+	Get the schema details of a specific table.
+
+	Location: appsmith/aps_backend/admin_api.py
+	'''
+
+	created = db.create_table(table_name, columns)
+	return {"created": created}
+
+@router.post(
+		"/admin/edit-table-column/{table_name}",
+		response_model=Dict,
+		tags=["Admin"]
+		)
+def edit_table_column(
+	table_name: str, 
+	old_column: str = Body(...), 
+	new_column: str = Body(...), 
+	new_type: str = Body(...),
+	default_value: str = Body(None)
+	):
+	'''
+	Edit a column in a specific table.
+
+	Location: appsmith/aps_backend/admin_api.py
+	'''
+
+	edited = db.edit_table_column(
+		table_name, 
+		old_column, 
+		new_column, 
+		new_type, 
+		default_value
+		)
+
+	return {"edited": edited}
