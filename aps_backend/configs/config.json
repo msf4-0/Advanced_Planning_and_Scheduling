@@ -13,7 +13,8 @@
       "qty_initialized": "qty_initialized",
       "locked": "locked",
       "locked_start": "locked_start",
-      "locked_machine": "locked_machine"
+      "locked_machine": "locked_machine",
+      "allowed_machines": "allowed_machines"
     },
     "graph_label": "Job",
     "id_property": "job_id",

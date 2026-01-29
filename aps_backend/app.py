@@ -90,8 +90,8 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
 	# Database connection
-	conn = DBTable().get_connection_graph()
-	# conn = DBTable().get_connection()
+	# conn = DBTable().get_connection_graph()
+	conn = DBTable().get_connection()
 	logging.info("Database connection established.")
 
 	# Initialize schema mapper and data ingestion

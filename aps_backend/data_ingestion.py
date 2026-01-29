@@ -7,7 +7,6 @@ Features:
 - Transforms data into scheduler-friendly format
 """
 
-from math import log
 from schema_mapper import SchemaMapper
 from repository import DBTable, GraphEditor
 import logging
@@ -54,14 +53,48 @@ class DataIngestion:
 		
 		rows = self.db.fetch(table)  # Fetch all rows from the table
 		jobs = {}
+		# First pass: collect all job IDs (case-insensitive map)
+		job_id_map = {}
+		for props in rows:
+			job_id = props.get(id_col)
+			if job_id:
+				job_id_map[job_id.lower()] = job_id
+
 		for props in rows:
 			job_id = props.get(id_col)  # Get the job's unique ID from the row
 			logging.info(f"Extracting job {job_id} with properties {props}")
 
 			# Build a dict of job properties using internal keys mapped to DB columns
 			job_props = {key: props.get(col) for key, col in fields.items()}
+			machine_type_id = props.get('required_machine_type_id')
+			if machine_type_id is not None:
+				allowed = self.db.fetch(
+					'machines',
+					{'machine_type_id': machine_type_id},
+				)
+				job_props['allowed_machines'] = [m.get('machine_id') for m in allowed]
+			else:
+				job_props['allowed_machines'] = []
+
+			# Auto-assign the first allowed machine if available
+			if job_props['allowed_machines']:
+				job_props['machine'] = job_props['allowed_machines'][0]
+			else:
+				job_props['machine'] = None
+
+			# Normalize predecessor field (if present)
+			predecessor = job_props.get('predecessor')
+			if predecessor:
+				# Try to match case-insensitively to a job ID
+				pred_key = predecessor.lower()
+				if pred_key in job_id_map:
+					job_props['predecessor'] = job_id_map[pred_key]
+				else:
+					logging.warning(f"Job {job_id} predecessor '{predecessor}' does not match any job ID; removing predecessor.")
+					job_props['predecessor'] = None
+
 			jobs[job_id] = job_props  # Add to jobs dict
-			
+
 		return jobs  # Return all jobs as a dict
 
 	def extract_graph_jobs(self, graph_name: str = 'production_graph'):
@@ -145,8 +178,8 @@ class DataIngestion:
 		Returns: dict with all entities for scheduler
 		Uses only internal keys from config.json for consistency.
 		"""
-		# jobs = self.extract_jobs()
-		jobs = self.extract_graph_jobs()
+		jobs = self.extract_jobs()
+		# jobs = self.extract_graph_jobs()
 		# You can add extract_machines(), extract_materials(), etc. using the same pattern:
 		# - Use mapping.get('fields') for internal keys
 		# - Build dicts with those keys for consistency
