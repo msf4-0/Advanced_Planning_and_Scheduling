@@ -20,6 +20,7 @@ Usage:
 
 import json
 import psycopg2
+import logging
 from typing import Dict, Any, Optional
 
 class SchemaMapper:
@@ -27,15 +28,16 @@ class SchemaMapper:
 	Handles dynamic schema mapping and discovery for both relational (PostgreSQL) and graph (Apache AGE) data sources.
 	Allows loading/saving mapping config from file or DB, and schema introspection for both data models.
 	"""
-	def __init__(self, conn: psycopg2.extensions.connection, config_path: str = "config.json"):
+	def __init__(self, conn: psycopg2.extensions.connection, config_path: str = "configs/config.json"):
 		"""
 		Args:
 			db_params: dict with PostgreSQL connection params
-			config_path: path to mapping config file (default: config.json)
+			config_path: path to mapping config file (default: configs/config.json)
 		"""
 		self.conn = conn
 		self.config_path = config_path
 		self.config = self.load_mapping_from_file()
+		# logging.info(f"(SCHEMA-MAP) Loaded mapping config: {self.config}")
 
 	# --- FILE-BASED MAPPING ---
 
@@ -46,10 +48,11 @@ class SchemaMapper:
 		"""
 		try:
 			with open(self.config_path, 'r') as f:
+				# logging.info(f"(SCHEMA-MAP) Loading mapping config from file: {self.config_path}")
 				return json.load(f)
 		except (FileNotFoundError, json.JSONDecodeError):
+			logging.error(f"(SCHEMA-MAP) Failed to load mapping config from file: {self.config_path}")
 			return {}
-
 
 	def save_mapping_to_file(self, mapping: Dict[str, Any]):
 		"""
@@ -77,7 +80,6 @@ class SchemaMapper:
 		if row:
 			return row[0]
 		return {}
-
 
 	def save_mapping_to_db(self, mapping: Dict[str, Any]):
 		"""
@@ -117,7 +119,6 @@ class SchemaMapper:
 		self.conn.close()
 		return tables
 
-
 	def list_columns(self, table_name: str) -> list:
 		"""
 		List all columns and their types for a given table.
@@ -127,10 +128,35 @@ class SchemaMapper:
 		"""
 		cur = self.conn.cursor()
 		cur.execute("""
-			SELECT column_name, data_type FROM information_schema.columns
-			WHERE table_name = %s;
-		""", (table_name,))
-		columns = cur.fetchall()
+			  	SELECT 
+				c.column_name,
+				c.data_type,
+				c.is_nullable,
+				c.column_default,
+				EXISTS (
+					SELECT 1
+					FROM information_schema.table_constraints tc
+					JOIN information_schema.key_column_usage kcu
+					ON tc.constraint_name = kcu.constraint_name
+					AND tc.table_schema = kcu.table_schema
+					WHERE tc.constraint_type = 'PRIMARY KEY'
+					AND tc.table_name = c.table_name
+					AND kcu.column_name = c.column_name
+				) AS is_primary_key
+				FROM information_schema.columns c
+				WHERE c.table_name = %s;
+			""", (table_name,))
+		
+		rows = cur.fetchall()
+
+		if cur.description is not None:
+			columns = [
+				dict(zip([d[0] for d in cur.description], row))
+				for row in rows
+			]
+		else:
+			columns = [{}]
+
 		cur.close()
 		self.conn.close()
 		return columns
@@ -184,7 +210,6 @@ class SchemaMapper:
 		cur.close()
 		self.conn.close()
 		return labels
-
 
 	def list_graph_edge_types(self, graph_name: str = 'production_graph') -> list[dict]:
 		"""
@@ -243,6 +268,7 @@ class SchemaMapper:
 		Get the current mapping config (from file or last loaded from DB).
 		Returns: dict mapping config
 		"""
+		logging.info(f"Getting current mapping config: {self.config}")
 		return self.config
 
 
