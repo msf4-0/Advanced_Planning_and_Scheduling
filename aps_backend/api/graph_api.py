@@ -7,7 +7,7 @@ from schema_mapper import SchemaMapper
 
 router = APIRouter()
 db = DBTable()
-mapper = SchemaMapper(db.get_connection())
+mapper = SchemaMapper(db.get_connection_graph())
 graph = GraphEditor(db)
 
 @router.get(

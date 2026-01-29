@@ -24,7 +24,7 @@ def list_tables():
 	'''
 
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 	
 	tables = schema_mapper.list_tables()
 	return tables
@@ -42,10 +42,10 @@ def list_columns(table_name: str):
 	'''
 
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 	
 	columns = schema_mapper.list_columns(table_name)
-	return [{"column_name": col[0], "data_type": col[1]} for col in columns]
+	return columns
 
 @router.get(
 	"/admin/graph/labels",
@@ -59,7 +59,7 @@ def list_graph_labels():
 	Location: appsmith/aps_backend/admin_api.py
 	'''
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 
 	labels = schema_mapper.list_graph_label_with_properties()
 	return labels
@@ -76,7 +76,7 @@ def list_graph_edge_types():
 	Location: appsmith/aps_backend/admin_api.py
 	'''
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 	
 	edge_types = schema_mapper.list_graph_edge_types()
 	return edge_types
@@ -97,7 +97,7 @@ def get_mapping():
 	'''
 
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 
 	mapping = schema_mapper.get_mapping()
 	return mapping
@@ -115,7 +115,7 @@ def set_mapping(mapping: Dict = Body(...)):
 	'''
 
 	db = DBTable()
-	schema_mapper = SchemaMapper(db.get_connection())
+	schema_mapper = SchemaMapper(db.get_connection_graph())
 
 	schema_mapper.update_mapping(mapping)
 	return {"status": "Mapping updated successfully."}
