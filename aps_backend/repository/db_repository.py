@@ -42,8 +42,9 @@ class DBTable:
         # Ensure PostgreSQL session uses UTC
         with conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'UTC';")
+            cur.execute("CREATE EXTENSION IF NOT EXISTS age;")
             cur.execute("LOAD 'age';")
-            cur.execute("""SET search_path = ag_catalog, "$user", public;""")
+            cur.execute("SET search_path = ag_catalog, \"$user\", public;")
         return conn
     
     def get_connection(self):
@@ -70,7 +71,7 @@ class DBTable:
             list[dict]: A list of records represented as dictionaries.
         """
 
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -111,7 +112,7 @@ class DBTable:
             list[dict]: A list containing the newly added record as a dictionary.
         """
 
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -146,7 +147,7 @@ class DBTable:
         Returns:
             int: The number of records deleted.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             if table_list:
@@ -189,7 +190,7 @@ class DBTable:
             int: The number of records updated.
         """
 
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             if table_list:
@@ -237,7 +238,7 @@ class DBTable:
             list[dict]: A list containing the upserted record as a dictionary.
         """
 
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -276,7 +277,7 @@ class DBTable:
         Returns:
             int: The count of records in the table.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         ALLOWED_TABLES = {"inventory", "orders", "machines", "materials", "products"}  # add all allowed table names
 
@@ -320,7 +321,7 @@ class DBTable:
         Returns:
             bool: True if the table was created successfully, False otherwise.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             query = f"CREATE TABLE IF NOT EXISTS {table_name};"
@@ -349,7 +350,7 @@ class DBTable:
         Returns:
             bool: True if columns added successfully, False otherwise.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             for col in column:
@@ -409,7 +410,7 @@ class DBTable:
         Returns:
             bool: True if the column was removed successfully, False otherwise.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
@@ -445,7 +446,7 @@ class DBTable:
         Returns:
             bool: True if the column was edited successfully, False otherwise.
         """
-        conn = self.get_connection()
+        conn = self.get_connection_graph()
         cur = conn.cursor()
         try:
             query = f"ALTER TABLE {table_name} RENAME COLUMN {old_column_name} TO {new_column_name};"

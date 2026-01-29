@@ -38,7 +38,7 @@ class GraphEditor:
         """
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         if not properties:
@@ -114,7 +114,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         if node_id:
@@ -195,7 +195,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         if not properties:
@@ -263,7 +263,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         cur = conn.cursor()
@@ -313,7 +313,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         cur = conn.cursor()
@@ -386,7 +386,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         cur = conn.cursor()
@@ -467,7 +467,7 @@ class GraphEditor:
 
         close_conn = False
         if conn is None:
-            conn = self.table.get_connection()
+            conn = self.table.get_connection_graph()
             close_conn = True
 
         cur = conn.cursor()
@@ -482,3 +482,75 @@ class GraphEditor:
             if close_conn:
                 conn.commit()
                 conn.close()
+
+    def get_related_nodes(
+            self,
+            node_id,
+            source_label: str,
+            edge_type: str,
+            direction: str = 'out',  # 'out' (from node), 'in' (to node)
+            graph_name: str = 'production_graph',
+            conn=None
+        ) -> list[dict]:
+            """
+            Fetch nodes related to a given node by edge type and direction.
+            Args:
+                node_id (int): The ID of the source node.
+                source_label (str): The label of the source node.
+                edge_type (str): The type of the edge.
+                direction (str): 'out' for outgoing, 'in' for incoming edges.
+                graph_name (str): The graph name.
+            Returns:
+                list[dict]: List of related node properties.
+            """
+            close_conn = False
+            if conn is None:
+                conn = self.table.get_connection_graph()
+                close_conn = True
+
+            if direction == 'out':
+                # (n)-[r:TYPE]->(m)
+                logging.info(f"Getting related nodes OUT from node {node_id} via edge {edge_type}")
+                if isinstance(node_id, int):
+                    match = f"MATCH (n:{source_label})-[r:{edge_type}]->(m) WHERE id(n) = {node_id} RETURN id(m) AS id, properties(m) AS props"
+                elif isinstance(node_id, tuple) and len(node_id) == 2:
+                    prop_key, prop_val = node_id
+                    if not isinstance(prop_key, str):
+                        raise ValueError("Property key must be a string.")
+                    match = f"MATCH (n:{source_label})-[r:{edge_type}]->(m) WHERE n.{prop_key} = '{prop_val}' RETURN id(m) AS id, properties(m) AS props"
+                else:
+                    raise ValueError("node_id must be int (internal id) or tuple (property_key, property_value)")
+            elif direction == 'in':
+                # (m)-[r:TYPE]->(n)
+                if isinstance(node_id, int):
+                    match = f"MATCH (m)-[r:{edge_type}]->(n:{source_label}) WHERE id(n) = {node_id} RETURN id(m) AS id, properties(m) AS props"
+                elif isinstance(node_id, tuple) and len(node_id) == 2:
+                    prop_key, prop_val = node_id
+                    if not isinstance(prop_key, str):
+                        raise ValueError("Property key must be a string.")
+                    match = f"MATCH (m)-[r:{edge_type}]->(n:{source_label}) WHERE n.{prop_key} = '{prop_val}' RETURN id(m) AS id, properties(m) AS props"
+                else:
+                    raise ValueError("node_id must be int (internal id) or tuple (property_key, property_value)")
+            else:
+                raise ValueError("direction must be 'out' or 'in'")
+
+            sql = f"""
+            SELECT *
+            FROM cypher('{graph_name}', $$
+                {match}
+            $$) AS (id agtype, props agtype);
+            """
+
+            cur = conn.cursor()
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                return [
+                    {"id": row[0], **json.loads(row[1])}
+                    for row in rows
+                ]
+            finally:
+                cur.close()
+                if close_conn:
+                    conn.commit()
+                    conn.close()
