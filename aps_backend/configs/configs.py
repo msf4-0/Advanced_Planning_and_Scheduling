@@ -1,6 +1,7 @@
 from ortools.sat.python import cp_model
 from typing import Callable
 from scheduler import SchedulerConstraint, SchedulerObjective
+from .baseConfigs import *
 import logging
 
 

@@ -1,31 +1,66 @@
 {
   "job_mapping": {
-    "source": "graph",                
-    "table_name": "operations",            
-    "column_id": "operation_id",         
-    "duration_col": "duration",       
-    "machine_col": "machine_id",      
-    "domain_col": "domain",
-
-    "graph_label": "Operation",      
-    "duration_prop": "duration",     
-    "machine_prop": "machine_id",    
-    "domain_prop": "domain"          
+    "source": "graph",
+    "table_name": "jobs",
+    "column_id": "job_id",
+    "fields": {
+      "duration": "duration",
+      "domain_start": "domain_start",
+      "domain_end": "domain_end",
+      "predecessor": "predecessor",
+      "due_date": "due_date",
+      "qty_ordered": "qty_ordered",
+      "qty_initialized": "qty_initialized",
+      "locked": "locked",
+      "locked_start": "locked_start",
+      "locked_machine": "locked_machine"
+    },
+    "graph_label": "Job",
+    "id_property": "job_id",
+    "property_map": {
+      "duration": "duration",
+      "domain_start": "domain_start",
+      "domain_end": "domain_end",
+      "predecessor": "predecessor",
+      "due_date": "due_date",
+      "qty_ordered": "qty_ordered",
+      "qty_initialized": "qty_initialized",
+      "locked": "locked",
+      "locked_start": "locked_start",
+      "locked_machine": "locked_machine"
+    }
   },
 
   "machine_mapping": {
-    "source": "sql",
+    "source": "graph",
     "table_name": "machines",
     "column_id": "machine_id",
-    "type_col": "type",
-    "capacity_col": "capacity"
+    "fields": {
+      "type": "type",
+      "capacity": "capacity"
+    },
+    
+    "graph_label": "Machine",
+    "id_property": "machine_id",
+    "property_map": {
+      "type": "type",
+      "capacity": "capacity"
+    }
   },
 
   "material_mapping": {
-    "source": "sql",
+    "source": "graph",
     "table_name": "materials",
     "column_id": "material_id",
-    "name_col": "material_name"
+    "fields": {
+      "name": "material_name"
+    },
+    
+    "graph_label": "Material",
+    "id_property": "material_id",
+    "property_map": {
+      "name": "material_name"
+    }
   },
 
   "graph_settings": {
