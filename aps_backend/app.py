@@ -1,4 +1,5 @@
 # Main entry point for running data extraction and scheduling (no API)
+import logging
 import sys
 from repository import DBTable
 from schema_mapper import SchemaMapper
@@ -85,30 +86,39 @@ mock_data = {
 	}
 }
 
+logging.basicConfig(level=logging.INFO)
+
 def main():
-	# # Database connection
+	# Database connection
+	conn = DBTable().get_connection_graph()
 	# conn = DBTable().get_connection()
+	logging.info("Database connection established.")
 
-	# # Initialize schema mapper and data ingestion
-	# mapper = SchemaMapper(conn)
-	# ingestion = DataIngestion(mapper)
+	# Initialize schema mapper and data ingestion
+	mapper = SchemaMapper(conn)
+	# logging.info(f"(APP) Current mapping config: {mapper.get_mapping()}")
+	ingestion = DataIngestion(mapper)
 
-	# # Extract all data for the scheduler
-	# extracted = ingestion.extract_all()
-	# jobs = extracted.get('jobs', {})
 
-	jobs = mock_data['jobs']
+	# Extract all data for the scheduler
+	extracted = ingestion.extract_all()
+	logging.info(f"Extracted data: {extracted}")
+
+	jobs = extracted.get('jobs', {})
+	logging.info(f"Extracted jobs: {jobs}")
+
+	# jobs = mock_data['jobs']
 	# You can add machines/materials extraction as needed
 
 	# Prepare scheduler input
 	data_input = SchedulerDataInput()
 	for job_id, props in jobs.items():
+		logging.info(f"Adding job {job_id} with props {props}")
 		data_input.add_jobs(job_id, props)
 
 	# Validate input
 	if not data_input.validate_input():
-		print("No jobs found or input invalid. Exiting.")
-		raise ValueError("Invalid scheduler input data.")
+		raise ValueError("(app.py) Invalid scheduler input data.")
 
 	# Set up constraints and objectives (add more as needed)
 	constraints = SchedulerConstraint()
