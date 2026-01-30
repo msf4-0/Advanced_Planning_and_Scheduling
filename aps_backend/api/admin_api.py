@@ -148,18 +148,12 @@ def create_new_table(table_name: str, columns: List[dict] = Body(None)):
 
 	logging.info(f"Creating table {table_name}")
 
-	table = db.create_table(table_name)
+	table = db.create_table(table_name, columns)
 
 	if not table:
 		raise HTTPException(status_code=400, detail="Table creation failed.")
-	
-	if columns:
-		col = db.add_table_column(table_name, columns)
 
-		if not col:
-			raise HTTPException(status_code=400, detail="Column creation failed.")
-
-	return {"created": table and (col if columns else True)}
+	return {"created": table}
 
 
 @router.post(

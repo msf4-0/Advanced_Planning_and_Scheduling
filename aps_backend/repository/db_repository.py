@@ -71,7 +71,7 @@ class DBTable:
             list[dict]: A list of records represented as dictionaries.
         """
 
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -112,7 +112,7 @@ class DBTable:
             list[dict]: A list containing the newly added record as a dictionary.
         """
 
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -147,7 +147,7 @@ class DBTable:
         Returns:
             int: The number of records deleted.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
             if table_list:
@@ -190,7 +190,7 @@ class DBTable:
             int: The number of records updated.
         """
 
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
             if table_list:
@@ -238,7 +238,7 @@ class DBTable:
             list[dict]: A list containing the upserted record as a dictionary.
         """
 
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         try:
             if table_list:
@@ -277,7 +277,7 @@ class DBTable:
         Returns:
             int: The count of records in the table.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         ALLOWED_TABLES = {"inventory", "orders", "machines", "materials", "products"}  # add all allowed table names
 
@@ -295,7 +295,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def create_table(self, table_name: str) -> bool:
+    def create_table(self, table_name: str, columns: list[dict]) -> bool:
         """
         Create a new table in the database with the specified schema.
 
@@ -321,10 +321,21 @@ class DBTable:
         Returns:
             bool: True if the table was created successfully, False otherwise.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
-            query = f"CREATE TABLE IF NOT EXISTS {table_name};"
+            column_defs = []
+            for col in columns:
+                col_def = f"{col['name']} {col['type']}"
+                if not col.get("nullable", True):
+                    col_def += " NOT NULL"
+                if col.get("unique", False):
+                    col_def += " UNIQUE"
+                if "default" in col:
+                    col_def += f" DEFAULT {col['default']}"
+                column_defs.append(col_def)
+            columns_str = ", ".join(column_defs)
+            query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_str});"
             logging.info("Creating table with query: %s", query)
             cur.execute(query)
             conn.commit()
@@ -350,7 +361,7 @@ class DBTable:
         Returns:
             bool: True if columns added successfully, False otherwise.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
             for col in column:
@@ -410,7 +421,7 @@ class DBTable:
         Returns:
             bool: True if the column was removed successfully, False otherwise.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
             query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
@@ -446,7 +457,7 @@ class DBTable:
         Returns:
             bool: True if the column was edited successfully, False otherwise.
         """
-        conn = self.get_connection_graph()
+        conn = self.get_connection()
         cur = conn.cursor()
         try:
             query = f"ALTER TABLE {table_name} RENAME COLUMN {old_column_name} TO {new_column_name};"
