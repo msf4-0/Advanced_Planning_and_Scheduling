@@ -1,0 +1,70 @@
+{
+  "job_mapping": {
+    "source": "graph",
+    "table_name": "jobs",
+    "column_id": "job_id",
+    "fields": {
+      "duration": "duration",
+      "domain_start": "domain_start",
+      "domain_end": "domain_end",
+      "predecessor": "predecessor",
+      "due_date": "due_date",
+      "qty_ordered": "qty_ordered",
+      "qty_initialized": "qty_initialized",
+      "locked": "locked",
+      "locked_start": "locked_start",
+      "locked_machine": "locked_machine",
+      "allowed_machines": "allowed_machines"
+    },
+    "graph_label": "Job",
+    "id_property": "job_id",
+    "property_map": {
+      "duration": "duration",
+      "domain_start": "domain_start",
+      "domain_end": "domain_end",
+      "predecessor": "predecessor",
+      "due_date": "due_date",
+      "qty_ordered": "qty_ordered",
+      "qty_initialized": "qty_initialized",
+      "locked": "locked",
+      "locked_start": "locked_start",
+      "locked_machine": "locked_machine"
+    }
+  },
+
+  "machine_mapping": {
+    "source": "graph",
+    "table_name": "machines",
+    "column_id": "machine_id",
+    "fields": {
+      "type": "type",
+      "capacity": "capacity"
+    },
+    
+    "graph_label": "Machine",
+    "id_property": "machine_id",
+    "property_map": {
+      "type": "type",
+      "capacity": "capacity"
+    }
+  },
+
+  "material_mapping": {
+    "source": "graph",
+    "table_name": "materials",
+    "column_id": "material_id",
+    "fields": {
+      "name": "material_name"
+    },
+    
+    "graph_label": "Material",
+    "id_property": "material_id",
+    "property_map": {
+      "name": "material_name"
+    }
+  },
+
+  "graph_settings": {
+    "graph_name": "production_graph"
+  }
+}
