@@ -51,16 +51,12 @@ class Configs:
         # Extract job fields mapping for dynamic property access
         self.job_fields = self.mapping.get('job_mapping', {}).get('fields', {})
         # You can add similar lines for machines/materials if needed
-
-        self.constraintClass.add_constraint(self.precedence_constraint)
-        self.constraintClass.add_constraint(self.no_overlap_constraint)
+        
         self.constraintClass.add_constraint(self.machine_availability_constraint)
         # self.constraintClass.add_constraint(self.machine_downtime_constraint)
         # self.constraintClass.add_constraint(self.lock_sequence_constraint)
 
-        self.objectiveClass.add_objective(self.minimize_makespan)
         self.objectiveClass.add_objective(self.minimize_total_tardiness)
-        self.objectiveClass.add_objective(self.minimize_total_completion_time)
 
 
 
@@ -68,38 +64,6 @@ class Configs:
     # Built-in constraints (User can add more)
     # once function is added here with , user can register it via add_constraint
 
-    
-    def no_overlap_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
-        """
-        Ensure no two jobs assigned to the same machine overlap in time.
-        Uses the dynamic key for 'machine' from config.json fields mapping.
-        """
-        machine_key = self.job_fields.get('machine', 'machine')
-        machine_to_intervals = {}
-        for job, props in jobs.items():
-            machine = props.get(machine_key)
-            if machine is not None:
-                if machine not in machine_to_intervals:
-                    machine_to_intervals[machine] = []
-                machine_to_intervals[machine].append(job_vars[job]['interval'])
-            else:
-                logging.warning(f"Job {job} has no machine assigned; skipping no-overlap constraint.")
-        for intervals in machine_to_intervals.values():
-            if len(intervals) > 1:
-                model.AddNoOverlap(intervals)
-
-    def precedence_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
-        """
-        Enforce sequencing: if a job (or product block) has a 'predecessor', it must start after the predecessor ends.
-        Uses the dynamic key for 'predecessor' from config.json fields mapping.
-        """
-        pred_key = self.job_fields.get('predecessor', 'predecessor')
-        for job, props in jobs.items():
-            pred = props.get(pred_key)
-            if pred and pred in job_vars:
-                model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
-            else:
-                logging.warning(f"Job {job} has no predecessor assigned or predecessor not in job_vars; skipping precedence constraint.")
 
     def machine_availability_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
@@ -161,33 +125,6 @@ class Configs:
 
     # Built-in objectives (User can add more)
     # once function is added here with , user can register it via add_objective
-
-    def minimize_makespan(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
-        """
-        Objective: Minimize the makespan (maximum job end time).
-        Uses the dynamic key for 'end' from config.json fields mapping.
-        """
-        end_key = self.job_fields.get('end', 'end')
-        end_vars = [job_vars[job][end_key] for job in jobs]
-        if not end_vars:
-            logging.warning("No end variables found; makespan objective cannot be applied.")
-        makespan = model.NewIntVar(0, int(1e9), 'makespan')
-        model.AddMaxEquality(makespan, end_vars)
-        return makespan
-
-    
-    def minimize_total_completion_time(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
-        """
-        Objective: Minimize the sum of all job end times.
-        Uses the dynamic key for 'end' from config.json fields mapping.
-        """
-        end_key = self.job_fields.get('end', 'end')
-        end_vars = [job_vars[job][end_key] for job in jobs]
-        if not end_vars:
-            logging.warning("No end variables found; total completion time objective cannot be applied.")
-        total_completion = model.NewIntVar(0, int(1e9), 'total_completion')
-        model.Add(total_completion == sum(end_vars))
-        return total_completion
 
     def minimize_total_tardiness(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """

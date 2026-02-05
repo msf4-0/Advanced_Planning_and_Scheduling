@@ -6,6 +6,7 @@ Designed to work with SchedulerDataInput and SchedulerConstraint.
 
 
 
+import logging
 from ortools.sat.python import cp_model
 from typing import Callable, List, Dict
 
@@ -23,6 +24,9 @@ class SchedulerObjective:
         """
         self.objectives: List[Callable[[cp_model.CpModel, Dict, Dict], cp_model.IntVar]] = []
         self.weights: List[float] = []
+
+        self.add_objective(self.minimize_makespan)
+        self.add_objective(self.minimize_total_completion_time)
 
     def add_objective(self, objective_fn: Callable[[cp_model.CpModel, Dict, Dict], cp_model.IntVar], weight: float = 1.0):
         """
@@ -59,4 +63,30 @@ class SchedulerObjective:
         else:
             model.Minimize(sum(objective_vars))
 
+
+    def minimize_makespan(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the makespan (maximum job end time).
+        Uses the dynamic key for 'end' from config.json fields mapping.
+        """
+        end_key = 'end'  # This can be made dynamic if needed
+        end_vars = [job_vars[job][end_key] for job in jobs]
+        if not end_vars:
+            logging.warning("No end variables found; makespan objective cannot be applied.")
+        makespan = model.NewIntVar(0, int(1e9), 'makespan')
+        model.AddMaxEquality(makespan, end_vars)
+        return makespan
+
+    def minimize_total_completion_time(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Objective: Minimize the sum of all job end times.
+        Uses the dynamic key for 'end' from config.json fields mapping.
+        """
+        end_key = 'end'
+        end_vars = [job_vars[job][end_key] for job in jobs]
+        if not end_vars:
+            logging.warning("No end variables found; total completion time objective cannot be applied.")
+        total_completion = model.NewIntVar(0, int(1e9), 'total_completion')
+        model.Add(total_completion == sum(end_vars))
+        return total_completion
     
