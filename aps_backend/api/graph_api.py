@@ -80,11 +80,10 @@ def add_new_graph_path(
             to_node_id = node_ids.get(to_temp)
             if from_node_id and to_node_id:
                 graph.create_edge(
-                    from_node_id=from_node_id,
-                    to_node_id=to_node_id,
+                    from_id=from_node_id,
+                    to_id=to_node_id,
                     edge_type=edge_type,
-                    properties={},
-                    graph_name=None
+                    conn=None
                 )
             else:
                 raise HTTPException(status_code=400, detail=f"Node temp_id(s) '{from_temp}' or '{to_temp}' not found in nodes.")
