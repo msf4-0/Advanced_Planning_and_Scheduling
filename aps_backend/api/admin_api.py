@@ -5,12 +5,11 @@ from schema_mapper import SchemaMapper
 from repository import DBTable
 import logging
 
-
 router = APIRouter()
 
 
 
-# Schema Discovery Endpoints
+# --------------- Schema Discovery Endpoints --------------- #
 @router.get(
 		"/admin/tables",
 		response_model=List[str],
@@ -83,7 +82,7 @@ def list_graph_edge_types():
 
 
 
-# Mapping Configuration Endpoints
+# --------------- Mapping Configuration Endpoints --------------- #
 @router.get(
 		"/admin/mapping/",
 		response_model=Dict,
@@ -121,7 +120,7 @@ def set_mapping(mapping: Dict = Body(...)):
 	return {"status": "Mapping updated successfully."}
 
 
-# Table Schema Operations Endpoints
+# --------------- Table Schema Operations Endpoints --------------- #
 @router.put(
 		"/admin/new-table/{table_name}",
 		response_model=Dict,
@@ -155,6 +154,28 @@ def create_new_table(table_name: str, columns: List[dict] = Body(None)):
 
 	return {"created": table}
 
+@router.delete(
+		"/admin/delete-table/{table_name}",
+		response_model=Dict,
+		tags=["Admin"]
+		)
+def drop_table(table_name: str):
+	'''
+	Delete a specific table from the database.
+
+	Location: appsmith/aps_backend/admin_api.py
+	'''
+
+	db = DBTable()
+
+	logging.info(f"Dropping table {table_name}")
+
+	dropped = db.drop_table(table_name)
+
+	if not dropped:
+		raise HTTPException(status_code=400, detail="Table drop failed.")
+
+	return {"dropped": dropped}
 
 @router.post(
 		"/admin/add-table-column/{table_name}",
@@ -212,3 +233,4 @@ def edit_table_column(
 		raise HTTPException(status_code=400, detail="Column edit failed.")
 
 	return {"edited": edited}
+

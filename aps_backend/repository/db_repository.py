@@ -476,3 +476,28 @@ class DBTable:
         finally:
             cur.close()
             conn.close()
+
+    def drop_table(self, table_name: str) -> bool:
+        """
+        Drop a specified table from the database.
+
+        Args:
+            table_name (str): The name of the table to drop.
+        Returns:
+            bool: True if the table was dropped successfully, False otherwise.
+        conn = self.get_connection()
+        """
+
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            query = f"DROP TABLE IF EXISTS {table_name};"
+            cur.execute(query)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error dropping table %s: %s", table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
