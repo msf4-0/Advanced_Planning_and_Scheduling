@@ -158,6 +158,11 @@ async def import_csv(table_name: str, csv_file: UploadFile = File(...)):
             clean_row = {k.strip(): (v.strip() if isinstance(v, str) else v) for k, v in row.items()}
             db.add(table_name, clean_row)
             all_rows.append(clean_row)
+        
+        if not all_rows:
+            logging.warning("No rows were imported from the CSV file.")
+            raise HTTPException(status_code=200, detail="No data imported from CSV file.")
+        
         return {"imported": len(all_rows), "rows": all_rows}
     except Exception as e:
         logging.error(f"Error parsing CSV file: {e}")
