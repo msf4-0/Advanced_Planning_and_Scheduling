@@ -53,8 +53,8 @@ class Configs:
         # You can add similar lines for machines/materials if needed
         
         self.constraintClass.add_constraint(self.machine_availability_constraint)
-        # self.constraintClass.add_constraint(self.machine_downtime_constraint)
-        # self.constraintClass.add_constraint(self.lock_sequence_constraint)
+        self.constraintClass.add_constraint(self.machine_downtime_constraint)
+        self.constraintClass.add_constraint(self.lock_sequence_constraint)
 
         self.objectiveClass.add_objective(self.minimize_total_tardiness)
 
@@ -67,21 +67,21 @@ class Configs:
 
     def machine_availability_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
-        Ensure that jobs are only scheduled on their allowed machines.
-        Uses the dynamic key for 'allowed_machines' from config.json fields mapping.
+        Ensure that jobs are only scheduled on their allowed resources.
+        Uses the dynamic key for 'allowed_resources' from config.json fields mapping.
         """
-        allowed_machines_key = self.job_fields.get('allowed_machines', 'allowed_machines')
+        allowed_resources_key = self.job_fields.get('allowed_resources', 'allowed_resources')
         machine_key = self.job_fields.get('machine', 'machine')
         for job, props in jobs.items():
-            allowed_machines = props.get(allowed_machines_key)
-            if allowed_machines is not None:
+            allowed_resources = props.get(allowed_resources_key)
+            if allowed_resources is not None:
                 machine_var = model.NewIntVarFromDomain(
-                    cp_model.Domain.FromValues(allowed_machines),
+                    cp_model.Domain.FromValues(allowed_resources),
                     f"{job}_machine"
                 )
                 model.Add(job_vars[job][machine_key] == machine_var)
             else:
-                logging.warning(f"Job {job} has no allowed machines specified; skipping machine availability constraint.")
+                logging.warning(f"Job {job} has no allowed resources specified; skipping resource availability constraint.")
 
     def machine_downtime_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """

@@ -3,7 +3,17 @@ class ConstraintBase:
     """
     Base class for all constraints. Each constraint should define required_fields.
     """
+    def __init__(self) -> None:
+        pass
+
     required_fields = []  # List of internal field names needed by this constraint
+
+    def get_model(self):
+        """
+        Return the model representation of the constraint.
+        To be implemented by subclasses.
+        """
+        raise NotImplementedError("Subclasses should implement get_model method.")
 
     @classmethod
     def get_required_fields(cls):

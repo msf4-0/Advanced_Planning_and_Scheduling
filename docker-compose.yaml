@@ -10,6 +10,8 @@ services:
     volumes:
       - appsmith-stacks:/appsmith-stacks
     restart: unless-stopped
+    networks:
+      - internal
 
   aps-backend:
     build: ./aps_backend  # Or use image: your-backend-image
@@ -29,6 +31,8 @@ services:
       watch:
         - path: ./aps_backend
           action: rebuild
+    networks:
+      - internal
 
   postgres:
     image: apache/age:release_PG15_1.6.0
@@ -41,9 +45,62 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - ./shared_data:/var/lib/postgresql/import
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - internal
+
+  erpnext-db:
+    image: 1devops2/erpnextdb:15
+    container_name: erpnextdb
+    environment:
+      - MYSQL_ROOT_PASSWORD=1QWERT2
+    volumes:
+      - ./conf:/etc/mysql/conf.d
+      - ./shared_data:/var/lib/erpnext/data
+      - erpnet-db-data:/var/lib/mysql
+    networks:
+      - erpnet
+      - internal
+    restart: unless-stopped
+
+  erpnext-app:
+    image: 1devops2/erpnext:15
+    container_name: erpnextapp
+    ports:
+      - "8001:8000"
+      - "9000:9000"
+    depends_on:
+      - erpnext-db
+    volumes:
+      - ./shared_data:/var/lib/erpnext/data
+      - erpnext-sites:/home/frappe/frappe-bench/sites
+      - erpnext-logs:/home/frappe/frappe-bench/logs
+    command: tail -f /dev/null
+    networks:
+      - erpnet
+      - internal
+    restart: unless-stopped
+
+  # kgtk-processor:
+  #   image: uscisii2/kgtk:latest
+  #   container_name: kgtk
+  #   volumes:
+  #     - ./shared_data:/data
+  #   working_dir: /data
+  #   tty: true
+  #   command: tail -f /dev/null
+
+networks:
+  erpnet:
+    driver: bridge
+  internal:
+    driver: bridge
 
 volumes:
   postgres-data:
   appsmith-stacks:
+  erpnet-db-data:
+  erpnext-sites:
+  erpnext-logs:
