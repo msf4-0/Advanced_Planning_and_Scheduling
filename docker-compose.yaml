@@ -83,15 +83,6 @@ services:
       - internal
     restart: unless-stopped
 
-  # kgtk-processor:
-  #   image: uscisii2/kgtk:latest
-  #   container_name: kgtk
-  #   volumes:
-  #     - ./shared_data:/data
-  #   working_dir: /data
-  #   tty: true
-  #   command: tail -f /dev/null
-
 networks:
   erpnet:
     driver: bridge

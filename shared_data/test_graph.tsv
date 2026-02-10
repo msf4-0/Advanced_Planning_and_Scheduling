@@ -1,5 +1,0 @@
-node1	label	node2
-taskA	has_duration	15
-taskA	has_priority	high
-taskB	has_duration	5
-taskB	has_priority	low
