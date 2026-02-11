@@ -78,7 +78,7 @@ class DBTable:
                 if table_name not in table_list:
                     raise ValueError("Table name not in allowed table list")
 
-            query = f"SELECT * FROM {table_name}"
+            query = f"SELECT * FROM \"{table_name}\""
             values = []
             if params:
                 filters = []
@@ -121,7 +121,7 @@ class DBTable:
 
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['%s'] * len(data))
-            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING *;"
+            query = f"INSERT INTO \"{table_name}\" ({columns}) VALUES ({placeholders}) RETURNING *;"
             cur.execute(query, tuple(data.values()))
             new_record = cur.fetchall()
             conn.commit()
@@ -154,7 +154,7 @@ class DBTable:
                 if table_name not in table_list:
                     raise ValueError("Table name not in allowed table list")
 
-            query = f"DELETE FROM {table_name}"
+            query = f"DELETE FROM \"{table_name}\""
             values = []
             if conditions:
                 filters = []
@@ -202,7 +202,7 @@ class DBTable:
             for key, value in data.items():
                 set_clauses.append(f"{key} = %s")
                 values.append(value)
-            query = f"UPDATE {table_name} SET " + ", ".join(set_clauses)
+            query = f"UPDATE \"{table_name}\" SET " + ", ".join(set_clauses)
 
             if conditions:
                 filters = []
@@ -251,7 +251,7 @@ class DBTable:
             conflict_cols = ', '.join(conflict_columns)
 
             query = f"""
-                INSERT INTO {table_name} ({columns})
+                INSERT INTO \"{table_name}\" ({columns})
                 VALUES ({placeholders})
                 ON CONFLICT ({conflict_cols}) DO UPDATE
                 SET {update_clauses}
@@ -285,7 +285,7 @@ class DBTable:
             if table_name not in ALLOWED_TABLES:
                 raise ValueError("Invalid table name")
             
-            cur.execute(f"SELECT COUNT(*) FROM {table_name};")
+            cur.execute(f"SELECT COUNT(*) FROM \"{table_name}\";")
             count = cur.fetchone()[0]
             return count
         except Exception as e:
@@ -335,7 +335,7 @@ class DBTable:
                     col_def += f" DEFAULT {col['default']}"
                 column_defs.append(col_def)
             columns_str = ", ".join(column_defs)
-            query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_str});"
+            query = f"CREATE TABLE IF NOT EXISTS \"{table_name}\" ({columns_str});"
             logging.info("Creating table with query: %s", query)
             cur.execute(query)
             conn.commit()
@@ -383,20 +383,20 @@ class DBTable:
                 if default not in (None, ""):
                     col_def += f" DEFAULT {default}"
                 # Add column
-                query = f"ALTER TABLE {table_name} ADD COLUMN {col_def};"
+                query = f"ALTER TABLE \"{table_name}\" ADD COLUMN {col_def};"
                 logging.info("Adding column with query: %s", query)
                 cur.execute(query)
                 # Add primary key (only possible if table has no PK yet, otherwise skip)
                 if primary_key:
                     try:
-                        pk_query = f"ALTER TABLE {table_name} ADD PRIMARY KEY ({name});"
+                        pk_query = f"ALTER TABLE \"{table_name}\" ADD PRIMARY KEY ({name});"
                         cur.execute(pk_query)
                     except Exception as pk_e:
                         logging.warning("Could not add primary key for column %s: %s", name, pk_e)
                 # Add foreign key
                 if foreign_key:
                     try:
-                        fk_query = f"ALTER TABLE {table_name} ADD FOREIGN KEY ({name}) REFERENCES {foreign_key};"
+                        fk_query = f"ALTER TABLE \"{table_name}\" ADD FOREIGN KEY ({name}) REFERENCES {foreign_key};"
                         cur.execute(fk_query)
                     except Exception as fk_e:
                         logging.warning("Could not add foreign key for column %s: %s", name, fk_e)
@@ -424,7 +424,7 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+            query = f"ALTER TABLE \"{table_name}\" DROP COLUMN {column_name};"
             cur.execute(query)
             conn.commit()
             return True
@@ -460,12 +460,12 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            query = f"ALTER TABLE {table_name} RENAME COLUMN {old_column_name} TO {new_column_name};"
+            query = f"ALTER TABLE \"{table_name}\" RENAME COLUMN {old_column_name} TO {new_column_name};"
             cur.execute(query)
-            query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} TYPE {new_data_type};"
+            query = f"ALTER TABLE \"{table_name}\" ALTER COLUMN {new_column_name} TYPE {new_data_type};"
             cur.execute(query)
             if default_value is not None:
-                query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} SET DEFAULT %s;"
+                query = f"ALTER TABLE \"{table_name}\" ALTER COLUMN {new_column_name} SET DEFAULT %s;"
                 cur.execute(query, (default_value,))
 
             conn.commit()
@@ -491,7 +491,7 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            query = f"DROP TABLE IF EXISTS {table_name};"
+            query = f"DROP TABLE IF EXISTS \"{table_name}\";"
             cur.execute(query)
             conn.commit()
             return True

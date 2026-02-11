@@ -83,10 +83,28 @@ services:
       - internal
     restart: unless-stopped
 
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Malaysia
+      - NODE_RED_CREDENTIAL_SECRET=qwerty
+    container_name: node_red
+    ports:
+      - "1880:1880"
+    volumes:
+      - node-red-data:/data
+      - ./shared_data:/node-red/shared_data
+    restart: unless-stopped
+    networks:
+      - internal
+      - node-red-net
+
 networks:
   erpnet:
     driver: bridge
   internal:
+    driver: bridge
+  node-red-net:
     driver: bridge
 
 volumes:
@@ -95,3 +113,4 @@ volumes:
   erpnet-db-data:
   erpnext-sites:
   erpnext-logs:
+  node-red-data:
