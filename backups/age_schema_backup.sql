@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict XVXG7n29rfuvWR7isfhbAYA0ZJx67poXZzpmhRFxDJIJd5doKT00b0jysiL1Mgz
+\restrict uCaKav43NPdOwIvYvvslf7wqXxhyQTLqYBfwTntodtcEZSr2LdChY97Eric3dwY
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
 -- Dumped by pg_dump version 15.15 (Debian 15.15-1.pgdg13+1)
@@ -447,6 +447,101 @@ ALTER SEQUENCE public.new_table_id_seq OWNED BY public.new_table.id;
 
 
 --
+-- Name: schedule_result; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public.schedule_result (
+    id integer NOT NULL,
+    result jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.schedule_result OWNER TO "postgresUser";
+
+--
+-- Name: schedule_result_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+--
+
+CREATE SEQUENCE public.schedule_result_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.schedule_result_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: schedule_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+--
+
+ALTER SEQUENCE public.schedule_result_id_seq OWNED BY public.schedule_result.id;
+
+
+--
+-- Name: tabCustomer; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public."tabCustomer" (
+    name character varying(140) NOT NULL,
+    creation timestamp without time zone,
+    modified timestamp without time zone,
+    modified_by character varying(140),
+    owner character varying(140),
+    docstatus integer DEFAULT 0 NOT NULL,
+    idx integer DEFAULT 0 NOT NULL,
+    naming_series character varying(140),
+    salutation character varying(140),
+    customer_name character varying(140),
+    customer_type character varying(140) DEFAULT 'Company'::character varying,
+    customer_group character varying(140),
+    territory character varying(140),
+    gender character varying(140),
+    lead_name character varying(140),
+    opportunity_name character varying(140),
+    account_manager character varying(140),
+    image text,
+    default_currency character varying(140),
+    default_bank_account character varying(140),
+    default_price_list character varying(140),
+    is_internal_customer integer DEFAULT 0 NOT NULL,
+    represents_company character varying(140),
+    market_segment character varying(140),
+    industry character varying(140),
+    customer_pos_id character varying(140),
+    website character varying(140),
+    language character varying(140),
+    customer_details text,
+    customer_primary_address character varying(140),
+    primary_address text,
+    customer_primary_contact character varying(140),
+    mobile_no character varying(140),
+    email_id character varying(140),
+    tax_id character varying(140),
+    tax_category character varying(140),
+    tax_withholding_category character varying(140),
+    payment_terms character varying(140),
+    loyalty_program character varying(140),
+    loyalty_program_tier character varying(140),
+    default_sales_partner character varying(140),
+    default_commission_rate numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    so_required integer DEFAULT 0 NOT NULL,
+    dn_required integer DEFAULT 0 NOT NULL,
+    is_frozen integer DEFAULT 0 NOT NULL,
+    disabled integer DEFAULT 0 NOT NULL,
+    _user_tags text,
+    _comments text,
+    _assign text,
+    _liked_by text
+);
+
+
+ALTER TABLE public."tabCustomer" OWNER TO "postgresUser";
+
+--
 -- Name: testing; Type: TABLE; Schema: public; Owner: postgresUser
 --
 
@@ -598,6 +693,13 @@ ALTER TABLE ONLY public.new_table ALTER COLUMN id SET DEFAULT nextval('public.ne
 
 
 --
+-- Name: schedule_result id; Type: DEFAULT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.schedule_result ALTER COLUMN id SET DEFAULT nextval('public.schedule_result_id_seq'::regclass);
+
+
+--
 -- Name: _ag_label_edge _ag_label_edge_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: postgresUser
 --
 
@@ -654,6 +756,22 @@ ALTER TABLE ONLY public.materials
 
 
 --
+-- Name: schedule_result schedule_result_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.schedule_result
+    ADD CONSTRAINT schedule_result_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tabCustomer tabCustomer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public."tabCustomer"
+    ADD CONSTRAINT "tabCustomer_pkey" PRIMARY KEY (name);
+
+
+--
 -- Name: testing testing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
 --
 
@@ -689,5 +807,5 @@ ALTER TABLE ONLY public.machines
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XVXG7n29rfuvWR7isfhbAYA0ZJx67poXZzpmhRFxDJIJd5doKT00b0jysiL1Mgz
+\unrestrict uCaKav43NPdOwIvYvvslf7wqXxhyQTLqYBfwTntodtcEZSr2LdChY97Eric3dwY
 

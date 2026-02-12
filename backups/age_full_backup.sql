@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bAGdEkhW4TcjUQN8YLRlCLHaB8CgXoZuk1qfdXFqRioUwG50CeAjuabi3x3Zg4s
+\restrict syNNlhBcwAowTQ50ZAPtTMP6tld2KmI4FmfoOYlDyifojEP8IhdypdNYMAIzZgy
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
 -- Dumped by pg_dump version 15.15 (Debian 15.15-1.pgdg13+1)
@@ -447,6 +447,101 @@ ALTER SEQUENCE public.new_table_id_seq OWNED BY public.new_table.id;
 
 
 --
+-- Name: schedule_result; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public.schedule_result (
+    id integer NOT NULL,
+    result jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.schedule_result OWNER TO "postgresUser";
+
+--
+-- Name: schedule_result_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+--
+
+CREATE SEQUENCE public.schedule_result_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.schedule_result_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: schedule_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+--
+
+ALTER SEQUENCE public.schedule_result_id_seq OWNED BY public.schedule_result.id;
+
+
+--
+-- Name: tabCustomer; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public."tabCustomer" (
+    name character varying(140) NOT NULL,
+    creation timestamp without time zone,
+    modified timestamp without time zone,
+    modified_by character varying(140),
+    owner character varying(140),
+    docstatus integer DEFAULT 0 NOT NULL,
+    idx integer DEFAULT 0 NOT NULL,
+    naming_series character varying(140),
+    salutation character varying(140),
+    customer_name character varying(140),
+    customer_type character varying(140) DEFAULT 'Company'::character varying,
+    customer_group character varying(140),
+    territory character varying(140),
+    gender character varying(140),
+    lead_name character varying(140),
+    opportunity_name character varying(140),
+    account_manager character varying(140),
+    image text,
+    default_currency character varying(140),
+    default_bank_account character varying(140),
+    default_price_list character varying(140),
+    is_internal_customer integer DEFAULT 0 NOT NULL,
+    represents_company character varying(140),
+    market_segment character varying(140),
+    industry character varying(140),
+    customer_pos_id character varying(140),
+    website character varying(140),
+    language character varying(140),
+    customer_details text,
+    customer_primary_address character varying(140),
+    primary_address text,
+    customer_primary_contact character varying(140),
+    mobile_no character varying(140),
+    email_id character varying(140),
+    tax_id character varying(140),
+    tax_category character varying(140),
+    tax_withholding_category character varying(140),
+    payment_terms character varying(140),
+    loyalty_program character varying(140),
+    loyalty_program_tier character varying(140),
+    default_sales_partner character varying(140),
+    default_commission_rate numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    so_required integer DEFAULT 0 NOT NULL,
+    dn_required integer DEFAULT 0 NOT NULL,
+    is_frozen integer DEFAULT 0 NOT NULL,
+    disabled integer DEFAULT 0 NOT NULL,
+    _user_tags text,
+    _comments text,
+    _assign text,
+    _liked_by text
+);
+
+
+ALTER TABLE public."tabCustomer" OWNER TO "postgresUser";
+
+--
 -- Name: testing; Type: TABLE; Schema: public; Owner: postgresUser
 --
 
@@ -598,6 +693,13 @@ ALTER TABLE ONLY public.new_table ALTER COLUMN id SET DEFAULT nextval('public.ne
 
 
 --
+-- Name: schedule_result id; Type: DEFAULT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.schedule_result ALTER COLUMN id SET DEFAULT nextval('public.schedule_result_id_seq'::regclass);
+
+
+--
 -- Data for Name: ag_graph; Type: TABLE DATA; Schema: ag_catalog; Owner: postgresUser
 --
 
@@ -634,6 +736,13 @@ COPY production_graph."ALLOWED_ON" (id, start_id, end_id, properties) FROM stdin
 2251799813685253	1125899906842628	844424930131970	{}
 2251799813685254	1125899906842628	844424930131971	{}
 2251799813685255	1125899906842629	844424930131971	{}
+2251799813685249	1125899906842625	844424930131969	{}
+2251799813685250	1125899906842625	844424930131970	{}
+2251799813685251	1125899906842626	844424930131970	{}
+2251799813685252	1125899906842627	844424930131969	{}
+2251799813685253	1125899906842628	844424930131970	{}
+2251799813685254	1125899906842628	844424930131971	{}
+2251799813685255	1125899906842629	844424930131971	{}
 \.
 
 
@@ -642,6 +751,13 @@ COPY production_graph."ALLOWED_ON" (id, start_id, end_id, properties) FROM stdin
 --
 
 COPY production_graph."CAN_RUN_ON" (id, start_id, end_id, properties) FROM stdin;
+1688849860263937	1125899906842625	844424930131969	{}
+1688849860263938	1125899906842625	844424930131970	{}
+1688849860263939	1125899906842626	844424930131970	{}
+1688849860263940	1125899906842627	844424930131969	{}
+1688849860263941	1125899906842628	844424930131970	{}
+1688849860263942	1125899906842628	844424930131971	{}
+1688849860263943	1125899906842629	844424930131971	{}
 1688849860263937	1125899906842625	844424930131969	{}
 1688849860263938	1125899906842625	844424930131970	{}
 1688849860263939	1125899906842626	844424930131970	{}
@@ -662,6 +778,11 @@ COPY production_graph."Job" (id, properties) FROM stdin;
 1125899906842627	{"job_id": "jobC", "locked": true, "due_date": 10, "duration": 4, "domain_end": 18, "qty_ordered": 80, "domain_start": 0, "locked_start": 2, "locked_machine": 1, "qty_initialized": 80}
 1125899906842628	{"job_id": "jobD", "locked": false, "due_date": 15, "duration": 10, "domain_end": 20, "qty_ordered": 100, "domain_start": 0, "qty_initialized": 90}
 1125899906842629	{"job_id": "jobE", "locked": false, "due_date": 15, "duration": 15, "domain_end": 20, "qty_ordered": 100, "domain_start": 0, "qty_initialized": 90}
+1125899906842625	{"job_id": "jobA", "locked": false, "due_date": 15, "duration": 5, "domain_end": 20, "qty_ordered": 100, "domain_start": 0, "qty_initialized": 90}
+1125899906842626	{"job_id": "jobB", "locked": false, "due_date": 20, "duration": 7, "domain_end": 25, "predecessor": "jobA", "qty_ordered": 120, "domain_start": 0, "qty_initialized": 110}
+1125899906842627	{"job_id": "jobC", "locked": true, "due_date": 10, "duration": 4, "domain_end": 18, "qty_ordered": 80, "domain_start": 0, "locked_start": 2, "locked_machine": 1, "qty_initialized": 80}
+1125899906842628	{"job_id": "jobD", "locked": false, "due_date": 15, "duration": 10, "domain_end": 20, "qty_ordered": 100, "domain_start": 0, "qty_initialized": 90}
+1125899906842629	{"job_id": "jobE", "locked": false, "due_date": 15, "duration": 15, "domain_end": 20, "qty_ordered": 100, "domain_start": 0, "qty_initialized": 90}
 \.
 
 
@@ -670,6 +791,9 @@ COPY production_graph."Job" (id, properties) FROM stdin;
 --
 
 COPY production_graph."Machine" (id, properties) FROM stdin;
+844424930131969	{"type": "CNC", "capacity": 2, "machine_id": 1}
+844424930131970	{"type": "Lathe", "capacity": 1, "machine_id": 2}
+844424930131971	{"type": "Milling", "capacity": 1, "machine_id": 3}
 844424930131969	{"type": "CNC", "capacity": 2, "machine_id": 1}
 844424930131970	{"type": "Lathe", "capacity": 1, "machine_id": 2}
 844424930131971	{"type": "Milling", "capacity": 1, "machine_id": 3}
@@ -683,6 +807,8 @@ COPY production_graph."Machine" (id, properties) FROM stdin;
 COPY production_graph."Material" (id, properties) FROM stdin;
 1407374883553281	{"material_id": "matA", "material_name": "Steel"}
 1407374883553282	{"material_id": "matB", "material_name": "Aluminum"}
+1407374883553281	{"material_id": "matA", "material_name": "Steel"}
+1407374883553282	{"material_id": "matB", "material_name": "Aluminum"}
 \.
 
 
@@ -691,6 +817,8 @@ COPY production_graph."Material" (id, properties) FROM stdin;
 --
 
 COPY production_graph."PRECEDES" (id, start_id, end_id, properties) FROM stdin;
+1970324836974593	1125899906842626	1125899906842625	{}
+1970324836974594	1125899906842625	1125899906842626	{}
 1970324836974593	1125899906842626	1125899906842625	{}
 1970324836974594	1125899906842625	1125899906842626	{}
 \.
@@ -721,10 +849,8 @@ jobE	15	0	20	\N	15	100	90	f	\N	\N	3
 jobB	7	0	25	jobA	20	120	110	f	\N	\N	5
 jobD	10	0	20	\N	15	100	90	f	\N	\N	5
 jobC	4	0	18	\N	10	80	80	t	2	1	3
-something	5	0	50	jobF	30	100	90	f	\N	\N	3
 jobF	6	0	15	jobC	20	100	90	f	\N	\N	4
 jobA	10	0	20	\N	15	100	90	f	\N	\N	3
-newJob	2	10	13	jobA	15	50	50	f	\N	\N	4
 paintingJob	5	5	20	\N	15	100	90	f	\N	\N	6
 \.
 
@@ -771,6 +897,28 @@ matB	Aluminum
 
 COPY public.new_table (id, game) FROM stdin;
 1	Elden Ring
+\.
+
+
+--
+-- Data for Name: schedule_result; Type: TABLE DATA; Schema: public; Owner: postgresUser
+--
+
+COPY public.schedule_result (id, result, created_at) FROM stdin;
+1	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "newJob": {"end": 12, "start": 10, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:15:36.792166
+2	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "newJob": {"end": 12, "start": 10, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:15:40.546615
+3	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:16:04.60846
+\.
+
+
+--
+-- Data for Name: tabCustomer; Type: TABLE DATA; Schema: public; Owner: postgresUser
+--
+
+COPY public."tabCustomer" (name, creation, modified, modified_by, owner, docstatus, idx, naming_series, salutation, customer_name, customer_type, customer_group, territory, gender, lead_name, opportunity_name, account_manager, image, default_currency, default_bank_account, default_price_list, is_internal_customer, represents_company, market_segment, industry, customer_pos_id, website, language, customer_details, customer_primary_address, primary_address, customer_primary_contact, mobile_no, email_id, tax_id, tax_category, tax_withholding_category, payment_terms, loyalty_program, loyalty_program_tier, default_sales_partner, default_commission_rate, so_required, dn_required, is_frozen, disabled, _user_tags, _comments, _assign, _liked_by) FROM stdin;
+Grant Plastics Ltd.	2026-02-05 10:27:08.059	2026-02-05 10:27:08.059	lugoisdead@gmail.com	lugoisdead@gmail.com	0	3	CUST-.YYYY.-	\N	Grant Plastics Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
+Palmer Productions Ltd.	2026-02-05 10:27:09.105	2026-02-05 10:27:09.105	lugoisdead@gmail.com	lugoisdead@gmail.com	0	0	CUST-.YYYY.-	\N	Palmer Productions Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
+West View Software Ltd.	2026-02-05 10:27:09.077	2026-02-05 10:27:09.077	lugoisdead@gmail.com	lugoisdead@gmail.com	0	0	CUST-.YYYY.-	\N	West View Software Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
 \.
 
 
@@ -879,6 +1027,13 @@ SELECT pg_catalog.setval('public.new_table_id_seq', 1, true);
 
 
 --
+-- Name: schedule_result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
+--
+
+SELECT pg_catalog.setval('public.schedule_result_id_seq', 3, true);
+
+
+--
 -- Name: testing_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
 --
 
@@ -942,6 +1097,22 @@ ALTER TABLE ONLY public.materials
 
 
 --
+-- Name: schedule_result schedule_result_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.schedule_result
+    ADD CONSTRAINT schedule_result_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tabCustomer tabCustomer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public."tabCustomer"
+    ADD CONSTRAINT "tabCustomer_pkey" PRIMARY KEY (name);
+
+
+--
 -- Name: testing testing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
 --
 
@@ -977,5 +1148,5 @@ ALTER TABLE ONLY public.machines
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bAGdEkhW4TcjUQN8YLRlCLHaB8CgXoZuk1qfdXFqRioUwG50CeAjuabi3x3Zg4s
+\unrestrict syNNlhBcwAowTQ50ZAPtTMP6tld2KmI4FmfoOYlDyifojEP8IhdypdNYMAIzZgy
 
