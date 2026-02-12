@@ -52,8 +52,8 @@ class SchedulerModelBuilder:
             end = model.NewIntVar(domain[0], domain[1], f"{job_name}_end")
             interval = model.NewIntervalVar(start, duration, end, f"{job_name}_interval")
             machine = model.NewIntVarFromDomain(
-                    cp_model.Domain.FromValues(props.get('allowed_machines', [1])),
-                    f"{job_name}_machine"
+                    cp_model.Domain.FromValues(props.get('allowed_resources', [1])),
+                    f"{job_name}_resources"
                 )
             
             job_vars[job_name] = {
@@ -61,7 +61,7 @@ class SchedulerModelBuilder:
                 'end': end,
                 'interval': interval,
                 'duration': duration,
-                'machine': machine
+                'resources': machine
             }
 
         return job_vars

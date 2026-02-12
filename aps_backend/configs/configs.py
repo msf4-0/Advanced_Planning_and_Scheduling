@@ -71,15 +71,15 @@ class Configs:
         Uses the dynamic key for 'allowed_resources' from config.json fields mapping.
         """
         allowed_resources_key = self.job_fields.get('allowed_resources', 'allowed_resources')
-        machine_key = self.job_fields.get('machine', 'machine')
+        resources_key = self.job_fields.get('resources', 'resources')
         for job, props in jobs.items():
             allowed_resources = props.get(allowed_resources_key)
             if allowed_resources is not None:
-                machine_var = model.NewIntVarFromDomain(
+                resources_var = model.NewIntVarFromDomain(
                     cp_model.Domain.FromValues(allowed_resources),
-                    f"{job}_machine"
+                    f"{job}_resources"
                 )
-                model.Add(job_vars[job][machine_key] == machine_var)
+                model.Add(job_vars[job][resources_key] == resources_var)
             else:
                 logging.warning(f"Job {job} has no allowed resources specified; skipping resource availability constraint.")
 
