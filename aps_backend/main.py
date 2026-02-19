@@ -109,18 +109,20 @@ def get_config():
 		raise HTTPException(status_code=500, detail=str(e))
 
 @app.post(
-		"/set-scheduler-state",
-		tags=["Schedule"]
-		)
+	"/set-scheduler-state",
+	tags=["Schedule"]
+)
 def toggle_run_scheduler(
-	state_key: str = Query("toggle_autoRun"), \
-	input: SchedulerInput = Body(None)
-	):
+	state_key: str = Query("toggle_autoRun")
+):
 	'''
-	Toggles the scheduler's running state.
+	[DEPRECATED] Toggles the scheduler's running state.
+
+	This endpoint is deprecated. Please use /set-config instead.
 
 	Location: appsmith/aps_backend/api/aps_api.py
 	'''
+	logging.warning("[DEPRECATED] /set-scheduler-state is deprecated. Use /set-config instead.")
 	try:
 		db = DBTable()
 		current_state = db.fetch("config", {"key": state_key})
@@ -132,18 +134,21 @@ def toggle_run_scheduler(
 		raise HTTPException(status_code=500, detail=str(e))
 	
 @app.get(
-		"/get-scheduler-state",
-		tags=["Schedule"]
-		)
+	"/get-scheduler-state",
+	tags=["Schedule"]
+)
 def get_scheduler_state(
 	state_key: str = Query("toggle_autoRun"),
 	type: SchedulerInput = Body(bool)
-	):
+):
 	'''
-	Fetches the current running state of the scheduler.
+	[DEPRECATED] Fetches the current running state of the scheduler.
+
+	This endpoint is deprecated. Please use /get-config instead.
 
 	Location: appsmith/aps_backend/api/aps_api.py
 	'''
+	logging.warning("[DEPRECATED] /get-scheduler-state is deprecated. Use /get-config instead.")
 	try:
 		db = DBTable()
 		current_state = db.fetch("config", {"key": state_key})
