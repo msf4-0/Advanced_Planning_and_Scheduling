@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Any, Dict, Optional
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Query
 from pydantic import BaseModel
 from repository import DBTable
 from schema_mapper import SchemaMapper
@@ -76,11 +76,46 @@ def get_schedule():
 		logging.error(f"(API) Error fetching recent schedule: {e}")
 		raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/set-config", tags=["Config"])
+def set_config(config: dict = Body(...)):
+	"""
+	Sets a config value for any key. Accepts a single key-value pair in the request body.
+	"""
+	try:
+		db = DBTable()
+		if not config or len(config) != 1:
+			raise HTTPException(status_code=400, detail="Request body must contain exactly one key-value pair.")
+		
+		key, value = next(iter(config.items()))
+		
+		db.update("config", {"value": value}, {"key": key})
+		return {"success": True, "key": key, "value": value}
+	except Exception as e:
+		logging.error(f"(API) Error setting config: {e}")
+		raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/get-config", tags=["Config"])
+def get_config():
+	"""
+	Gets all config values as a key-value dictionary.
+	"""
+	try:
+		db = DBTable()
+		result = db.fetch("config")
+		config_dict = {item["key"]: item["value"] for item in result}
+		return {"success": True, "config": config_dict}
+	except Exception as e:
+		logging.error(f"(API) Error fetching config: {e}")
+		raise HTTPException(status_code=500, detail=str(e))
+
 @app.post(
-		"/toggle-run-scheduler",
+		"/set-scheduler-state",
 		tags=["Schedule"]
 		)
-def toggle_run_scheduler():
+def toggle_run_scheduler(
+	state_key: str = Query("toggle_autoRun"), \
+	input: SchedulerInput = Body(None)
+	):
 	'''
 	Toggles the scheduler's running state.
 
@@ -88,9 +123,9 @@ def toggle_run_scheduler():
 	'''
 	try:
 		db = DBTable()
-		current_state = db.fetch("config", {"key": "toggle_autoRun"})
+		current_state = db.fetch("config", {"key": state_key})
 		new_state = not (current_state[0]["value"] == "TRUE") if current_state else True
-		db.update("config", {"value": "TRUE" if new_state else "FALSE"}, {"key": "toggle_autoRun"})
+		db.update("config", {"value": "TRUE" if new_state else "FALSE"}, {"key": state_key})
 		return {"success": True, "is_running": new_state}
 	except Exception as e:
 		logging.error(f"(API) Error toggling scheduler state: {e}")
@@ -100,7 +135,10 @@ def toggle_run_scheduler():
 		"/get-scheduler-state",
 		tags=["Schedule"]
 		)
-def get_scheduler_state():
+def get_scheduler_state(
+	state_key: str = Query("toggle_autoRun"),
+	type: SchedulerInput = Body(bool)
+	):
 	'''
 	Fetches the current running state of the scheduler.
 
@@ -108,7 +146,7 @@ def get_scheduler_state():
 	'''
 	try:
 		db = DBTable()
-		current_state = db.fetch("config", {"key": "toggle_autoRun"})
+		current_state = db.fetch("config", {"key": state_key})
 		is_running = True if (current_state[0]["value"] == "TRUE") else False
 		return {"success": True, "is_running": is_running}
 	except Exception as e:

@@ -99,6 +99,34 @@ def upsert_table_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@router.post(
+    "/update",
+    response_model=int,
+    tags=["Table General"]
+)
+def update_table_data(
+    table_name: str = Query(...),
+    condition: dict = Body(...),
+    update_values: dict = Body(...)
+):
+    '''
+    Update records in a specified table based on a condition.
+
+    Location: appsmith/aps_backend/api/table_api.py
+    '''
+
+    db = DBTable()
+    mapper = SchemaMapper(db.get_connection_graph())
+
+    valid_tables = mapper.list_tables()
+    try:
+        if not condition:
+            raise HTTPException(status_code=400, detail="Condition for update cannot be empty.")
+
+        result = db.update(table_name, update_values, condition, table_list=valid_tables)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete(
     "/data",

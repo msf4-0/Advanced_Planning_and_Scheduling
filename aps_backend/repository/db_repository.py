@@ -54,7 +54,7 @@ class DBTable:
             cur.execute("SET TIME ZONE 'UTC';")
         return conn
 
-    # Fetch functions
+    # -------------- Basic CRUD functions ---------------
 
     def fetch(self, table_name: str, params: Optional[dict] = None, table_list: Optional[list[str]] = None) -> list[dict[str, Any]]:
         """
@@ -295,57 +295,7 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def create_table(self, table_name: str, columns: list[dict]) -> bool:
-        """
-        Create a new table in the database with the specified schema.
-
-        Args:
-            table_name (str): The name of the table to create.
-            columns (list[dict]): A list of dicts, each with keys:
-                - name (str): column name
-                - type (str): SQL data type
-                - default (optional): default value
-                - nullable (optional): bool
-                - primary_key (optional): bool
-                - unique (optional): bool
-                - foreign_key (optional): str, e.g. 'other_table(other_id)'
-
-            Example:
-                columns = [
-                    {"name": "item_id", "type": "SERIAL", "primary_key": True},
-                    {"name": "item_name", "type": "VARCHAR(100)", "nullable": False},
-                    {"name": "quantity", "type": "INT", "default": 0, "nullable": True},
-                    {"name": "category_id", "type": "INT", "foreign_key": "categories(category_id)"}
-                ]
-
-        Returns:
-            bool: True if the table was created successfully, False otherwise.
-        """
-        conn = self.get_connection()
-        cur = conn.cursor()
-        try:
-            column_defs = []
-            for col in columns:
-                col_def = f"{col['name']} {col['type']}"
-                if not col.get("nullable", True):
-                    col_def += " NOT NULL"
-                if col.get("unique", False):
-                    col_def += " UNIQUE"
-                if "default" in col:
-                    col_def += f" DEFAULT {col['default']}"
-                column_defs.append(col_def)
-            columns_str = ", ".join(column_defs)
-            query = f"CREATE TABLE IF NOT EXISTS \"{table_name}\" ({columns_str});"
-            logging.info("Creating table with query: %s", query)
-            cur.execute(query)
-            conn.commit()
-            return True
-        except Exception as e:
-            logging.error("Error creating table %s: %s", table_name, e)
-            return False
-        finally:
-            cur.close()
-            conn.close()
+    # --------------- Column manipulation functions ---------------
 
     def add_table_column(self,
                          table_name: str,
@@ -472,6 +422,60 @@ class DBTable:
             return True
         except Exception as e:
             logging.error("Error editing column %s in table %s: %s", old_column_name, table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    # --------------- Table manipulation functions ---------------
+
+    def create_table(self, table_name: str, columns: list[dict]) -> bool:
+        """
+        Create a new table in the database with the specified schema.
+
+        Args:
+            table_name (str): The name of the table to create.
+            columns (list[dict]): A list of dicts, each with keys:
+                - name (str): column name
+                - type (str): SQL data type
+                - default (optional): default value
+                - nullable (optional): bool
+                - primary_key (optional): bool
+                - unique (optional): bool
+                - foreign_key (optional): str, e.g. 'other_table(other_id)'
+
+            Example:
+                columns = [
+                    {"name": "item_id", "type": "SERIAL", "primary_key": True},
+                    {"name": "item_name", "type": "VARCHAR(100)", "nullable": False},
+                    {"name": "quantity", "type": "INT", "default": 0, "nullable": True},
+                    {"name": "category_id", "type": "INT", "foreign_key": "categories(category_id)"}
+                ]
+
+        Returns:
+            bool: True if the table was created successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            column_defs = []
+            for col in columns:
+                col_def = f"{col['name']} {col['type']}"
+                if not col.get("nullable", True):
+                    col_def += " NOT NULL"
+                if col.get("unique", False):
+                    col_def += " UNIQUE"
+                if "default" in col:
+                    col_def += f" DEFAULT {col['default']}"
+                column_defs.append(col_def)
+            columns_str = ", ".join(column_defs)
+            query = f"CREATE TABLE IF NOT EXISTS \"{table_name}\" ({columns_str});"
+            logging.info("Creating table with query: %s", query)
+            cur.execute(query)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error creating table %s: %s", table_name, e)
             return False
         finally:
             cur.close()
