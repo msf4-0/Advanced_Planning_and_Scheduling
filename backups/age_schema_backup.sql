@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict uCaKav43NPdOwIvYvvslf7wqXxhyQTLqYBfwTntodtcEZSr2LdChY97Eric3dwY
+\restrict FEeeKWLoGF43iyJuuS6PremWS2EDWrbXe6vPs8ZZQrnXE8PhzIf6zsnJGfLCOQY
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
--- Dumped by pg_dump version 15.15 (Debian 15.15-1.pgdg13+1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -91,7 +91,7 @@ CREATE SEQUENCE production_graph."ALLOWED_ON_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."ALLOWED_ON_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."ALLOWED_ON_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: ALLOWED_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -123,7 +123,7 @@ CREATE SEQUENCE production_graph."CAN_RUN_ON_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."CAN_RUN_ON_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."CAN_RUN_ON_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -167,7 +167,7 @@ CREATE SEQUENCE production_graph."Job_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Job_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."Job_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: Job_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -199,7 +199,7 @@ CREATE SEQUENCE production_graph."Machine_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Machine_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."Machine_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: Machine_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -231,7 +231,7 @@ CREATE SEQUENCE production_graph."Material_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Material_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."Material_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: Material_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -263,7 +263,7 @@ CREATE SEQUENCE production_graph."PRECEDES_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."PRECEDES_id_seq" OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph."PRECEDES_id_seq" OWNER TO "postgresUser";
 
 --
 -- Name: PRECEDES_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -284,7 +284,7 @@ CREATE SEQUENCE production_graph._ag_label_edge_id_seq
     CACHE 1;
 
 
-ALTER TABLE production_graph._ag_label_edge_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph._ag_label_edge_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: _ag_label_edge_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -305,7 +305,7 @@ CREATE SEQUENCE production_graph._ag_label_vertex_id_seq
     CACHE 1;
 
 
-ALTER TABLE production_graph._ag_label_vertex_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph._ag_label_vertex_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: _ag_label_vertex_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
@@ -328,7 +328,53 @@ CREATE SEQUENCE production_graph._label_id_seq
     CYCLE;
 
 
-ALTER TABLE production_graph._label_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE production_graph._label_id_seq OWNER TO "postgresUser";
+
+--
+-- Name: New_table2; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public."New_table2" (
+    id integer NOT NULL,
+    client character varying(255)
+);
+
+
+ALTER TABLE public."New_table2" OWNER TO "postgresUser";
+
+--
+-- Name: New_table2_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+--
+
+CREATE SEQUENCE public."New_table2_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."New_table2_id_seq" OWNER TO "postgresUser";
+
+--
+-- Name: New_table2_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+--
+
+ALTER SEQUENCE public."New_table2_id_seq" OWNED BY public."New_table2".id;
+
+
+--
+-- Name: config; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public.config (
+    key text NOT NULL,
+    value text
+);
+
+
+ALTER TABLE public.config OWNER TO "postgresUser";
 
 --
 -- Name: jobs; Type: TABLE; Schema: public; Owner: postgresUser
@@ -377,7 +423,7 @@ CREATE SEQUENCE public.machine_types_type_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.machine_types_type_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.machine_types_type_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: machine_types_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -437,7 +483,7 @@ CREATE SEQUENCE public.new_table_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.new_table_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.new_table_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: new_table_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -472,7 +518,7 @@ CREATE SEQUENCE public.schedule_result_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.schedule_result_id_seq OWNER TO "postgresUser";
+ALTER SEQUENCE public.schedule_result_id_seq OWNER TO "postgresUser";
 
 --
 -- Name: schedule_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
@@ -482,10 +528,10 @@ ALTER SEQUENCE public.schedule_result_id_seq OWNED BY public.schedule_result.id;
 
 
 --
--- Name: tabCustomer; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: tabCompany; Type: TABLE; Schema: public; Owner: postgresUser
 --
 
-CREATE TABLE public."tabCustomer" (
+CREATE TABLE public."tabCompany" (
     name character varying(140) NOT NULL,
     creation timestamp without time zone,
     modified timestamp without time zone,
@@ -493,45 +539,82 @@ CREATE TABLE public."tabCustomer" (
     owner character varying(140),
     docstatus integer DEFAULT 0 NOT NULL,
     idx integer DEFAULT 0 NOT NULL,
-    naming_series character varying(140),
-    salutation character varying(140),
-    customer_name character varying(140),
-    customer_type character varying(140) DEFAULT 'Company'::character varying,
-    customer_group character varying(140),
-    territory character varying(140),
-    gender character varying(140),
-    lead_name character varying(140),
-    opportunity_name character varying(140),
-    account_manager character varying(140),
-    image text,
+    company_name character varying(140),
+    abbr character varying(140),
     default_currency character varying(140),
-    default_bank_account character varying(140),
-    default_price_list character varying(140),
-    is_internal_customer integer DEFAULT 0 NOT NULL,
-    represents_company character varying(140),
-    market_segment character varying(140),
-    industry character varying(140),
-    customer_pos_id character varying(140),
-    website character varying(140),
-    language character varying(140),
-    customer_details text,
-    customer_primary_address character varying(140),
-    primary_address text,
-    customer_primary_contact character varying(140),
-    mobile_no character varying(140),
-    email_id character varying(140),
+    country character varying(140),
+    is_group integer DEFAULT 0 NOT NULL,
+    default_holiday_list character varying(140),
+    default_letter_head character varying(140),
     tax_id character varying(140),
-    tax_category character varying(140),
-    tax_withholding_category character varying(140),
+    domain character varying(140),
+    date_of_establishment date,
+    parent_company character varying(140),
+    company_logo text,
+    date_of_incorporation date,
+    phone_no character varying(140),
+    email character varying(140),
+    company_description text,
+    date_of_commencement date,
+    fax character varying(140),
+    website character varying(140),
+    registration_details text,
+    lft integer DEFAULT 0 NOT NULL,
+    rgt integer DEFAULT 0 NOT NULL,
+    old_parent character varying(140),
+    create_chart_of_accounts_based_on character varying(140),
+    existing_company character varying(140),
+    chart_of_accounts character varying(140),
+    default_bank_account character varying(140),
+    default_cash_account character varying(140),
+    default_receivable_account character varying(140),
+    round_off_account character varying(140),
+    round_off_cost_center character varying(140),
+    write_off_account character varying(140),
+    exchange_gain_loss_account character varying(140),
+    unrealized_exchange_gain_loss_account character varying(140),
+    unrealized_profit_loss_account character varying(140),
+    allow_account_creation_against_child_company integer DEFAULT 0 NOT NULL,
+    default_payable_account character varying(140),
+    default_expense_account character varying(140),
+    default_income_account character varying(140),
+    default_deferred_revenue_account character varying(140),
+    default_deferred_expense_account character varying(140),
+    default_discount_account character varying(140),
     payment_terms character varying(140),
-    loyalty_program character varying(140),
-    loyalty_program_tier character varying(140),
-    default_sales_partner character varying(140),
-    default_commission_rate numeric(21,9) DEFAULT 0.000000000 NOT NULL,
-    so_required integer DEFAULT 0 NOT NULL,
-    dn_required integer DEFAULT 0 NOT NULL,
-    is_frozen integer DEFAULT 0 NOT NULL,
-    disabled integer DEFAULT 0 NOT NULL,
+    cost_center character varying(140),
+    default_finance_book character varying(140),
+    book_advance_payments_in_separate_party_account integer DEFAULT 0 NOT NULL,
+    default_advance_received_account character varying(140),
+    default_advance_paid_account character varying(140),
+    auto_exchange_rate_revaluation integer DEFAULT 0 NOT NULL,
+    auto_err_frequency character varying(140),
+    submit_err_jv integer DEFAULT 0 NOT NULL,
+    exception_budget_approver_role character varying(140),
+    accumulated_depreciation_account character varying(140),
+    depreciation_expense_account character varying(140),
+    series_for_depreciation_entry character varying(140),
+    expenses_included_in_asset_valuation character varying(140),
+    disposal_account character varying(140),
+    depreciation_cost_center character varying(140),
+    capital_work_in_progress_account character varying(140),
+    asset_received_but_not_billed character varying(140),
+    default_buying_terms character varying(140),
+    sales_monthly_history text,
+    monthly_sales_target numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    total_monthly_sales numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    default_selling_terms character varying(140),
+    default_warehouse_for_sales_return character varying(140),
+    credit_limit numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    transactions_annual_history text,
+    enable_perpetual_inventory integer DEFAULT 1 NOT NULL,
+    enable_provisional_accounting_for_non_stock_items integer DEFAULT 0 NOT NULL,
+    default_inventory_account character varying(140),
+    stock_adjustment_account character varying(140),
+    default_in_transit_warehouse character varying(140),
+    stock_received_but_not_billed character varying(140),
+    default_provisional_account character varying(140),
+    expenses_included_in_valuation character varying(140),
     _user_tags text,
     _comments text,
     _assign text,
@@ -539,7 +622,70 @@ CREATE TABLE public."tabCustomer" (
 );
 
 
-ALTER TABLE public."tabCustomer" OWNER TO "postgresUser";
+ALTER TABLE public."tabCompany" OWNER TO "postgresUser";
+
+--
+-- Name: tabJob Card; Type: TABLE; Schema: public; Owner: postgresUser
+--
+
+CREATE TABLE public."tabJob Card" (
+    name character varying(140) NOT NULL,
+    creation timestamp without time zone,
+    modified timestamp without time zone,
+    modified_by character varying(140),
+    owner character varying(140),
+    docstatus integer DEFAULT 0 NOT NULL,
+    idx integer DEFAULT 0 NOT NULL,
+    naming_series character varying(140) DEFAULT 'PO-JOB.#####'::character varying,
+    work_order character varying(140),
+    bom_no character varying(140),
+    production_item character varying(140),
+    posting_date date,
+    company character varying(140),
+    for_quantity numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    total_completed_qty numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    process_loss_qty numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    expected_start_date timestamp without time zone,
+    time_required numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    expected_end_date timestamp without time zone,
+    actual_start_date timestamp without time zone,
+    total_time_in_mins numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    actual_end_date timestamp without time zone,
+    operation character varying(140),
+    wip_warehouse character varying(140),
+    workstation_type character varying(140),
+    workstation character varying(140),
+    quality_inspection_template character varying(140),
+    quality_inspection character varying(140),
+    for_job_card character varying(140),
+    is_corrective_job_card integer DEFAULT 0 NOT NULL,
+    hour_rate numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    for_operation character varying(140),
+    project character varying(140),
+    item_name character varying(140),
+    transferred_qty numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    requested_qty numeric(21,9) DEFAULT 0.000000000 NOT NULL,
+    status character varying(140) DEFAULT 'Open'::character varying,
+    operation_row_number character varying(140),
+    operation_id character varying(140),
+    sequence_id integer DEFAULT 0 NOT NULL,
+    remarks text,
+    serial_and_batch_bundle character varying(140),
+    batch_no character varying(140),
+    serial_no text,
+    barcode text,
+    job_started integer DEFAULT 0 NOT NULL,
+    started_time timestamp without time zone,
+    "current_time" integer DEFAULT 0 NOT NULL,
+    amended_from character varying(140),
+    _user_tags text,
+    _comments text,
+    _assign text,
+    _liked_by text
+);
+
+
+ALTER TABLE public."tabJob Card" OWNER TO "postgresUser";
 
 --
 -- Name: testing; Type: TABLE; Schema: public; Owner: postgresUser
@@ -679,6 +825,13 @@ ALTER TABLE ONLY production_graph._ag_label_vertex ALTER COLUMN id SET DEFAULT a
 
 
 --
+-- Name: New_table2 id; Type: DEFAULT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public."New_table2" ALTER COLUMN id SET DEFAULT nextval('public."New_table2_id_seq"'::regclass);
+
+
+--
 -- Name: machine_types type_id; Type: DEFAULT; Schema: public; Owner: postgresUser
 --
 
@@ -713,6 +866,26 @@ ALTER TABLE ONLY production_graph._ag_label_edge
 
 ALTER TABLE ONLY production_graph._ag_label_vertex
     ADD CONSTRAINT _ag_label_vertex_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: config config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public.config
+    ADD CONSTRAINT config_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: config seed values; Type: DATA; Schema: public; Owner: postgresUser
+--
+
+INSERT INTO public.config (key, value)
+VALUES
+    ('toggle_autoRun', 'TRUE'),
+    ('job_tableName', 'jobs')
+ON CONFLICT (key) DO UPDATE
+SET value = EXCLUDED.value;
 
 
 --
@@ -764,11 +937,19 @@ ALTER TABLE ONLY public.schedule_result
 
 
 --
--- Name: tabCustomer tabCustomer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: tabCompany tabCompany_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
 --
 
-ALTER TABLE ONLY public."tabCustomer"
-    ADD CONSTRAINT "tabCustomer_pkey" PRIMARY KEY (name);
+ALTER TABLE ONLY public."tabCompany"
+    ADD CONSTRAINT "tabCompany_pkey" PRIMARY KEY (name);
+
+
+--
+-- Name: tabJob Card tabJob Card_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+--
+
+ALTER TABLE ONLY public."tabJob Card"
+    ADD CONSTRAINT "tabJob Card_pkey" PRIMARY KEY (name);
 
 
 --
@@ -807,5 +988,5 @@ ALTER TABLE ONLY public.machines
 -- PostgreSQL database dump complete
 --
 
-\unrestrict uCaKav43NPdOwIvYvvslf7wqXxhyQTLqYBfwTntodtcEZSr2LdChY97Eric3dwY
+\unrestrict FEeeKWLoGF43iyJuuS6PremWS2EDWrbXe6vPs8ZZQrnXE8PhzIf6zsnJGfLCOQY
 
