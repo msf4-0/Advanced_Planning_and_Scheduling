@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict syNNlhBcwAowTQ50ZAPtTMP6tld2KmI4FmfoOYlDyifojEP8IhdypdNYMAIzZgy
+\restrict MwymxzVIFZ3YrUxnJv50HYG4qUw09tV9yDdhSgdbiYBQ86jA5mzEg7MU7ksVfcU
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
 -- Dumped by pg_dump version 15.15 (Debian 15.15-1.pgdg13+1)
@@ -19,22 +19,18 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: ag_catalog; Type: SCHEMA; Schema: -; Owner: postgresUser
+-- Name: ag_catalog; Type: SCHEMA; Schema: -; Owner: -
 --
 
 CREATE SCHEMA ag_catalog;
 
 
-ALTER SCHEMA ag_catalog OWNER TO "postgresUser";
-
 --
--- Name: production_graph; Type: SCHEMA; Schema: -; Owner: postgresUser
+-- Name: production_graph; Type: SCHEMA; Schema: -; Owner: -
 --
 
 CREATE SCHEMA production_graph;
 
-
-ALTER SCHEMA production_graph OWNER TO "postgresUser";
 
 --
 -- Name: age; Type: EXTENSION; Schema: -; Owner: -
@@ -44,7 +40,7 @@ CREATE EXTENSION IF NOT EXISTS age WITH SCHEMA ag_catalog;
 
 
 --
--- Name: EXTENSION age; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION age; Type: COMMENT; Schema: -; Owner: -
 --
 
 COMMENT ON EXTENSION age IS 'AGE database extension';
@@ -55,7 +51,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: _ag_label_edge; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph._ag_label_edge (
@@ -66,10 +62,8 @@ CREATE TABLE production_graph._ag_label_edge (
 );
 
 
-ALTER TABLE production_graph._ag_label_edge OWNER TO "postgresUser";
-
 --
--- Name: ALLOWED_ON; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."ALLOWED_ON" (
@@ -77,10 +71,8 @@ CREATE TABLE production_graph."ALLOWED_ON" (
 INHERITS (production_graph._ag_label_edge);
 
 
-ALTER TABLE production_graph."ALLOWED_ON" OWNER TO "postgresUser";
-
 --
--- Name: ALLOWED_ON_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."ALLOWED_ON_id_seq"
@@ -91,17 +83,15 @@ CREATE SEQUENCE production_graph."ALLOWED_ON_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."ALLOWED_ON_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: ALLOWED_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."ALLOWED_ON_id_seq" OWNED BY production_graph."ALLOWED_ON".id;
 
 
 --
--- Name: CAN_RUN_ON; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."CAN_RUN_ON" (
@@ -109,10 +99,8 @@ CREATE TABLE production_graph."CAN_RUN_ON" (
 INHERITS (production_graph._ag_label_edge);
 
 
-ALTER TABLE production_graph."CAN_RUN_ON" OWNER TO "postgresUser";
-
 --
--- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."CAN_RUN_ON_id_seq"
@@ -123,17 +111,15 @@ CREATE SEQUENCE production_graph."CAN_RUN_ON_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."CAN_RUN_ON_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."CAN_RUN_ON_id_seq" OWNED BY production_graph."CAN_RUN_ON".id;
 
 
 --
--- Name: _ag_label_vertex; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph._ag_label_vertex (
@@ -142,10 +128,8 @@ CREATE TABLE production_graph._ag_label_vertex (
 );
 
 
-ALTER TABLE production_graph._ag_label_vertex OWNER TO "postgresUser";
-
 --
--- Name: Job; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: Job; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."Job" (
@@ -153,10 +137,8 @@ CREATE TABLE production_graph."Job" (
 INHERITS (production_graph._ag_label_vertex);
 
 
-ALTER TABLE production_graph."Job" OWNER TO "postgresUser";
-
 --
--- Name: Job_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: Job_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."Job_id_seq"
@@ -167,17 +149,15 @@ CREATE SEQUENCE production_graph."Job_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Job_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: Job_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: Job_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."Job_id_seq" OWNED BY production_graph."Job".id;
 
 
 --
--- Name: Machine; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: Machine; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."Machine" (
@@ -185,10 +165,8 @@ CREATE TABLE production_graph."Machine" (
 INHERITS (production_graph._ag_label_vertex);
 
 
-ALTER TABLE production_graph."Machine" OWNER TO "postgresUser";
-
 --
--- Name: Machine_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: Machine_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."Machine_id_seq"
@@ -199,17 +177,15 @@ CREATE SEQUENCE production_graph."Machine_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Machine_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: Machine_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: Machine_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."Machine_id_seq" OWNED BY production_graph."Machine".id;
 
 
 --
--- Name: Material; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: Material; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."Material" (
@@ -217,10 +193,8 @@ CREATE TABLE production_graph."Material" (
 INHERITS (production_graph._ag_label_vertex);
 
 
-ALTER TABLE production_graph."Material" OWNER TO "postgresUser";
-
 --
--- Name: Material_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: Material_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."Material_id_seq"
@@ -231,17 +205,15 @@ CREATE SEQUENCE production_graph."Material_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."Material_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: Material_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: Material_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."Material_id_seq" OWNED BY production_graph."Material".id;
 
 
 --
--- Name: PRECEDES; Type: TABLE; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES; Type: TABLE; Schema: production_graph; Owner: -
 --
 
 CREATE TABLE production_graph."PRECEDES" (
@@ -249,10 +221,8 @@ CREATE TABLE production_graph."PRECEDES" (
 INHERITS (production_graph._ag_label_edge);
 
 
-ALTER TABLE production_graph."PRECEDES" OWNER TO "postgresUser";
-
 --
--- Name: PRECEDES_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph."PRECEDES_id_seq"
@@ -263,17 +233,15 @@ CREATE SEQUENCE production_graph."PRECEDES_id_seq"
     CACHE 1;
 
 
-ALTER TABLE production_graph."PRECEDES_id_seq" OWNER TO "postgresUser";
-
 --
--- Name: PRECEDES_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph."PRECEDES_id_seq" OWNED BY production_graph."PRECEDES".id;
 
 
 --
--- Name: _ag_label_edge_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph._ag_label_edge_id_seq
@@ -284,17 +252,15 @@ CREATE SEQUENCE production_graph._ag_label_edge_id_seq
     CACHE 1;
 
 
-ALTER TABLE production_graph._ag_label_edge_id_seq OWNER TO "postgresUser";
-
 --
--- Name: _ag_label_edge_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph._ag_label_edge_id_seq OWNED BY production_graph._ag_label_edge.id;
 
 
 --
--- Name: _ag_label_vertex_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph._ag_label_vertex_id_seq
@@ -305,17 +271,15 @@ CREATE SEQUENCE production_graph._ag_label_vertex_id_seq
     CACHE 1;
 
 
-ALTER TABLE production_graph._ag_label_vertex_id_seq OWNER TO "postgresUser";
-
 --
--- Name: _ag_label_vertex_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex_id_seq; Type: SEQUENCE OWNED BY; Schema: production_graph; Owner: -
 --
 
 ALTER SEQUENCE production_graph._ag_label_vertex_id_seq OWNED BY production_graph._ag_label_vertex.id;
 
 
 --
--- Name: _label_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: postgresUser
+-- Name: _label_id_seq; Type: SEQUENCE; Schema: production_graph; Owner: -
 --
 
 CREATE SEQUENCE production_graph._label_id_seq
@@ -328,10 +292,18 @@ CREATE SEQUENCE production_graph._label_id_seq
     CYCLE;
 
 
-ALTER TABLE production_graph._label_id_seq OWNER TO "postgresUser";
+--
+-- Name: config; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.config (
+    key text NOT NULL,
+    value text
+);
+
 
 --
--- Name: jobs; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: jobs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.jobs (
@@ -350,10 +322,8 @@ CREATE TABLE public.jobs (
 );
 
 
-ALTER TABLE public.jobs OWNER TO "postgresUser";
-
 --
--- Name: machine_types; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: machine_types; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.machine_types (
@@ -362,10 +332,8 @@ CREATE TABLE public.machine_types (
 );
 
 
-ALTER TABLE public.machine_types OWNER TO "postgresUser";
-
 --
--- Name: machine_types_type_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+-- Name: machine_types_type_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.machine_types_type_id_seq
@@ -377,17 +345,15 @@ CREATE SEQUENCE public.machine_types_type_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.machine_types_type_id_seq OWNER TO "postgresUser";
-
 --
--- Name: machine_types_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+-- Name: machine_types_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.machine_types_type_id_seq OWNED BY public.machine_types.type_id;
 
 
 --
--- Name: machines; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: machines; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.machines (
@@ -398,10 +364,8 @@ CREATE TABLE public.machines (
 );
 
 
-ALTER TABLE public.machines OWNER TO "postgresUser";
-
 --
--- Name: materials; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: materials; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.materials (
@@ -410,44 +374,8 @@ CREATE TABLE public.materials (
 );
 
 
-ALTER TABLE public.materials OWNER TO "postgresUser";
-
 --
--- Name: new_table; Type: TABLE; Schema: public; Owner: postgresUser
---
-
-CREATE TABLE public.new_table (
-    id integer NOT NULL,
-    game character varying(255)
-);
-
-
-ALTER TABLE public.new_table OWNER TO "postgresUser";
-
---
--- Name: new_table_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
---
-
-CREATE SEQUENCE public.new_table_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.new_table_id_seq OWNER TO "postgresUser";
-
---
--- Name: new_table_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
---
-
-ALTER SEQUENCE public.new_table_id_seq OWNED BY public.new_table.id;
-
-
---
--- Name: schedule_result; Type: TABLE; Schema: public; Owner: postgresUser
+-- Name: schedule_result; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.schedule_result (
@@ -457,10 +385,8 @@ CREATE TABLE public.schedule_result (
 );
 
 
-ALTER TABLE public.schedule_result OWNER TO "postgresUser";
-
 --
--- Name: schedule_result_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
+-- Name: schedule_result_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.schedule_result_id_seq
@@ -472,235 +398,127 @@ CREATE SEQUENCE public.schedule_result_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.schedule_result_id_seq OWNER TO "postgresUser";
-
 --
--- Name: schedule_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgresUser
+-- Name: schedule_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.schedule_result_id_seq OWNED BY public.schedule_result.id;
 
 
 --
--- Name: tabCustomer; Type: TABLE; Schema: public; Owner: postgresUser
---
-
-CREATE TABLE public."tabCustomer" (
-    name character varying(140) NOT NULL,
-    creation timestamp without time zone,
-    modified timestamp without time zone,
-    modified_by character varying(140),
-    owner character varying(140),
-    docstatus integer DEFAULT 0 NOT NULL,
-    idx integer DEFAULT 0 NOT NULL,
-    naming_series character varying(140),
-    salutation character varying(140),
-    customer_name character varying(140),
-    customer_type character varying(140) DEFAULT 'Company'::character varying,
-    customer_group character varying(140),
-    territory character varying(140),
-    gender character varying(140),
-    lead_name character varying(140),
-    opportunity_name character varying(140),
-    account_manager character varying(140),
-    image text,
-    default_currency character varying(140),
-    default_bank_account character varying(140),
-    default_price_list character varying(140),
-    is_internal_customer integer DEFAULT 0 NOT NULL,
-    represents_company character varying(140),
-    market_segment character varying(140),
-    industry character varying(140),
-    customer_pos_id character varying(140),
-    website character varying(140),
-    language character varying(140),
-    customer_details text,
-    customer_primary_address character varying(140),
-    primary_address text,
-    customer_primary_contact character varying(140),
-    mobile_no character varying(140),
-    email_id character varying(140),
-    tax_id character varying(140),
-    tax_category character varying(140),
-    tax_withholding_category character varying(140),
-    payment_terms character varying(140),
-    loyalty_program character varying(140),
-    loyalty_program_tier character varying(140),
-    default_sales_partner character varying(140),
-    default_commission_rate numeric(21,9) DEFAULT 0.000000000 NOT NULL,
-    so_required integer DEFAULT 0 NOT NULL,
-    dn_required integer DEFAULT 0 NOT NULL,
-    is_frozen integer DEFAULT 0 NOT NULL,
-    disabled integer DEFAULT 0 NOT NULL,
-    _user_tags text,
-    _comments text,
-    _assign text,
-    _liked_by text
-);
-
-
-ALTER TABLE public."tabCustomer" OWNER TO "postgresUser";
-
---
--- Name: testing; Type: TABLE; Schema: public; Owner: postgresUser
---
-
-CREATE TABLE public.testing (
-    id integer NOT NULL,
-    name character varying(255) DEFAULT 'hi'::character varying NOT NULL,
-    type integer NOT NULL
-);
-
-
-ALTER TABLE public.testing OWNER TO "postgresUser";
-
---
--- Name: testing2; Type: TABLE; Schema: public; Owner: postgresUser
---
-
-CREATE TABLE public.testing2 (
-    somn character varying(255),
-    asdf character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public.testing2 OWNER TO "postgresUser";
-
---
--- Name: testing_id_seq; Type: SEQUENCE; Schema: public; Owner: postgresUser
---
-
-ALTER TABLE public.testing ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.testing_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: ALLOWED_ON id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."ALLOWED_ON" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'ALLOWED_ON'::name))::integer, nextval('production_graph."ALLOWED_ON_id_seq"'::regclass));
 
 
 --
--- Name: ALLOWED_ON properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."ALLOWED_ON" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: CAN_RUN_ON id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."CAN_RUN_ON" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'CAN_RUN_ON'::name))::integer, nextval('production_graph."CAN_RUN_ON_id_seq"'::regclass));
 
 
 --
--- Name: CAN_RUN_ON properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."CAN_RUN_ON" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: Job id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Job id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Job" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Job'::name))::integer, nextval('production_graph."Job_id_seq"'::regclass));
 
 
 --
--- Name: Job properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Job properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Job" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: Machine id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Machine id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Machine" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Machine'::name))::integer, nextval('production_graph."Machine_id_seq"'::regclass));
 
 
 --
--- Name: Machine properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Machine properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Machine" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: Material id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Material id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Material" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'Material'::name))::integer, nextval('production_graph."Material_id_seq"'::regclass));
 
 
 --
--- Name: Material properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: Material properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."Material" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: PRECEDES id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."PRECEDES" ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, 'PRECEDES'::name))::integer, nextval('production_graph."PRECEDES_id_seq"'::regclass));
 
 
 --
--- Name: PRECEDES properties; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES properties; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph."PRECEDES" ALTER COLUMN properties SET DEFAULT ag_catalog.agtype_build_map();
 
 
 --
--- Name: _ag_label_edge id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph._ag_label_edge ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, '_ag_label_edge'::name))::integer, nextval('production_graph._ag_label_edge_id_seq'::regclass));
 
 
 --
--- Name: _ag_label_vertex id; Type: DEFAULT; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex id; Type: DEFAULT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph._ag_label_vertex ALTER COLUMN id SET DEFAULT ag_catalog._graphid((ag_catalog._label_id('production_graph'::name, '_ag_label_vertex'::name))::integer, nextval('production_graph._ag_label_vertex_id_seq'::regclass));
 
 
 --
--- Name: machine_types type_id; Type: DEFAULT; Schema: public; Owner: postgresUser
+-- Name: machine_types type_id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.machine_types ALTER COLUMN type_id SET DEFAULT nextval('public.machine_types_type_id_seq'::regclass);
 
 
 --
--- Name: new_table id; Type: DEFAULT; Schema: public; Owner: postgresUser
---
-
-ALTER TABLE ONLY public.new_table ALTER COLUMN id SET DEFAULT nextval('public.new_table_id_seq'::regclass);
-
-
---
--- Name: schedule_result id; Type: DEFAULT; Schema: public; Owner: postgresUser
+-- Name: schedule_result id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schedule_result ALTER COLUMN id SET DEFAULT nextval('public.schedule_result_id_seq'::regclass);
 
 
 --
--- Data for Name: ag_graph; Type: TABLE DATA; Schema: ag_catalog; Owner: postgresUser
+-- Data for Name: ag_graph; Type: TABLE DATA; Schema: ag_catalog; Owner: -
 --
 
 COPY ag_catalog.ag_graph (graphid, name, namespace) FROM stdin;
@@ -709,7 +527,7 @@ COPY ag_catalog.ag_graph (graphid, name, namespace) FROM stdin;
 
 
 --
--- Data for Name: ag_label; Type: TABLE DATA; Schema: ag_catalog; Owner: postgresUser
+-- Data for Name: ag_label; Type: TABLE DATA; Schema: ag_catalog; Owner: -
 --
 
 COPY ag_catalog.ag_label (name, graph, id, kind, relation, seq_name) FROM stdin;
@@ -725,7 +543,7 @@ ALLOWED_ON	17056	8	e	production_graph."ALLOWED_ON"	ALLOWED_ON_id_seq
 
 
 --
--- Data for Name: ALLOWED_ON; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: ALLOWED_ON; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."ALLOWED_ON" (id, start_id, end_id, properties) FROM stdin;
@@ -747,7 +565,7 @@ COPY production_graph."ALLOWED_ON" (id, start_id, end_id, properties) FROM stdin
 
 
 --
--- Data for Name: CAN_RUN_ON; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: CAN_RUN_ON; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."CAN_RUN_ON" (id, start_id, end_id, properties) FROM stdin;
@@ -769,7 +587,7 @@ COPY production_graph."CAN_RUN_ON" (id, start_id, end_id, properties) FROM stdin
 
 
 --
--- Data for Name: Job; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: Job; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."Job" (id, properties) FROM stdin;
@@ -787,7 +605,7 @@ COPY production_graph."Job" (id, properties) FROM stdin;
 
 
 --
--- Data for Name: Machine; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: Machine; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."Machine" (id, properties) FROM stdin;
@@ -801,7 +619,7 @@ COPY production_graph."Machine" (id, properties) FROM stdin;
 
 
 --
--- Data for Name: Material; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: Material; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."Material" (id, properties) FROM stdin;
@@ -813,7 +631,7 @@ COPY production_graph."Material" (id, properties) FROM stdin;
 
 
 --
--- Data for Name: PRECEDES; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: PRECEDES; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph."PRECEDES" (id, start_id, end_id, properties) FROM stdin;
@@ -825,7 +643,7 @@ COPY production_graph."PRECEDES" (id, start_id, end_id, properties) FROM stdin;
 
 
 --
--- Data for Name: _ag_label_edge; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: _ag_label_edge; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph._ag_label_edge (id, start_id, end_id, properties) FROM stdin;
@@ -833,7 +651,7 @@ COPY production_graph._ag_label_edge (id, start_id, end_id, properties) FROM std
 
 
 --
--- Data for Name: _ag_label_vertex; Type: TABLE DATA; Schema: production_graph; Owner: postgresUser
+-- Data for Name: _ag_label_vertex; Type: TABLE DATA; Schema: production_graph; Owner: -
 --
 
 COPY production_graph._ag_label_vertex (id, properties) FROM stdin;
@@ -841,22 +659,38 @@ COPY production_graph._ag_label_vertex (id, properties) FROM stdin;
 
 
 --
--- Data for Name: jobs; Type: TABLE DATA; Schema: public; Owner: postgresUser
+-- Data for Name: config; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.config (key, value) FROM stdin;
+toggle_autoRun	TRUE
+job_tableName	jobs
+\.
+
+
+--
+-- Data for Name: jobs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.jobs (job_id, duration, domain_start, domain_end, predecessor, due_date, qty_ordered, qty_initialized, locked, locked_start, locked_machine, required_machine_type_id) FROM stdin;
 jobE	15	0	20	\N	15	100	90	f	\N	\N	3
 jobB	7	0	25	jobA	20	120	110	f	\N	\N	5
 jobD	10	0	20	\N	15	100	90	f	\N	\N	5
-jobC	4	0	18	\N	10	80	80	t	2	1	3
 jobF	6	0	15	jobC	20	100	90	f	\N	\N	4
 jobA	10	0	20	\N	15	100	90	f	\N	\N	3
 paintingJob	5	5	20	\N	15	100	90	f	\N	\N	6
+jobC	4	0	18	\N	10	80	80	t	2	1	7
+Panting2	15	0	20	\N	15	100	90	f	\N	\N	3
+Assembly Job	5	0	20	\N	15	100	90	f	\N	\N	4
+Calculating	3	0	20	jobB	15	100	90	f	\N	\N	5
+Programming Job	6	0	20	jobA	15	100	90	f	\N	\N	4
+Wood	5	0	20	jobF	15	100	90	f	\N	\N	5
+Production	10	0	20	\N	15	100	90	f	\N	\N	6
 \.
 
 
 --
--- Data for Name: machine_types; Type: TABLE DATA; Schema: public; Owner: postgresUser
+-- Data for Name: machine_types; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.machine_types (type_id, type_name) FROM stdin;
@@ -864,25 +698,27 @@ COPY public.machine_types (type_id, type_name) FROM stdin;
 4	Sawing
 5	Milling
 6	Painting
+7	Assembly
 \.
 
 
 --
--- Data for Name: machines; Type: TABLE DATA; Schema: public; Owner: postgresUser
+-- Data for Name: machines; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.machines (machine_id, type, capacity, machine_type_id) FROM stdin;
-1	CNC	2	3
 2	Lathe	1	3
 3	Milling	1	5
 4	Sawing	2	4
 5	Sawing	2	4
 6	Painter	3	6
+7	Assembly	2	7
+1	CNC	2	3
 \.
 
 
 --
--- Data for Name: materials; Type: TABLE DATA; Schema: public; Owner: postgresUser
+-- Data for Name: materials; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.materials (material_id, material_name) FROM stdin;
@@ -892,156 +728,106 @@ matB	Aluminum
 
 
 --
--- Data for Name: new_table; Type: TABLE DATA; Schema: public; Owner: postgresUser
---
-
-COPY public.new_table (id, game) FROM stdin;
-1	Elden Ring
-\.
-
-
---
--- Data for Name: schedule_result; Type: TABLE DATA; Schema: public; Owner: postgresUser
+-- Data for Name: schedule_result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.schedule_result (id, result, created_at) FROM stdin;
 1	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "newJob": {"end": 12, "start": 10, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:15:36.792166
 2	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "newJob": {"end": 12, "start": 10, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:15:40.546615
 3	{"jobA": {"end": 10, "start": 0, "machine": 1}, "jobB": {"end": 17, "start": 10, "machine": 3}, "jobC": {"end": 6, "start": 2, "machine": 1}, "jobD": {"end": 10, "start": 0, "machine": 3}, "jobE": {"end": 15, "start": 0, "machine": 1}, "jobF": {"end": 12, "start": 6, "machine": 4}, "paintingJob": {"end": 5, "start": 0, "machine": 6}}	2026-02-12 01:16:04.60846
+4	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "paintingJob": {"end": 5, "start": 0, "resources": 6}}	2026-02-12 02:53:43.759017
+5	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "paintingJob": {"end": 5, "start": 0, "resources": 6}}	2026-02-12 02:54:35.434894
+6	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "paintingJob": {"end": 5, "start": 0, "resources": 6}}	2026-02-12 03:26:34.133708
+7	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 40, "start": 25, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 25, "start": 10, "resources": 1}, "paintingJob": {"end": 5, "start": 0, "resources": 6}}	2026-02-12 06:03:02.960432
+8	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}}	2026-02-12 08:32:43.23018
+9	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}}	2026-02-12 08:43:35.247649
+10	{"jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}, "Programming Job": {"end": 18, "start": 12, "resources": 4}}	2026-02-12 08:51:53.587379
+11	{"Wood": {"end": 25, "start": 20, "resources": 3}, "jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 40, "start": 25, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 25, "start": 10, "resources": 1}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}, "Programming Job": {"end": 18, "start": 12, "resources": 4}}	2026-02-12 08:58:49.060074
+12	{"Wood": {"end": 25, "start": 20, "resources": 3}, "jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "Production": {"end": 15, "start": 5, "resources": 6}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}, "Programming Job": {"end": 18, "start": 12, "resources": 4}}	2026-02-12 09:08:16.976609
+13	{"Wood": {"end": 25, "start": 20, "resources": 3}, "jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "Production": {"end": 15, "start": 5, "resources": 6}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}, "Programming Job": {"end": 18, "start": 12, "resources": 4}}	2026-02-19 01:47:25.701244
+14	{"Wood": {"end": 25, "start": 20, "resources": 3}, "jobA": {"end": 10, "start": 0, "resources": 1}, "jobB": {"end": 17, "start": 10, "resources": 3}, "jobC": {"end": 6, "start": 2, "resources": 7}, "jobD": {"end": 10, "start": 0, "resources": 3}, "jobE": {"end": 25, "start": 10, "resources": 1}, "jobF": {"end": 12, "start": 6, "resources": 4}, "Panting2": {"end": 40, "start": 25, "resources": 1}, "Production": {"end": 15, "start": 5, "resources": 6}, "Calculating": {"end": 20, "start": 17, "resources": 3}, "paintingJob": {"end": 5, "start": 0, "resources": 6}, "Assembly Job": {"end": 5, "start": 0, "resources": 4}, "Programming Job": {"end": 18, "start": 12, "resources": 4}}	2026-02-19 03:07:53.99359
 \.
 
 
 --
--- Data for Name: tabCustomer; Type: TABLE DATA; Schema: public; Owner: postgresUser
---
-
-COPY public."tabCustomer" (name, creation, modified, modified_by, owner, docstatus, idx, naming_series, salutation, customer_name, customer_type, customer_group, territory, gender, lead_name, opportunity_name, account_manager, image, default_currency, default_bank_account, default_price_list, is_internal_customer, represents_company, market_segment, industry, customer_pos_id, website, language, customer_details, customer_primary_address, primary_address, customer_primary_contact, mobile_no, email_id, tax_id, tax_category, tax_withholding_category, payment_terms, loyalty_program, loyalty_program_tier, default_sales_partner, default_commission_rate, so_required, dn_required, is_frozen, disabled, _user_tags, _comments, _assign, _liked_by) FROM stdin;
-Grant Plastics Ltd.	2026-02-05 10:27:08.059	2026-02-05 10:27:08.059	lugoisdead@gmail.com	lugoisdead@gmail.com	0	3	CUST-.YYYY.-	\N	Grant Plastics Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
-Palmer Productions Ltd.	2026-02-05 10:27:09.105	2026-02-05 10:27:09.105	lugoisdead@gmail.com	lugoisdead@gmail.com	0	0	CUST-.YYYY.-	\N	Palmer Productions Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
-West View Software Ltd.	2026-02-05 10:27:09.077	2026-02-05 10:27:09.077	lugoisdead@gmail.com	lugoisdead@gmail.com	0	0	CUST-.YYYY.-	\N	West View Software Ltd.	Company	Demo Customer Group	\N	\N	\N	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	en	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.000000000	0	0	0	0	\N	\N	\N	\N
-\.
-
-
---
--- Data for Name: testing; Type: TABLE DATA; Schema: public; Owner: postgresUser
---
-
-COPY public.testing (id, name, type) FROM stdin;
-1	Alice	101
-2	Bob	102
-3	Charlie	103
-4	Danielle	104
-5	Bon	105
-6	John	106
-\.
-
-
---
--- Data for Name: testing2; Type: TABLE DATA; Schema: public; Owner: postgresUser
---
-
-COPY public.testing2 (somn, asdf) FROM stdin;
-apple	red
-banana	yellow
-carrot	orange
-cucumber	green
-someFruit	someColor
-\.
-
-
---
--- Name: ALLOWED_ON_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: ALLOWED_ON_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."ALLOWED_ON_id_seq"', 7, true);
 
 
 --
--- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: CAN_RUN_ON_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."CAN_RUN_ON_id_seq"', 7, true);
 
 
 --
--- Name: Job_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: Job_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."Job_id_seq"', 5, true);
 
 
 --
--- Name: Machine_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: Machine_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."Machine_id_seq"', 3, true);
 
 
 --
--- Name: Material_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: Material_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."Material_id_seq"', 2, true);
 
 
 --
--- Name: PRECEDES_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: PRECEDES_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph."PRECEDES_id_seq"', 2, true);
 
 
 --
--- Name: _ag_label_edge_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph._ag_label_edge_id_seq', 1, false);
 
 
 --
--- Name: _ag_label_vertex_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph._ag_label_vertex_id_seq', 1, false);
 
 
 --
--- Name: _label_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: postgresUser
+-- Name: _label_id_seq; Type: SEQUENCE SET; Schema: production_graph; Owner: -
 --
 
 SELECT pg_catalog.setval('production_graph._label_id_seq', 8, true);
 
 
 --
--- Name: machine_types_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
+-- Name: machine_types_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.machine_types_type_id_seq', 6, true);
-
-
---
--- Name: new_table_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
---
-
-SELECT pg_catalog.setval('public.new_table_id_seq', 1, true);
+SELECT pg_catalog.setval('public.machine_types_type_id_seq', 7, true);
 
 
 --
--- Name: schedule_result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
+-- Name: schedule_result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.schedule_result_id_seq', 3, true);
-
-
---
--- Name: testing_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgresUser
---
-
-SELECT pg_catalog.setval('public.testing_id_seq', 6, true);
+SELECT pg_catalog.setval('public.schedule_result_id_seq', 14, true);
 
 
 --
--- Name: _ag_label_edge _ag_label_edge_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_edge _ag_label_edge_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph._ag_label_edge
@@ -1049,7 +835,7 @@ ALTER TABLE ONLY production_graph._ag_label_edge
 
 
 --
--- Name: _ag_label_vertex _ag_label_vertex_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: postgresUser
+-- Name: _ag_label_vertex _ag_label_vertex_pkey; Type: CONSTRAINT; Schema: production_graph; Owner: -
 --
 
 ALTER TABLE ONLY production_graph._ag_label_vertex
@@ -1057,7 +843,15 @@ ALTER TABLE ONLY production_graph._ag_label_vertex
 
 
 --
--- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: config config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.config
+    ADD CONSTRAINT config_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.jobs
@@ -1065,7 +859,7 @@ ALTER TABLE ONLY public.jobs
 
 
 --
--- Name: machine_types machine_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: machine_types machine_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.machine_types
@@ -1073,7 +867,7 @@ ALTER TABLE ONLY public.machine_types
 
 
 --
--- Name: machine_types machine_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: machine_types machine_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.machine_types
@@ -1081,7 +875,7 @@ ALTER TABLE ONLY public.machine_types
 
 
 --
--- Name: machines machines_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: machines machines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.machines
@@ -1089,7 +883,7 @@ ALTER TABLE ONLY public.machines
 
 
 --
--- Name: materials materials_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: materials materials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.materials
@@ -1097,7 +891,7 @@ ALTER TABLE ONLY public.materials
 
 
 --
--- Name: schedule_result schedule_result_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: schedule_result schedule_result_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schedule_result
@@ -1105,31 +899,7 @@ ALTER TABLE ONLY public.schedule_result
 
 
 --
--- Name: tabCustomer tabCustomer_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
---
-
-ALTER TABLE ONLY public."tabCustomer"
-    ADD CONSTRAINT "tabCustomer_pkey" PRIMARY KEY (name);
-
-
---
--- Name: testing testing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgresUser
---
-
-ALTER TABLE ONLY public.testing
-    ADD CONSTRAINT testing_pkey PRIMARY KEY (id);
-
-
---
--- Name: testing testing_type_key; Type: CONSTRAINT; Schema: public; Owner: postgresUser
---
-
-ALTER TABLE ONLY public.testing
-    ADD CONSTRAINT testing_type_key UNIQUE (type);
-
-
---
--- Name: jobs jobs_required_machine_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: jobs jobs_required_machine_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.jobs
@@ -1137,7 +907,7 @@ ALTER TABLE ONLY public.jobs
 
 
 --
--- Name: machines machines_machine_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgresUser
+-- Name: machines machines_machine_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.machines
@@ -1148,5 +918,5 @@ ALTER TABLE ONLY public.machines
 -- PostgreSQL database dump complete
 --
 
-\unrestrict syNNlhBcwAowTQ50ZAPtTMP6tld2KmI4FmfoOYlDyifojEP8IhdypdNYMAIzZgy
+\unrestrict MwymxzVIFZ3YrUxnJv50HYG4qUw09tV9yDdhSgdbiYBQ86jA5mzEg7MU7ksVfcU
 
