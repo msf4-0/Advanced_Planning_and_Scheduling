@@ -11,20 +11,10 @@ POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgresUser")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgresPass")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "postgresDB")
+DO_NOT_MODIFY_TABLES = {"jobs", "machines", "machine_types", "config", "schedule_result"}
 
 run_id = datetime.now().isoformat()
 
-class TableName(Enum):
-    INVENTORY = "inventory"
-    MACHINE_TYPES = "machine_types"
-    MACHINES = "machines"
-    MATERIALS = "materials"
-    OPERATIONS = "operations"
-    ORDERS = "orders"
-    PRODUCT_BLUEPRINT = "product_blueprint"
-    PRODUCTS = "products"
-    SCHEDULE_RUNS = "schedule_runs"
-    SCHEDULE_STEPS = "schedule_steps"
 
 class DBTable:
         
@@ -314,6 +304,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+
             for col in column:
                 name = col.get("name")
                 type_ = col.get("type")
@@ -374,6 +367,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+            
             query = f"ALTER TABLE \"{table_name}\" DROP COLUMN {column_name};"
             cur.execute(query)
             conn.commit()
@@ -410,6 +406,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+
             query = f"ALTER TABLE \"{table_name}\" RENAME COLUMN {old_column_name} TO {new_column_name};"
             cur.execute(query)
             query = f"ALTER TABLE \"{table_name}\" ALTER COLUMN {new_column_name} TYPE {new_data_type};"
@@ -495,6 +494,9 @@ class DBTable:
         conn = self.get_connection()
         cur = conn.cursor()
         try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Dropping table {table_name} is not allowed")
+
             query = f"DROP TABLE IF EXISTS \"{table_name}\";"
             cur.execute(query)
             conn.commit()
