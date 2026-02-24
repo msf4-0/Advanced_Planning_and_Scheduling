@@ -157,3 +157,5 @@ appsmith-stacks/*
 !appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/
 !appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/APS-SchedulerV2/
 !appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/APS-SchedulerV2/**
+
+.env
