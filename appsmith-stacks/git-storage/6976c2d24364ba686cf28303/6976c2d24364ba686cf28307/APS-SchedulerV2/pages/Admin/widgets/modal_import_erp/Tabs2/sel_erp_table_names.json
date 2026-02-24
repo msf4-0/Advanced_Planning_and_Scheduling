@@ -1,0 +1,68 @@
+{
+  "accentColor": "{{appsmith.theme.colors.primaryColor}}",
+  "animateLoading": true,
+  "borderRadius": "{{appsmith.theme.borderRadius.appBorderRadius}}",
+  "bottomRow": 7,
+  "boxShadow": "none",
+  "defaultOptionValue": "{{ ((options, serverSideFiltering) => ( importObject.selectedTables))(sel_erp_table_names.options, sel_erp_table_names.serverSideFiltering) }}",
+  "dynamicBindingPathList": [
+    {
+      "key": "accentColor"
+    },
+    {
+      "key": "borderRadius"
+    },
+    {
+      "key": "sourceData"
+    },
+    {
+      "key": "defaultOptionValue"
+    }
+  ],
+  "dynamicHeight": "FIXED",
+  "dynamicPropertyPathList": [
+    {
+      "key": "sourceData"
+    }
+  ],
+  "dynamicTriggerPathList": [],
+  "isDisabled": false,
+  "isFilterable": true,
+  "isLoading": false,
+  "isRequired": false,
+  "isVisible": true,
+  "key": "q8fcuwk2zh",
+  "labelAlignment": "left",
+  "labelPosition": "Top",
+  "labelText": "Table names for future imports",
+  "labelTextSize": "0.875rem",
+  "labelTooltip": "Table names are extracted from ERP-Next MySQL Database and stored in local browser storage.",
+  "labelWidth": 5,
+  "leftColumn": 1,
+  "maxDynamicHeight": 9000,
+  "minDynamicHeight": 4,
+  "minWidth": 450,
+  "mobileBottomRow": 7,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 20,
+  "mobileTopRow": 0,
+  "needsErrorInfo": false,
+  "optionLabel": "table_name",
+  "optionValue": "table_name",
+  "originalBottomRow": 32,
+  "originalTopRow": 25,
+  "parentColumnSpace": 19.390625,
+  "parentId": "gz590ddmny",
+  "parentRowSpace": 10,
+  "placeholderText": "Select table(s)",
+  "renderMode": "CANVAS",
+  "responsiveBehavior": "fill",
+  "rightColumn": 63,
+  "serverSideFiltering": false,
+  "sourceData": "{{get_erp_table_name.data}}",
+  "topRow": 0,
+  "type": "MULTI_SELECT_WIDGET_V2",
+  "version": 1,
+  "widgetId": "x67qzpnpnn",
+  "widgetName": "sel_erp_table_names"
+}

@@ -1,0 +1,58 @@
+{
+  "accentColor": "{{appsmith.theme.colors.primaryColor}}",
+  "alignWidget": "LEFT",
+  "animateLoading": true,
+  "bottomRow": 4,
+  "boxShadow": "none",
+  "defaultSwitchState": "{{get_state.data.config.toggle_autoRun == \"TRUE\"}}",
+  "dynamicBindingPathList": [
+    {
+      "key": "accentColor"
+    },
+    {
+      "key": "defaultSwitchState"
+    }
+  ],
+  "dynamicHeight": "AUTO_HEIGHT",
+  "dynamicPropertyPathList": [
+    {
+      "key": "defaultSwitchState"
+    }
+  ],
+  "dynamicTriggerPathList": [
+    {
+      "key": "onChange"
+    }
+  ],
+  "isDisabled": false,
+  "isLoading": false,
+  "isVisible": true,
+  "key": "jmlcghw3y5",
+  "label": "Auto Generate Schedule",
+  "labelPosition": "Left",
+  "labelStyle": "BOLD",
+  "labelTextSize": "0.875rem",
+  "leftColumn": 0,
+  "maxDynamicHeight": 9000,
+  "minDynamicHeight": 4,
+  "mobileBottomRow": 4,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 12,
+  "mobileTopRow": 0,
+  "needsErrorInfo": false,
+  "onChange": "{{set_state.run({\n  toggle_autoRun : switch_autoGen.isSwitchedOn ? \"TRUE\" : \"FALSE\"\n});}}",
+  "originalBottomRow": 4,
+  "originalTopRow": 0,
+  "parentColumnSpace": 6.650390625,
+  "parentId": "fzlli0quh2",
+  "parentRowSpace": 10,
+  "renderMode": "CANVAS",
+  "responsiveBehavior": "fill",
+  "rightColumn": 64,
+  "shouldScrollContents": true,
+  "topRow": 0,
+  "type": "SWITCH_WIDGET",
+  "version": 1,
+  "widgetId": "qn6dr0cs7v",
+  "widgetName": "switch_autoGen"
+}

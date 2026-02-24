@@ -5,11 +5,13 @@ services:
     ports:
       - "8080:80"
     environment:
-      APPSMITH_ENCRYPTION_PASSWORD: abcd
-      APPSMITH_ENCRYPTION_SALT: abcd
+      APPSMITH_ENCRYPTION_PASSWORD: ${APPSMITH_ENCRYPTION_PASSWORD}
+      APPSMITH_ENCRYPTION_SALT: ${APPSMITH_ENCRYPTION_SALT}
     volumes:
-      - appsmith-stacks:/appsmith-stacks
+      - ./appsmith-stacks:/appsmith-stacks
     restart: unless-stopped
+    networks:
+      - internal
 
   aps-backend:
     build: ./aps_backend  # Or use image: your-backend-image
@@ -19,9 +21,9 @@ services:
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgresUser
-      - POSTGRES_PASSWORD=postgresPass
-      - POSTGRES_DB=postgresDB
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     depends_on:
       - postgres
     restart: unless-stopped
@@ -29,21 +31,83 @@ services:
       watch:
         - path: ./aps_backend
           action: rebuild
+    networks:
+      - internal
 
   postgres:
     image: apache/age:release_PG15_1.6.0
     # image: apache/age:release_PG17_1.6.0
     container_name: postgres
     environment:
-      POSTGRES_USER: postgresUser
-      POSTGRES_PASSWORD: postgresPass
-      POSTGRES_DB: postgresDB
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
+      - ./db_init:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - internal
+
+  erpnext-db:
+    image: 1devops2/erpnextdb:15
+    container_name: erpnextdb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./conf:/etc/mysql/conf.d
+      - erpnet-db-data:/var/lib/mysql
+    networks:
+      - erpnet
+      - internal
+    restart: unless-stopped
+
+  erpnext-app:
+    image: 1devops2/erpnext:15
+    container_name: erpnextapp
+    ports:
+      - "8001:8000"
+      - "9000:9000"
+    depends_on:
+      - erpnext-db
+    volumes:
+      - erpnext-sites:/home/frappe/frappe-bench/sites
+      - erpnext-logs:/home/frappe/frappe-bench/logs
+    command: tail -f /dev/null
+    networks:
+      - erpnet
+      - internal
+    restart: unless-stopped
+
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Malaysia
+      - NODE_RED_CREDENTIAL_SECRET=${NODE_RED_CREDENTIAL_SECRET}
+    container_name: node_red
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./node-red-data:/data
+    restart: unless-stopped
+    networks:
+      - internal
+      - node-red-net
+
+networks:
+  erpnet:
+    driver: bridge
+  internal:
+    driver: bridge
+  node-red-net:
+    driver: bridge
 
 volumes:
   postgres-data:
   appsmith-stacks:
+  erpnet-db-data:
+  erpnext-sites:
+  erpnext-logs:
+  node-red-data:

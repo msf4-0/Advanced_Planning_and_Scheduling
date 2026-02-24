@@ -1,0 +1,8 @@
+{
+  "condition": {
+    "job_id": {{data_table.selectedRow.job_id}}
+  },
+  "update_values": {{update_form.formData
+}}
+}
+

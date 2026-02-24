@@ -1,0 +1,24 @@
+{
+  "gitSyncId": "6976c2d24364ba686cf28307_aecc76a1-c635-4485-a6ec-4ab53bfb0887",
+  "id": "Admin_tableDatas",
+  "unpublishedCollection": {
+    "name": "tableDatas",
+    "pageId": "Admin",
+    "pluginId": "js-plugin",
+    "pluginType": "JS",
+    "variables": [
+      {
+        "name": "tableData",
+        "value": "get_table_content.data"
+      },
+      {
+        "name": "tableSchema",
+        "value": "get_table_cols.data"
+      },
+      {
+        "name": "importFromERP",
+        "value": "appsmith.store.tableNames_ERP"
+      }
+    ]
+  }
+}

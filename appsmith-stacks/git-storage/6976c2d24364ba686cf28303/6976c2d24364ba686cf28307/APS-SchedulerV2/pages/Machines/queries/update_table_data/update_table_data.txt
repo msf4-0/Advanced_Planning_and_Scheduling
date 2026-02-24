@@ -1,0 +1,7 @@
+{
+  "condition": {
+    "machine_id": {{data_table.selectedRow.machine_id}}
+  },
+  "update_values": {{update_form.formData}}
+}
+

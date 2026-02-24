@@ -1,0 +1,35 @@
+[
+    {
+        "id": "e4d0bf09784dc535",
+        "type": "mysql",
+        "z": "f6f2187d.f17ca8",
+        "mydb": "76d83c43ca4a1532",
+        "name": "erp",
+        "x": 1330,
+        "y": 540,
+        "wires": [
+            [
+                "4e08139f622adf10",
+                "1f3b3ff8cd620456"
+            ]
+        ]
+    },
+    {
+        "id": "76d83c43ca4a1532",
+        "type": "MySQLdatabase",
+        "name": "erpnext",
+        "host": "erpnextdb",
+        "port": "3306",
+        "db": "_dc54e3ae4a9024bb",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "c9b72a191b860d4e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mysql": "3.0.0"
+        }
+    }
+]

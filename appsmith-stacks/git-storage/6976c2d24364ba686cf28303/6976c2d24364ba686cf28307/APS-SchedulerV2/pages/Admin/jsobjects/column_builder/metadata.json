@@ -1,0 +1,16 @@
+{
+  "gitSyncId": "6976c2d24364ba686cf28307_1fc0572a-d050-4bfa-b571-8d3ad28c746b",
+  "id": "Admin_column_builder",
+  "unpublishedCollection": {
+    "name": "column_builder",
+    "pageId": "Admin",
+    "pluginId": "js-plugin",
+    "pluginType": "JS",
+    "variables": [
+      {
+        "name": "data",
+        "value": "[]"
+      }
+    ]
+  }
+}

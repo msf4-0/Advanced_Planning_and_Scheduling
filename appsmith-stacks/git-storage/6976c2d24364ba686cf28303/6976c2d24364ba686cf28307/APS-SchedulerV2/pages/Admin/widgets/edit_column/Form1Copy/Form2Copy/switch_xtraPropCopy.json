@@ -1,0 +1,52 @@
+{
+  "accentColor": "{{appsmith.theme.colors.primaryColor}}",
+  "alignment": "right",
+  "animateLoading": true,
+  "bottomRow": 29,
+  "defaultSelectedValues": "",
+  "dynamicBindingPathList": [
+    {
+      "key": "accentColor"
+    },
+    {
+      "key": "labelText"
+    }
+  ],
+  "dynamicHeight": "AUTO_HEIGHT",
+  "dynamicTriggerPathList": [],
+  "flexVerticalAlignment": "start",
+  "isCanvas": false,
+  "isDisabled": false,
+  "isInline": false,
+  "isLoading": false,
+  "isRequired": false,
+  "isVisible": true,
+  "key": "qllxai4s49",
+  "labelAlignment": "left",
+  "labelPosition": "Auto",
+  "labelStyle": "",
+  "labelText": "{{\"Extra \\nProperty\"}}",
+  "labelTextSize": "0.875rem",
+  "labelWidth": "10",
+  "leftColumn": 0,
+  "maxDynamicHeight": 9000,
+  "minDynamicHeight": 4,
+  "mobileBottomRow": 35,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 26,
+  "mobileTopRow": 29,
+  "needsErrorInfo": false,
+  "options": "[\n  {\n    \"label\": \"Nullable\",\n    \"value\": \"nullable\"\n  },\n  {\n    \"label\": \"Primary Key\",\n    \"value\": \"primary_key\"\n  },\n  {\n    \"label\": \"Unique\",\n    \"value\": \"unique\"\n  }\n]",
+  "originalBottomRow": 28,
+  "originalTopRow": 17,
+  "parentColumnSpace": 9.3125,
+  "parentId": "vmepse6jn1",
+  "parentRowSpace": 10,
+  "renderMode": "CANVAS",
+  "rightColumn": 64,
+  "topRow": 17,
+  "type": "SWITCH_GROUP_WIDGET",
+  "version": 1,
+  "widgetId": "4ma4kbkua1",
+  "widgetName": "switch_xtraPropCopy"
+}

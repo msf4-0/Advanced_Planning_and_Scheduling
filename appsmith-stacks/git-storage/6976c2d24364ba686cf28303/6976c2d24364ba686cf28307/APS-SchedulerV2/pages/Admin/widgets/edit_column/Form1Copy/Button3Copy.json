@@ -1,0 +1,51 @@
+{
+  "animateLoading": true,
+  "borderRadius": "{{appsmith.theme.borderRadius.appBorderRadius}}",
+  "bottomRow": 53,
+  "boxShadow": "none",
+  "buttonColor": "{{appsmith.theme.colors.primaryColor}}",
+  "buttonVariant": "PRIMARY",
+  "disabledWhenInvalid": true,
+  "dynamicBindingPathList": [
+    {
+      "key": "buttonColor"
+    },
+    {
+      "key": "borderRadius"
+    }
+  ],
+  "dynamicPropertyPathList": [],
+  "dynamicTriggerPathList": [
+    {
+      "key": "onClick"
+    }
+  ],
+  "isDefaultClickDisabled": true,
+  "isDisabled": false,
+  "isLoading": false,
+  "isVisible": true,
+  "key": "3ocdct0g21",
+  "leftColumn": 49,
+  "minWidth": 120,
+  "mobileBottomRow": 37,
+  "mobileLeftColumn": 46,
+  "mobileRightColumn": 62,
+  "mobileTopRow": 33,
+  "needsErrorInfo": false,
+  "onClick": "{{add_columns.run().then(() => {\n  get_all_tables.run();\n  get_table_cols.run();\n});\ncloseModal(edit_column.name).then(() => {\n  column_builder.setToDefault();\n});}}",
+  "originalBottomRow": 53,
+  "originalTopRow": 49,
+  "parentId": "z16b6ulpg6",
+  "placement": "CENTER",
+  "recaptchaType": "V3",
+  "renderMode": "CANVAS",
+  "resetFormOnClick": true,
+  "responsiveBehavior": "hug",
+  "rightColumn": 64,
+  "text": "Submit",
+  "topRow": 49,
+  "type": "BUTTON_WIDGET",
+  "version": 1,
+  "widgetId": "l9c57o9z3t",
+  "widgetName": "Button3Copy"
+}

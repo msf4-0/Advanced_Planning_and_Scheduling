@@ -1,0 +1,20 @@
+{
+  "gitSyncId": "6976c2d24364ba686cf28307_afa2de33-09c3-4afa-81e1-f1127299dac5",
+  "id": "Admin_importObject",
+  "unpublishedCollection": {
+    "name": "importObject",
+    "pageId": "Admin",
+    "pluginId": "js-plugin",
+    "pluginType": "JS",
+    "variables": [
+      {
+        "name": "allERPTables",
+        "value": "[]"
+      },
+      {
+        "name": "selectedTables",
+        "value": "[]"
+      }
+    ]
+  }
+}

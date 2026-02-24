@@ -1,0 +1,61 @@
+{
+  "accentColor": "{{appsmith.theme.colors.primaryColor}}",
+  "animateLoading": true,
+  "borderRadius": "{{appsmith.theme.borderRadius.appBorderRadius}}",
+  "bottomRow": 13,
+  "boxShadow": "none",
+  "defaultOptionValue": "",
+  "dynamicBindingPathList": [
+    {
+      "key": "accentColor"
+    },
+    {
+      "key": "borderRadius"
+    }
+  ],
+  "dynamicHeight": "FIXED",
+  "dynamicPropertyPathList": [
+    {
+      "key": "sourceData"
+    }
+  ],
+  "dynamicTriggerPathList": [],
+  "isDisabled": false,
+  "isFilterable": true,
+  "isLoading": false,
+  "isRequired": false,
+  "isVisible": true,
+  "key": "gj3j3nt9np",
+  "labelAlignment": "left",
+  "labelPosition": "Left",
+  "labelText": "Type",
+  "labelTextSize": "0.875rem",
+  "labelWidth": "20",
+  "leftColumn": 0,
+  "maxDynamicHeight": 9000,
+  "minDynamicHeight": 4,
+  "minWidth": 450,
+  "mobileBottomRow": 22,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 20,
+  "mobileTopRow": 15,
+  "needsErrorInfo": false,
+  "optionLabel": "label",
+  "optionValue": "value",
+  "originalBottomRow": 15,
+  "originalTopRow": 11,
+  "parentColumnSpace": 9.3125,
+  "parentId": "pevk3au1rz",
+  "parentRowSpace": 10,
+  "placeholderText": "Select option",
+  "renderMode": "CANVAS",
+  "responsiveBehavior": "fill",
+  "rightColumn": 64,
+  "serverSideFiltering": false,
+  "sourceData": "[\n    {\"label\": \"Serial (Auto-incr.)\", \"value\": \"SERIAL\"},\n    {\"label\": \"Text\", \"value\": \"VARCHAR(255)\"},\n    {\"label\": \"Long Text\", \"value\": \"TEXT\"},\n    {\"label\": \"Integer\", \"value\": \"INT\"},\n    {\"label\": \"Big Integer\", \"value\": \"BIGINT\"},\n    {\"label\": \"Small Integer\", \"value\": \"SMALLINT\"},\n    {\"label\": \"Decimal\", \"value\": \"DECIMAL(10,2)\"},\n    {\"label\": \"Float\", \"value\": \"FLOAT\"},\n    {\"label\": \"Boolean\", \"value\": \"BOOLEAN\"},\n    {\"label\": \"Date\", \"value\": \"DATE\"},\n    {\"label\": \"Time\", \"value\": \"TIME\"},\n    {\"label\": \"Timestamp\", \"value\": \"TIMESTAMP\"},\n    {\"label\": \"Timestamp with TZ\", \"value\": \"TIMESTAMPTZ\"},\n    {\"label\": \"UUID\", \"value\": \"UUID\"},\n    {\"label\": \"JSON\", \"value\": \"JSON\"},\n    {\"label\": \"Array (Integer)\", \"value\": \"INT[]\"},\n    {\"label\": \"Array (Text)\", \"value\": \"TEXT[]\"}\n]",
+  "topRow": 9,
+  "type": "SELECT_WIDGET",
+  "version": 1,
+  "widgetId": "768pz06661",
+  "widgetName": "sel_col_type"
+}

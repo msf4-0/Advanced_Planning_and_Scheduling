@@ -72,15 +72,15 @@ class DataIngestion:
 					'machines',
 					{'machine_type_id': machine_type_id},
 				)
-				job_props['allowed_machines'] = [m.get('machine_id') for m in allowed]
+				job_props['allowed_resources'] = [m.get('machine_id') for m in allowed]
 			else:
-				job_props['allowed_machines'] = []
+				job_props['allowed_resources'] = []
 
-			# Auto-assign the first allowed machine if available
-			if job_props['allowed_machines']:
-				job_props['machine'] = job_props['allowed_machines'][0]
+			# Auto-assign the first allowed resource if available
+			if job_props['allowed_resources']:
+				job_props['resources'] = job_props['allowed_resources'][0]
 			else:
-				job_props['machine'] = None
+				job_props['resources'] = None
 
 			# Normalize predecessor field (if present)
 			predecessor = job_props.get('predecessor')
@@ -143,31 +143,31 @@ class DataIngestion:
 			else:
 				job_props['predecessors'] = []
 
-			# 2. Find allowed machines (edges: Job)-[:ALLOWED_ON]->(Machine)
-			allowed_machines = self.graph.get_related_nodes(
+			# 2. Find allowed resources (edges: Job)-[:ALLOWED_ON]->(Machine)
+			allowed_resources = self.graph.get_related_nodes(
 				node_id=(id_prop, job_id),
 				source_label=job_label,
 				edge_type='ALLOWED_ON',
 				direction='out',
 				graph_name=graph_name
 			)
-			if allowed_machines:
-				job_props['allowed_machines'] = [m.get('machine_id') for m in allowed_machines]
+			if allowed_resources:
+				job_props['allowed_resources'] = [m.get('machine_id') for m in allowed_resources]
 			else:
-				job_props['allowed_machines'] = []
+				job_props['allowed_resources'] = []
 
-			# 3. Find assigned machine (edges: Job)-[:ASSIGNED_TO]->(Machine)
-			assigned_machine = self.graph.get_related_nodes(
+			# 3. Find assigned resource (edges: Job)-[:ASSIGNED_TO]->(Machine)
+			assigned_resource = self.graph.get_related_nodes(
 				node_id=(id_prop, job_id),
 				source_label=job_label,
 				edge_type='ASSIGNED_TO',
 				direction='out',
 				graph_name=graph_name
 			)
-			if assigned_machine:
-				job_props['assigned_machine'] = assigned_machine[0].get('machine_id')
+			if assigned_resource:
+				job_props['assigned_resource'] = assigned_resource[0].get('machine_id')
 			else:
-				job_props['assigned_machine'] = None
+				job_props['assigned_resource'] = None
 
 			jobs[job_id] = job_props  # Add to jobs dict
 		return jobs  # Return all jobs as a dict

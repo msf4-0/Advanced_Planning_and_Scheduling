@@ -11,20 +11,10 @@ POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", 5432))
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgresUser")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgresPass")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "postgresDB")
+DO_NOT_MODIFY_TABLES = {"jobs", "machines", "machine_types", "config", "schedule_result"}
 
 run_id = datetime.now().isoformat()
 
-class TableName(Enum):
-    INVENTORY = "inventory"
-    MACHINE_TYPES = "machine_types"
-    MACHINES = "machines"
-    MATERIALS = "materials"
-    OPERATIONS = "operations"
-    ORDERS = "orders"
-    PRODUCT_BLUEPRINT = "product_blueprint"
-    PRODUCTS = "products"
-    SCHEDULE_RUNS = "schedule_runs"
-    SCHEDULE_STEPS = "schedule_steps"
 
 class DBTable:
         
@@ -54,7 +44,7 @@ class DBTable:
             cur.execute("SET TIME ZONE 'UTC';")
         return conn
 
-    # Fetch functions
+    # -------------- Basic CRUD functions ---------------
 
     def fetch(self, table_name: str, params: Optional[dict] = None, table_list: Optional[list[str]] = None) -> list[dict[str, Any]]:
         """
@@ -78,7 +68,7 @@ class DBTable:
                 if table_name not in table_list:
                     raise ValueError("Table name not in allowed table list")
 
-            query = f"SELECT * FROM {table_name}"
+            query = f"SELECT * FROM \"{table_name}\""
             values = []
             if params:
                 filters = []
@@ -121,7 +111,7 @@ class DBTable:
 
             columns = ', '.join(data.keys())
             placeholders = ', '.join(['%s'] * len(data))
-            query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders}) RETURNING *;"
+            query = f"INSERT INTO \"{table_name}\" ({columns}) VALUES ({placeholders}) RETURNING *;"
             cur.execute(query, tuple(data.values()))
             new_record = cur.fetchall()
             conn.commit()
@@ -154,7 +144,7 @@ class DBTable:
                 if table_name not in table_list:
                     raise ValueError("Table name not in allowed table list")
 
-            query = f"DELETE FROM {table_name}"
+            query = f"DELETE FROM \"{table_name}\""
             values = []
             if conditions:
                 filters = []
@@ -202,7 +192,7 @@ class DBTable:
             for key, value in data.items():
                 set_clauses.append(f"{key} = %s")
                 values.append(value)
-            query = f"UPDATE {table_name} SET " + ", ".join(set_clauses)
+            query = f"UPDATE \"{table_name}\" SET " + ", ".join(set_clauses)
 
             if conditions:
                 filters = []
@@ -251,7 +241,7 @@ class DBTable:
             conflict_cols = ', '.join(conflict_columns)
 
             query = f"""
-                INSERT INTO {table_name} ({columns})
+                INSERT INTO \"{table_name}\" ({columns})
                 VALUES ({placeholders})
                 ON CONFLICT ({conflict_cols}) DO UPDATE
                 SET {update_clauses}
@@ -285,7 +275,7 @@ class DBTable:
             if table_name not in ALLOWED_TABLES:
                 raise ValueError("Invalid table name")
             
-            cur.execute(f"SELECT COUNT(*) FROM {table_name};")
+            cur.execute(f"SELECT COUNT(*) FROM \"{table_name}\";")
             count = cur.fetchone()[0]
             return count
         except Exception as e:
@@ -294,6 +284,149 @@ class DBTable:
         finally:
             cur.close()
             conn.close()
+
+    # --------------- Column manipulation functions ---------------
+
+    def add_table_column(self,
+                         table_name: str,
+                         column: list[dict]
+                        ) -> bool:
+        """
+        Add one or more columns to an existing table.
+
+        Args:
+            table_name (str): The name of the table to alter.
+            column (list[dict]): List of column definitions (same format as create_table).
+
+        Returns:
+            bool: True if columns added successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+
+            for col in column:
+                name = col.get("name")
+                type_ = col.get("type")
+                default = col.get("default")
+                nullable = col.get("nullable", True)
+                unique = col.get("unique", False)
+                primary_key = col.get("primary_key", False)
+                foreign_key = col.get("foreign_key")
+                if not name or not type_:
+                    logging.warning("Column name or type missing, skipping column: %s", col)
+                    continue
+                col_def = f"{name} {type_}"
+                if not nullable:
+                    col_def += " NOT NULL"
+                if unique:
+                    col_def += " UNIQUE"
+                if default not in (None, ""):
+                    col_def += f" DEFAULT {default}"
+                # Add column
+                query = f"ALTER TABLE \"{table_name}\" ADD COLUMN {col_def};"
+                logging.info("Adding column with query: %s", query)
+                cur.execute(query)
+                # Add primary key (only possible if table has no PK yet, otherwise skip)
+                if primary_key:
+                    try:
+                        pk_query = f"ALTER TABLE \"{table_name}\" ADD PRIMARY KEY ({name});"
+                        cur.execute(pk_query)
+                    except Exception as pk_e:
+                        logging.warning("Could not add primary key for column %s: %s", name, pk_e)
+                # Add foreign key
+                if foreign_key:
+                    try:
+                        fk_query = f"ALTER TABLE \"{table_name}\" ADD FOREIGN KEY ({name}) REFERENCES {foreign_key};"
+                        cur.execute(fk_query)
+                    except Exception as fk_e:
+                        logging.warning("Could not add foreign key for column %s: %s", name, fk_e)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error adding column(s) to table %s: %s", table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    def remove_table_column(self,
+                            table_name: str,
+                            column_name: str
+                            ) -> bool:
+        """
+        Remove a column from a specified table.
+        Args:
+            table_name (str): The name of the table from which to remove the column.
+            column_name (str): The name of the column to remove.
+        Returns:
+            bool: True if the column was removed successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+            
+            query = f"ALTER TABLE \"{table_name}\" DROP COLUMN {column_name};"
+            cur.execute(query)
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error removing column %s from table %s: %s", column_name, table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    def edit_table_column(self, 
+                          table_name: str, 
+                          old_column_name: str, 
+                          new_column_name: str, 
+                          new_data_type: str,
+                          default_value: Optional[Any] = None
+                          ) -> bool:
+        """
+        Edit the data type of an existing column in a specified table.
+
+        Args:
+            table_name (str): The name of the table containing the column to edit.
+            old_column_name (str): The current name of the column to edit.
+            new_column_name (str): The new name for the column.
+            new_data_type (str): The new SQL data type for the column.
+            default_value (Optional[Any]): The default value for the column, if any.
+            Example:
+                new_data_type = "VARCHAR(200)"
+
+        Returns:
+            bool: True if the column was edited successfully, False otherwise.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        try:
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Modifying columns in table {table_name} is not allowed")
+
+            query = f"ALTER TABLE \"{table_name}\" RENAME COLUMN {old_column_name} TO {new_column_name};"
+            cur.execute(query)
+            query = f"ALTER TABLE \"{table_name}\" ALTER COLUMN {new_column_name} TYPE {new_data_type};"
+            cur.execute(query)
+            if default_value is not None:
+                query = f"ALTER TABLE \"{table_name}\" ALTER COLUMN {new_column_name} SET DEFAULT %s;"
+                cur.execute(query, (default_value,))
+
+            conn.commit()
+            return True
+        except Exception as e:
+            logging.error("Error editing column %s in table %s: %s", old_column_name, table_name, e)
+            return False
+        finally:
+            cur.close()
+            conn.close()
+
+    # --------------- Table manipulation functions ---------------
 
     def create_table(self, table_name: str, columns: list[dict]) -> bool:
         """
@@ -335,7 +468,7 @@ class DBTable:
                     col_def += f" DEFAULT {col['default']}"
                 column_defs.append(col_def)
             columns_str = ", ".join(column_defs)
-            query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_str});"
+            query = f"CREATE TABLE IF NOT EXISTS \"{table_name}\" ({columns_str});"
             logging.info("Creating table with query: %s", query)
             cur.execute(query)
             conn.commit()
@@ -347,131 +480,29 @@ class DBTable:
             cur.close()
             conn.close()
 
-    def add_table_column(self,
-                         table_name: str,
-                         column: list[dict]
-                        ) -> bool:
+    def drop_table(self, table_name: str) -> bool:
         """
-        Add one or more columns to an existing table.
+        Drop a specified table from the database.
 
         Args:
-            table_name (str): The name of the table to alter.
-            column (list[dict]): List of column definitions (same format as create_table).
-
+            table_name (str): The name of the table to drop.
         Returns:
-            bool: True if columns added successfully, False otherwise.
+            bool: True if the table was dropped successfully, False otherwise.
+        conn = self.get_connection()
         """
+
         conn = self.get_connection()
         cur = conn.cursor()
         try:
-            for col in column:
-                name = col.get("name")
-                type_ = col.get("type")
-                default = col.get("default")
-                nullable = col.get("nullable", True)
-                unique = col.get("unique", False)
-                primary_key = col.get("primary_key", False)
-                foreign_key = col.get("foreign_key")
-                if not name or not type_:
-                    logging.warning("Column name or type missing, skipping column: %s", col)
-                    continue
-                col_def = f"{name} {type_}"
-                if not nullable:
-                    col_def += " NOT NULL"
-                if unique:
-                    col_def += " UNIQUE"
-                if default not in (None, ""):
-                    col_def += f" DEFAULT {default}"
-                # Add column
-                query = f"ALTER TABLE {table_name} ADD COLUMN {col_def};"
-                logging.info("Adding column with query: %s", query)
-                cur.execute(query)
-                # Add primary key (only possible if table has no PK yet, otherwise skip)
-                if primary_key:
-                    try:
-                        pk_query = f"ALTER TABLE {table_name} ADD PRIMARY KEY ({name});"
-                        cur.execute(pk_query)
-                    except Exception as pk_e:
-                        logging.warning("Could not add primary key for column %s: %s", name, pk_e)
-                # Add foreign key
-                if foreign_key:
-                    try:
-                        fk_query = f"ALTER TABLE {table_name} ADD FOREIGN KEY ({name}) REFERENCES {foreign_key};"
-                        cur.execute(fk_query)
-                    except Exception as fk_e:
-                        logging.warning("Could not add foreign key for column %s: %s", name, fk_e)
-            conn.commit()
-            return True
-        except Exception as e:
-            logging.error("Error adding column(s) to table %s: %s", table_name, e)
-            return False
-        finally:
-            cur.close()
-            conn.close()
+            if table_name in DO_NOT_MODIFY_TABLES:
+                raise ValueError(f"Dropping table {table_name} is not allowed")
 
-    def remove_table_column(self,
-                            table_name: str,
-                            column_name: str
-                            ) -> bool:
-        """
-        Remove a column from a specified table.
-        Args:
-            table_name (str): The name of the table from which to remove the column.
-            column_name (str): The name of the column to remove.
-        Returns:
-            bool: True if the column was removed successfully, False otherwise.
-        """
-        conn = self.get_connection()
-        cur = conn.cursor()
-        try:
-            query = f"ALTER TABLE {table_name} DROP COLUMN {column_name};"
+            query = f"DROP TABLE IF EXISTS \"{table_name}\";"
             cur.execute(query)
             conn.commit()
             return True
         except Exception as e:
-            logging.error("Error removing column %s from table %s: %s", column_name, table_name, e)
-            return False
-        finally:
-            cur.close()
-            conn.close()
-
-    def edit_table_column(self, 
-                          table_name: str, 
-                          old_column_name: str, 
-                          new_column_name: str, 
-                          new_data_type: str,
-                          default_value: Optional[Any] = None
-                          ) -> bool:
-        """
-        Edit the data type of an existing column in a specified table.
-
-        Args:
-            table_name (str): The name of the table containing the column to edit.
-            old_column_name (str): The current name of the column to edit.
-            new_column_name (str): The new name for the column.
-            new_data_type (str): The new SQL data type for the column.
-            default_value (Optional[Any]): The default value for the column, if any.
-            Example:
-                new_data_type = "VARCHAR(200)"
-
-        Returns:
-            bool: True if the column was edited successfully, False otherwise.
-        """
-        conn = self.get_connection()
-        cur = conn.cursor()
-        try:
-            query = f"ALTER TABLE {table_name} RENAME COLUMN {old_column_name} TO {new_column_name};"
-            cur.execute(query)
-            query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} TYPE {new_data_type};"
-            cur.execute(query)
-            if default_value is not None:
-                query = f"ALTER TABLE {table_name} ALTER COLUMN {new_column_name} SET DEFAULT %s;"
-                cur.execute(query, (default_value,))
-
-            conn.commit()
-            return True
-        except Exception as e:
-            logging.error("Error editing column %s in table %s: %s", old_column_name, table_name, e)
+            logging.error("Error dropping table %s: %s", table_name, e)
             return False
         finally:
             cur.close()
