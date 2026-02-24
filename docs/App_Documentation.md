@@ -48,13 +48,13 @@ Main goals:
 
 ## 4. Runtime Configuration
 
-### Environment variables (backend)
-Configured in `docker-compose.yaml`:
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_DB`
+### Environment variables
+All secrets and configuration are managed via a `.env` file in the project root (see `.env.example` for template). These are referenced in `docker-compose.yaml` for all services. Do not commit your real `.env` to version control.
+
+Key variables:
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+- `APPSMITH_ENCRYPTION_PASSWORD`, `APPSMITH_ENCRYPTION_SALT`
+- `MYSQL_ROOT_PASSWORD`, `NODE_RED_CREDENTIAL_SECRET`
 
 ### Mapping configuration
 Default mapping file:
@@ -125,22 +125,33 @@ Default objective includes:
 
 ## 7. Deployment and Operations
 
-### Start
+### Recommended: Automated install
+
+Use the provided install script for your OS:
+
+- Linux/macOS/WSL: `./install.sh`
+- Windows: `install.bat`
+
+This will copy `.env.example` to `.env` (if needed) and start all services. If the script works, skip to manual steps below.
+
+### Manual start/stop
+
+Start all services:
 ```bash
 docker compose up -d --build
 ```
 
-### Stop
+Stop all services:
 ```bash
 docker compose down
 ```
 
-### View logs
+View logs:
 ```bash
 docker compose logs -f aps-backend
 ```
 
-### Rebuild backend only
+Rebuild backend only:
 ```bash
 docker compose build aps-backend && docker compose up -d aps-backend
 ```
@@ -148,7 +159,10 @@ docker compose build aps-backend && docker compose up -d aps-backend
 ## 8. Data and Backup Notes
 
 - SQL backups are stored under `backups/`.
-- Shared import/export volume is under `shared_data/` and mounted into containers.
+- Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`). Place your schema and seed SQL files here.
+- Appsmith app data is stored in `appsmith-stacks/` and tracked in git as needed.
+- Node-RED flows and config are in `node-red-data/`.
+- Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.
 - Graph operations assume Apache AGE graph name `production_graph` in repository code.
 
 ## 9. Troubleshooting

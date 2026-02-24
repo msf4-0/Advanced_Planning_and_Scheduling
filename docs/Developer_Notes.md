@@ -1,88 +1,118 @@
-# High-level approach to integrating graph data (e.g., from Apache AGE/Postgres) with scheduler:
+# Developer Notes
 
-1. **Extract Graph Data**  
-   - Use SQL or graph queries to fetch nodes (jobs, machines, materials, etc.) and edges (dependencies, routes, precedence) from your database.
-   - Example: Get all jobs, their properties, and their relationships (e.g., job A must finish before job B).
+Last updated: 2026-02-24
 
-2. **Transform Graph Data to Scheduler Input**  
-   - Convert nodes and edges into the format expected by SchedulerDataInput.
-   - For each job node, extract attributes like duration, allowed_machines, etc.
-   - For each edge, determine if it represents a constraint (e.g., precedence, material flow).
+## High-level approach to integrating relational/graph data (PostgreSQL + Apache AGE) with the scheduler
 
-3. **Populate SchedulerDataInput**  
-   - For each job node, call add_jobs() on SchedulerDataInput with the extracted properties.
-   - For each relationship, add the appropriate constraint (e.g., set 'predecessor' property or register a custom constraint).
+1. **Extract Data**
+   - Use SQL queries (tables) and/or Cypher queries via Apache AGE (graph) to fetch:
+     - Nodes/entities (jobs, machines, materials, etc.)
+     - Edges/relationships (precedence, allowed-on routes, assignments, etc.)
 
-4. **Configure Constraints/Objectives**  
-   - Based on graph relationships, add constraints to SchedulerConstraint (e.g., precedence, no-overlap, machine availability).
-   - Set objectives as needed (minimize makespan, etc.).
+2. **Transform to Scheduler Input**
+   - Convert extracted records into the shape expected by `SchedulerDataInput`.
+   - For jobs, normalize key attributes (e.g., `duration`, `due_date`, `allowed_resources`, `predecessor(s)`), using a mapping layer so the system is not tied to a specific schema.
 
-5. **Build and Solve the Model**  
-   - Use SchedulerModelBuilder and Scheduler as before.
-   - The scheduler will now operate on data that reflects your graph structure.
+3. **Populate `SchedulerDataInput`**
+   - Load the transformed jobs/resources into `SchedulerDataInput`.
+   - Represent relationships as either:
+     - job fields (e.g., `predecessor`), or
+     - explicit constraints in `SchedulerConstraint`.
 
-6. **(Optional) Write Back Results**  
-   - After solving, you can update the graph database with the schedule (e.g., add start/end times as node properties or create new edges for scheduled flows).
+4. **Configure Constraints/Objectives**
+   - Add constraints based on the extracted relationships (precedence, no-overlap/resource capacity, machine availability, etc.).
+   - Configure objectives (e.g., minimize makespan).
 
-**Summary:**  
-- Extract → Transform → Populate Scheduler → Add Constraints → Solve → (Optional) Update Graph
+5. **Build and Solve**
+   - Use `SchedulerModelBuilder` and `Scheduler` to build/solve the CP-SAT model.
 
-Let me know if you want a code outline for any of these steps!
+6. **(Optional) Write Back Results**
+   - Persist schedule results back into Postgres/graph (e.g., job start/end times as properties).
+
+**Summary:** Extract → Transform (via mapping) → Populate Scheduler → Add Constraints → Solve → (Optional) Persist
 
 
-To build a dynamic, schema-agnostic backend for PostgreSQL/Apache AGE, you’ll need these core files/components:
+## Current implementation in this repository (aps_backend)
+
+The dynamic, schema-agnostic backend is implemented under `aps_backend/`.
 
 ---
 
 **1. Database Access Layer**
-- db_repository.py:  
-  - Handles connections, generic CRUD, and schema introspection (e.g., list tables/columns using information_schema).
-  - Example: DBTable class (already implemented).
+- `aps_backend/repository/db_repository.py`  
+  - Generic DB access, CRUD, and schema/table operations.
+  - `DBTable` is used across API routes and ingestion.
+
+- `aps_backend/repository/graph_editor.py`
+  - Apache AGE helper to read/write graph nodes/edges.
 
 **2. Schema Discovery/Mapping**
-- schema_mapper.py (new):  
-  - Reads the database schema at runtime.
-  - Allows admin/dev to configure mappings (e.g., which table/column is “job name”, “duration”, etc.).
-  - Stores mapping in a config file (JSON/YAML) or a metadata table in the DB.
+- `aps_backend/schema_mapper.py`
+  - Loads mapping from `aps_backend/configs/config.json` by default.
+  - Can load/save mapping in DB (via `mapping_config` table).
+  - Supports discovery for:
+    - PostgreSQL tables/columns (information_schema)
+    - Apache AGE graph labels/edge types (Cypher)
+
+- `aps_backend/api/admin_api.py`
+  - Admin endpoints for schema discovery + mapping configuration (tables/columns, graph labels/edge types, get/set mapping).
 
 **3. Data Extraction/Transformation**
-- data_ingestion.py (new):  
-  - Uses schema_mapper to extract and transform data from the DB into the format needed by SchedulerDataInput.
-  - Handles unknown/dynamic schemas by using the mapping.
+- `aps_backend/data_ingestion.py`
+  - Uses `SchemaMapper` to interpret mappings.
+  - Extracts jobs from relational tables (`extract_jobs`) and includes a graph-based path (`extract_graph_jobs`) for Apache AGE.
+  - Converts extracted records into scheduler-friendly job dictionaries.
 
 **4. Scheduler Integration**
-- scheduler/ (existing):  
-  - Uses SchedulerDataInput, SchedulerConstraint, etc.
-  - Accepts data from data_ingestion.py.
+- `aps_backend/scheduler/`
+  - Contains `SchedulerDataInput`, constraints, objectives, model builder, and solver orchestration.
 
 **5. API Layer**
-- api/ (existing or new):  
-  - Exposes endpoints for CRUD, mapping configuration, and running the scheduler.
-  - Example: FastAPI routers for jobs, machines, mapping config, etc.
+- `aps_backend/main.py`
+  - FastAPI app entrypoint.
+  - Includes routers from `aps_backend/api/`.
+  - Exposes the scheduler run endpoint (`POST /run_scheduler`) and schedule retrieval (`GET /recent-schedule`).
+
+- `aps_backend/api/table_api.py`
+  - Table CRUD endpoints.
+
+- `aps_backend/api/graph_api.py`
+  - Graph endpoints for interacting with Apache AGE graph data.
 
 **6. (Optional) Admin UI/Config**
-- config.json or config.yaml (new):  
-  - Stores mapping between DB schema and scheduler fields.
-  - Editable by admin via UI or direct file/database access.
+- `aps_backend/configs/config.json`
+  - Stores schema mapping between DB/graph fields and scheduler keys.
 
 ---
 
 **Summary Table:**
 
-| File/Component      | Purpose                                      |
-|---------------------|----------------------------------------------|
-| db_repository.py    | Generic DB access, CRUD, schema introspection|
-| schema_mapper.py    | Dynamic schema mapping/configuration         |
-| data_ingestion.py   | Data extraction/transformation for scheduler |
-| scheduler/          | Scheduling logic (already modular)           |
-| api/                | API endpoints for CRUD, mapping, scheduling  |
-| config.json/yaml    | Mapping config (optional, for admin)         |
+| File/Component              | Purpose                                         |
+|-----------------------------|-------------------------------------------------|
+| repository/db_repository.py | Generic DB access, CRUD, schema/table ops       |
+| repository/graph_editor.py  | Graph read/write helpers for Apache AGE         |
+| schema_mapper.py            | Dynamic schema mapping + schema discovery       |
+| data_ingestion.py           | Extract/transform DB/graph data for scheduler   |
+| scheduler/                  | Scheduling logic (constraints/objectives/model) |
+| api/                        | FastAPI routes: admin/table/graph               |
+| configs/config.json         | Mapping config (file-based)                     |
 
 ---
 
 **Workflow:**
-1. db_repository.py discovers schema.
-2. schema_mapper.py configures mapping.
-3. data_ingestion.py extracts/transforms data.
-4. scheduler/ runs scheduling logic.
-5. api/ exposes endpoints for UI/admin/dev.
+1. Admin discovers schema (tables/columns and/or graph labels/edge types).
+2. Admin sets mapping (file-based JSON or DB-backed mapping).
+3. `DataIngestion` extracts/transforms based on the mapping.
+4. Scheduler consumes the normalized input and solves.
+5. API exposes endpoints for UI/admin/dev and persists schedule results.
+
+
+## Area that can be improved upon
+
+a. change from using ERD to graph database to understand some constraints
+
+b. add more constraints and have the system to be opt-in on certain constraints
+
+c. have that the table isnt hardcoded (which is why we should use graph database)
+
+d. improve upon the integration with ERP-Next

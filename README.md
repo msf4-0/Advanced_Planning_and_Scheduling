@@ -9,6 +9,10 @@ Manufacturing scheduling platform with a FastAPI backend, PostgreSQL + Apache AG
 
 ## Quick Start
 
+**Recommended:** Use the install script for your OS (`install.sh` for Linux/macOS/WSL, `install.bat` for Windows) to automate setup. If the script works, skip to step 3 below.
+
+If the install script does not work for your environment, follow the manual steps starting from step 1.
+
 ### 1) Start all services
 
 From repository root:
@@ -27,28 +31,24 @@ docker compose up -d --build
 
 ### 3) Run your first schedule
 
-```bash
-curl -X POST http://localhost:8000/run_scheduler \
-	-H "Content-Type: application/json" \
-	-d '{}'
-```
-
-Then fetch the latest result:
-
-```bash
-curl http://localhost:8000/recent-schedule
-```
+1. Enter Appsmith
+2. Edit Order
+3. Add Order
+4. Go back to schedule
+5. Run Schedule
 
 ## Core Services
 
 - `aps-backend`: FastAPI scheduler and data APIs
 - `postgres`: PostgreSQL + Apache AGE
 - `appsmith`: low-code UI
-- `erpnext-db`, `erpnext-app`: ERP integration services
 - `node-red`: workflow automation service
+- `erpnext-db`, `erpnext-app`: ERP integration services
 
 ## Notes
 
-- Backend DB connection uses environment variables from `docker-compose.yaml`.
+- Environment variables are managed via a `.env` file (see `.env.example` for template). Secrets and config are not stored in version control.
+- Use `install.sh` (Linux/macOS/WSL) or `install.bat` (Windows) for automated setup and startup.
+- Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`).
 - Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.
 - For detailed endpoint reference and workflows, see docs in the `docs/` folder.

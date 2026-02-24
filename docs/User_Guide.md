@@ -8,7 +8,12 @@ This guide walks you through daily usage: startup, data setup, mapping, schedule
 - Ports available: `8000`, `8080`, `5432`, `1880`, `8001`, `9000`
 - Terminal access in repository root
 
+
 ## 2) Start the Application
+
+**Recommended:** Use the install script for your OS (`install.sh` for Linux/macOS/WSL, `install.bat` for Windows) to automate setup. This will copy `.env.example` to `.env` (if needed) and start all services. If the script works, skip to step 3.
+
+If the install script does not work for your environment, follow the manual steps below:
 
 From repository root:
 
@@ -194,6 +199,7 @@ curl -X POST http://localhost:8000/new-path \
   }'
 ```
 
+
 ## 10) Stop and Clean Up
 
 Stop services:
@@ -202,13 +208,22 @@ Stop services:
 docker compose down
 ```
 
-Stop and remove volumes (destructive):
+Stop and remove volumes (destructive, removes all data):
 
 ```bash
 docker compose down -v
 ```
 
-## 11) Troubleshooting
+
+## 11) Environment and Data Notes
+
+- All secrets and configuration are managed via a `.env` file (see `.env.example` for template). Do not commit your real `.env` to version control.
+- Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`). Place your schema and seed SQL files here.
+- Appsmith app data is stored in `appsmith-stacks/` and tracked in git as needed.
+- Node-RED flows and config are in `node-red-data/`.
+- Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.
+
+## 12) Troubleshooting
 
 - `500` on schedule run:
   - verify required rows exist in mapped jobs table
