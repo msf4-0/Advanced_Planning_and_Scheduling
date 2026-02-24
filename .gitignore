@@ -126,3 +126,34 @@ stacks/git-storage/
 *.sqlite3
 *.log
 *.tmp
+
+# Node-Red sensitive and machine-specific files
+node-red-data/data/flows_cred.json
+node-red-data/data/.config.users.json
+node-red-data/data/.config.users.json.backup
+node-red-data/data/.config.runtime.json
+node-red-data/data/.config.runtime.json.backup
+node-red-data/data/.config.nodes.json
+node-red-data/data/.config.nodes.json.backup
+
+# Node-Red dependencies and temp files
+node-red-data/data/node_modules/
+node-red-data/data/.npm/
+node-red-data/data/package-lock.json
+
+# Optional: backup files (if you don't want to share them)
+node-red-data/data/.flows.json.backup
+
+# Optional: package.json/settings.js if you want users to use their own
+# node-red-data/data/package.json
+# node-red-data/data/settings.js
+
+# Ignore everything in appsmith-stacks
+appsmith-stacks/*
+
+# But do NOT ignore the APS-SchedulerV2 app folder and its contents
+!appsmith-stacks/git-storage/
+!appsmith-stacks/git-storage/6976c2d24364ba686cf28303/
+!appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/
+!appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/APS-SchedulerV2/
+!appsmith-stacks/git-storage/6976c2d24364ba686cf28303/6976c2d24364ba686cf28307/APS-SchedulerV2/**
