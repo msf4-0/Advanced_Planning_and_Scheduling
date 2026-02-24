@@ -1,0 +1,3 @@
+{
+"type_id": {{data_table.triggeredRow.type_id}}
+}

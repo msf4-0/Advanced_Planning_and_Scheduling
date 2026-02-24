@@ -8,7 +8,7 @@ services:
       APPSMITH_ENCRYPTION_PASSWORD: abcd
       APPSMITH_ENCRYPTION_SALT: abcd
     volumes:
-      - appsmith-stacks:/appsmith-stacks
+      - ./appsmith-stacks:/appsmith-stacks
     restart: unless-stopped
     networks:
       - internal

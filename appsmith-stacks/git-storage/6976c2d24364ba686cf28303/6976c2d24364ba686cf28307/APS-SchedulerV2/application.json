@@ -1,0 +1,29 @@
+{
+  "appIsExample": false,
+  "applicationVersion": 2,
+  "collapseInvisibleWidgets": true,
+  "color": "#FFDEDE",
+  "evaluationVersion": 2,
+  "pages": [
+    {
+      "id": "Admin",
+      "isDefault": false
+    },
+    {
+      "id": "Schedule",
+      "isDefault": true
+    },
+    {
+      "id": "Jobs",
+      "isDefault": false
+    },
+    {
+      "id": "Machines",
+      "isDefault": false
+    },
+    {
+      "id": "Types",
+      "isDefault": false
+    }
+  ]
+}

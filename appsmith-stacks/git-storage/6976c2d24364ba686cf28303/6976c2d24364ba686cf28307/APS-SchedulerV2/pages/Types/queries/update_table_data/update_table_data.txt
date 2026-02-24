@@ -1,0 +1,7 @@
+{
+  "condition": {
+    "type_id": {{data_table.selectedRow.type_id}}
+  },
+  "update_values": {{update_form.formData}}
+}
+

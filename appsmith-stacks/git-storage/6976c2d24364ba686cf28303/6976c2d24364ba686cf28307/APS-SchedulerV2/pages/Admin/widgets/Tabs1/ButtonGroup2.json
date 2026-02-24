@@ -1,0 +1,130 @@
+{
+  "animateLoading": true,
+  "borderRadius": "{{appsmith.theme.borderRadius.appBorderRadius}}",
+  "bottomRow": 4,
+  "boxShadow": "none",
+  "buttonVariant": "PRIMARY",
+  "childStylesheet": {
+    "button": {
+      "buttonColor": "{{appsmith.theme.colors.primaryColor}}"
+    }
+  },
+  "dynamicBindingPathList": [
+    {
+      "key": "groupButtons.groupButton1.buttonColor"
+    },
+    {
+      "key": "groupButtons.groupButton2.buttonColor"
+    },
+    {
+      "key": "groupButtons.groupButtonqreyhtt2ps.buttonColor"
+    },
+    {
+      "key": "borderRadius"
+    }
+  ],
+  "dynamicTriggerPathList": [
+    {
+      "key": "groupButtons.groupButton2.onClick"
+    },
+    {
+      "key": "groupButtons.groupButton1.onClick"
+    },
+    {
+      "key": "groupButtons.groupButtonqreyhtt2ps.menuItems.menuItem43kbf0wvep.onClick"
+    },
+    {
+      "key": "groupButtons.groupButtonqreyhtt2ps.menuItems.menuItemve66fkudm3.onClick"
+    }
+  ],
+  "groupButtons": {
+    "groupButton1": {
+      "buttonColor": "{{appsmith.theme.colors.primaryColor}}",
+      "buttonType": "SIMPLE",
+      "disabledWhenInvalid": false,
+      "iconName": "refresh",
+      "id": "groupButton1",
+      "index": 1,
+      "isDisabled": false,
+      "isVisible": true,
+      "label": "Refresh",
+      "menuItems": {},
+      "onClick": "{{tableDatas.getAPIData();}}",
+      "placement": "CENTER",
+      "widgetId": ""
+    },
+    "groupButton2": {
+      "buttonColor": "{{appsmith.theme.colors.primaryColor}}",
+      "buttonType": "SIMPLE",
+      "disabledWhenInvalid": false,
+      "iconName": "add",
+      "id": "groupButton2",
+      "index": 0,
+      "isDisabled": false,
+      "isVisible": true,
+      "label": "Add",
+      "menuItems": {},
+      "onClick": "{{showModal(modal_add_data.name);}}",
+      "placement": "CENTER",
+      "widgetId": ""
+    },
+    "groupButtonqreyhtt2ps": {
+      "buttonColor": "{{appsmith.theme.colors.primaryColor}}",
+      "buttonType": "MENU",
+      "iconName": "import",
+      "id": "groupButtonqreyhtt2ps",
+      "index": 2,
+      "isDisabled": false,
+      "isSeparator": false,
+      "isVisible": true,
+      "itemType": "BUTTON",
+      "label": "Import Data",
+      "menuItems": {
+        "menuItem43kbf0wvep": {
+          "id": "menuItem43kbf0wvep",
+          "index": 0,
+          "isDisabled": false,
+          "isVisible": true,
+          "label": "CSV",
+          "onClick": "{{showModal(modal_import_csv.name);}}",
+          "widgetId": "l7g6lw8ak1"
+        },
+        "menuItemve66fkudm3": {
+          "id": "menuItemve66fkudm3",
+          "index": 1,
+          "isDisabled": false,
+          "isVisible": true,
+          "label": "ERP-Next",
+          "onClick": "{{showModal(modal_import_erp.name).then(() => {\n  get_erp_table_name.run();\n});}}",
+          "widgetId": "tp2agkl7zw"
+        }
+      },
+      "placement": "CENTER",
+      "variant": "filled",
+      "widgetId": "5vhgi1kdbm"
+    }
+  },
+  "isCanvas": false,
+  "isLoading": false,
+  "isVisible": true,
+  "key": "g3dci2n2pb",
+  "leftColumn": 0,
+  "minWidth": 450,
+  "mobileBottomRow": 4,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 24,
+  "mobileTopRow": 0,
+  "needsErrorInfo": false,
+  "orientation": "horizontal",
+  "parentColumnSpace": 19.390625,
+  "parentId": "vbs1zn0c7m",
+  "parentRowSpace": 10,
+  "renderMode": "CANVAS",
+  "responsiveBehavior": "fill",
+  "rightColumn": 64,
+  "topRow": 0,
+  "type": "BUTTON_GROUP_WIDGET",
+  "version": 1,
+  "widgetId": "ml259oxi9i",
+  "widgetName": "ButtonGroup2"
+}

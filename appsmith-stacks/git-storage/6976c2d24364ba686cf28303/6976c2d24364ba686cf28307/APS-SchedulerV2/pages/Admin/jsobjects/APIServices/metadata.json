@@ -1,0 +1,11 @@
+{
+  "gitSyncId": "698d47d001206005aebdc93a_474b2964-6a49-4fd6-9cd9-85dbc459a160",
+  "id": "Admin_APIServices",
+  "unpublishedCollection": {
+    "name": "APIServices",
+    "pageId": "Admin",
+    "pluginId": "js-plugin",
+    "pluginType": "JS",
+    "variables": []
+  }
+}

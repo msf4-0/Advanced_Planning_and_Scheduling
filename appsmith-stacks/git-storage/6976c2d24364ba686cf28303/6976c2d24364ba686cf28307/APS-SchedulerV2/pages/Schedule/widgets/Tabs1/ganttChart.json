@@ -1,0 +1,42 @@
+{
+  "animateLoading": true,
+  "borderOpacity": "25",
+  "borderRadius": "{{appsmith.theme.borderRadius.appBorderRadius}}",
+  "borderWidth": 1,
+  "bottomRow": 71,
+  "boxShadow": "none",
+  "dynamicBindingPathList": [
+    {
+      "key": "borderRadius"
+    },
+    {
+      "key": "srcDoc"
+    }
+  ],
+  "dynamicTriggerPathList": [],
+  "flexVerticalAlignment": "start",
+  "isLoading": false,
+  "isVisible": true,
+  "key": "ku9css5sih",
+  "leftColumn": 1,
+  "mobileBottomRow": 48,
+  "mobileLeftColumn": 0,
+  "mobileRightColumn": 23,
+  "mobileTopRow": 16,
+  "needsErrorInfo": false,
+  "originalBottomRow": 82,
+  "originalTopRow": 10,
+  "parentColumnSpace": 19.390625,
+  "parentId": "eg2sh8qdnq",
+  "parentRowSpace": 10,
+  "renderMode": "CANVAS",
+  "responsiveBehavior": "fill",
+  "rightColumn": 64,
+  "source": "https://www.example.com",
+  "srcDoc": "<script type=\"module\">\n  import mermaid from 'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.4.0/mermaid.esm.min.mjs';\n  mermaid.initialize({startOnLoad: true});\n</script>\n<div class=\"mermaid\">\n  {{ganttJSObject.mapToMermaidGantt()}}\n</div>",
+  "topRow": 0,
+  "type": "IFRAME_WIDGET",
+  "version": 1,
+  "widgetId": "tew4xkgvmt",
+  "widgetName": "ganttChart"
+}

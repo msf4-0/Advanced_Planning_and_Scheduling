@@ -1,0 +1,40 @@
+{
+  "gitSyncId": "6976c2d24364ba686cf28307_b2833272-6129-4fd3-b094-bd10f26fde0f",
+  "id": "Schedule_ganttJSObject",
+  "unpublishedCollection": {
+    "name": "ganttJSObject",
+    "pageId": "Schedule",
+    "pluginId": "js-plugin",
+    "pluginType": "JS",
+    "variables": [
+      {
+        "name": "groupField",
+        "value": "inp_group.text"
+      },
+      {
+        "name": "labelField",
+        "value": "inp_label.text"
+      },
+      {
+        "name": "startField",
+        "value": "inp_start.text"
+      },
+      {
+        "name": "endField",
+        "value": "inp_end.text"
+      },
+      {
+        "name": "durationField",
+        "value": "inp_duration.text"
+      },
+      {
+        "name": "scheduleStartDate",
+        "value": "datePick_start.selectedDate"
+      },
+      {
+        "name": "data",
+        "value": "{}"
+      }
+    ]
+  }
+}
