@@ -46,7 +46,6 @@ services:
       - "5432:5432"
     volumes:
       - ./db_init:/docker-entrypoint-initdb.d
-      - ./shared_data:/var/lib/postgresql/import
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
@@ -59,7 +58,6 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./conf:/etc/mysql/conf.d
-      - ./shared_data:/var/lib/erpnext/data
       - erpnet-db-data:/var/lib/mysql
     networks:
       - erpnet
@@ -75,7 +73,6 @@ services:
     depends_on:
       - erpnext-db
     volumes:
-      - ./shared_data:/var/lib/erpnext/data
       - erpnext-sites:/home/frappe/frappe-bench/sites
       - erpnext-logs:/home/frappe/frappe-bench/logs
     command: tail -f /dev/null
@@ -94,7 +91,6 @@ services:
       - "1880:1880"
     volumes:
       - ./node-red-data:/data
-      - ./shared_data:/node-red/shared_data
     restart: unless-stopped
     networks:
       - internal
