@@ -92,7 +92,7 @@ services:
     ports:
       - "1880:1880"
     volumes:
-      - node-red-data:/data
+      - ./node-red-data:/data
       - ./shared_data:/node-red/shared_data
     restart: unless-stopped
     networks:
