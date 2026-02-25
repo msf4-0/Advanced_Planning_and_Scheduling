@@ -1,6 +1,6 @@
 # APS Scheduling Platform - How-To User Guide
 
-This guide walks you through daily usage: startup, data setup, mapping, schedule execution, and result retrieval.
+This guide walks you through daily usage: startup, Appsmith setup, running a schedule, and (optional) API-based data setup and debugging.
 
 ## 1) Prerequisites
 
@@ -11,7 +11,7 @@ This guide walks you through daily usage: startup, data setup, mapping, schedule
 
 ## 2) Start the Application
 
-**Recommended:** Use the install script for your OS (`install.sh` for Linux/macOS/WSL, `install.bat` for Windows) to automate setup. This will copy `.env.example` to `.env` (if needed) and start all services. If the script works, skip to step 3.
+**Recommended:** Use the install script for your OS (`install.sh` for Linux/macOS/WSL, `install.bat` for Windows) to automate setup and start all services. If the script works, continue to step 3.
 
 If the install script does not work for your environment, follow the manual steps below:
 
@@ -28,11 +28,31 @@ docker compose ps
 ```
 
 Open services:
-- API docs: `http://localhost:8000/docs`
+- APS backend API: `http://localhost:8000`
+- FastAPI docs (Swagger): `http://localhost:8000/docs`
 - Appsmith: `http://localhost:8080`
 - Node-RED: `http://localhost:1880`
+- ERPNext app: `http://localhost:8001`
 
-## 3) Quick Health Checks
+## 3) Create Appsmith Account & Restore App
+
+On a fresh install, Appsmith will prompt you to create the first admin account when you visit `http://localhost:8080`.
+
+1. Open Appsmith in your browser: `http://localhost:8080`
+2. Complete the onboarding and create your admin account (email/password).
+3. Import the app manually:
+   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside the `backups/` folder).
+4. Invite additional users as needed (Share/Invite workspace).
+
+## 4) Run Your First Schedule (Appsmith)
+
+1. Enter Appsmith: `http://localhost:8080`
+2. Press the **Edit Jobs** button to open the Jobs menu.
+3. Press the **+** icon to add jobs, then fill in the necessary details.
+4. Return to the scheduling menu by pressing the **schedule** button.
+5. Run the schedule by pressing the **Start Schedule** button.
+
+## 5) Quick Health Checks (Optional)
 
 Check backend:
 
@@ -52,7 +72,7 @@ Check mapping config:
 curl http://localhost:8000/admin/mapping/
 ```
 
-## 4) Prepare Data for Scheduling
+## 6) Prepare Data for Scheduling (API / Advanced)
 
 The scheduler ingests jobs via mapping configuration. In current backend flow, extraction reads SQL job data from the mapping table (for example, `jobs`) and derives machine resources.
 
@@ -82,7 +102,7 @@ curl -X PUT "http://localhost:8000/import-csv/jobs" \
   -F "csv_file=@/absolute/path/jobs.csv"
 ```
 
-## 5) Configure/Update Mapping
+## 7) Configure/Update Mapping (API / Advanced)
 
 Mapping controls how source fields map to scheduler fields.
 
@@ -118,7 +138,7 @@ curl -X POST http://localhost:8000/admin/mapping/ \
   }'
 ```
 
-## 6) Run the Scheduler
+## 8) Run the Scheduler (API / Advanced)
 
 Basic run:
 
@@ -136,7 +156,7 @@ curl -X POST http://localhost:8000/run_scheduler \
   -d '{"config": {"job_mapping": {"table_name": "jobs"}}}'
 ```
 
-## 7) Retrieve Results
+## 9) Retrieve Results
 
 Most recent run:
 
@@ -148,7 +168,7 @@ Result format is typically:
 - top-level job IDs
 - per job: solved `start`, `end`, `resources` (plus model vars)
 
-## 8) Common Admin Tasks
+## 10) Common Admin Tasks
 
 ### Discover schema
 
@@ -175,12 +195,10 @@ curl -X POST "http://localhost:8000/update?table_name=jobs" \
   -d '{"condition":{"job_id":"J100"},"update_values":{"duration":8}}'
 ```
 
-## 9) Graph Usage (Optional)
+## 11) Graph Usage (Optional)
 
 List node labels:
 
-```bash
-curl http://localhost:8000/node-names
 ```
 
 Create nodes + edges path:
@@ -200,7 +218,7 @@ curl -X POST http://localhost:8000/new-path \
 ```
 
 
-## 10) Stop and Clean Up
+## 12) Stop and Clean Up
 
 Stop services:
 
@@ -215,15 +233,15 @@ docker compose down -v
 ```
 
 
-## 11) Environment and Data Notes
+## 13) Environment and Data Notes
 
-- All secrets and configuration are managed via a `.env` file (see `.env.example` for template). Do not commit your real `.env` to version control.
+- Environment variables are managed via a `.env` file (see `.env.example` for template). Do not commit your real `.env` to version control.
 - Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`). Place your schema and seed SQL files here.
 - Appsmith app data is stored in `appsmith-stacks/` and tracked in git as needed.
 - Node-RED flows and config are in `node-red-data/`.
 - Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.
 
-## 12) Troubleshooting
+## 14) Troubleshooting
 
 - `500` on schedule run:
   - verify required rows exist in mapped jobs table
