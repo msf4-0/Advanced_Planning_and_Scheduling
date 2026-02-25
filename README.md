@@ -42,8 +42,8 @@ On a fresh install, Appsmith will prompt you to create the first admin account w
 ### 4) Run your first schedule
 
 1. Enter Appsmith: `http://localhost:8080`
-2. Press the "Edit Order" Button which shows the Order/Jobs menu to edit the detail
-3. Press the "+" Icon to Add Order then fill in the necessary details
+2. Press the "Edit Jobs" Button which shows the Jobs menu to edit the detail
+3. Press the "+" Icon to Add Jobs then fill in the necessary details
 4. Return to scheduling menu by pressing "schedule" button
 5. Run Schedule by pressing the "Start Schedule" button
 
