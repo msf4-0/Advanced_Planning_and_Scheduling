@@ -29,13 +29,23 @@ docker compose up -d --build
 - Node-RED: `http://localhost:1880`
 - ERPNext app: `http://localhost:8001`
 
-### 3) Run your first schedule
+### 3) Create Appsmith Account & Restore App
 
-1. Enter Appsmith
-2. Edit Order
-3. Add Order
-4. Go back to schedule
-5. Run Schedule
+On a fresh install, Appsmith will prompt you to create the first admin account when you visit `http://localhost:8080`.
+
+1. Open Appsmith in your browser: `http://localhost:8080`
+2. Complete the onboarding and create your admin account (email/password).
+3. Import the app manually:
+   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside backups folders).
+4. Invite additional users as needed (Share/Invite workspace).
+
+### 4) Run your first schedule
+
+1. Enter Appsmith: `http://localhost:8080`
+2. Press the "Edit Order" Button which shows the Order/Jobs menu to edit the detail
+3. Press the "+" Icon to Add Order then fill in the necessary details
+4. Return to scheduling menu by pressing "schedule" button
+5. Run Schedule by pressing the "Start Schedule" button
 
 ## Core Services
 
