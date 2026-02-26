@@ -158,8 +158,10 @@ docker compose build aps-backend && docker compose up -d aps-backend
 
 ## 8. Data and Backup Notes
 
-- SQL backups are stored under `backups/`.
+- SQL backups are stored under `backups/` (Currently the content of the data was filled with testing values).
 - Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`). Place your schema and seed SQL files here.
+
+  > **Warning:** The PostgreSQL schema and seed files are essential for the application to function correctly. It is **not recommended** to modify these files unless you fully understand the database structure and its impact on the app. Changing the schema or seed data may break core features or cause the app to malfunction.
 - Appsmith app data is stored in `appsmith-stacks/` and tracked in git as needed.
 - Node-RED flows and config are in `node-red-data/`.
 - Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.

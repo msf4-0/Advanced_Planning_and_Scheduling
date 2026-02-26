@@ -8,6 +8,8 @@ if [ ! -f .env ]; then
   cp .env.example .env
   echo "Copied .env.example to .env. Please review and edit secrets in .env if needed."
   echo "Edit .env and rerun this script to start containers."
+  echo
+  read -p "Press Enter to exit..." _
   exit 1
 fi
 
@@ -15,3 +17,5 @@ fi
 docker compose up --build -d
 
 echo "All services are starting. Access Appsmith at http://localhost:8080"
+echo
+read -p "Press Enter to exit..." _

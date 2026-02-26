@@ -1,6 +1,9 @@
 # APS Scheduling Platform - How-To User Guide
 
-This guide walks you through daily usage: startup, Appsmith setup, running a schedule, and (optional) API-based data setup and debugging.
+
+This guide walks you through daily usage: startup, Appsmith setup, and running a schedule. Most users can do everything through the Appsmith web interface—**no command-line or API knowledge is required!**
+
+> **Note:** Sections marked as **Advanced/API Usage** are for developers or power users who want to automate, debug, or directly interact with the backend. If you are a regular user, you can skip those sections.
 
 ## 1) Prerequisites
 
@@ -44,6 +47,16 @@ On a fresh install, Appsmith will prompt you to create the first admin account w
    - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside the `backups/` folder).
 4. Invite additional users as needed (Share/Invite workspace).
 
+## 4) Import Node-red Flow for import integration between Appsmith and ERP-Next
+
+To allow importing ERP-Next MySQL Database to Appsmith Postgress database
+
+1. Open Node-red in your browser: `http://localhost:1880`
+2. Press the burger icon on the top right and import (or use ctrl+i)
+3. Click "select a file to import"
+4. Select Node-red flows json file (located on `init_apps_and_flows/Node-Red Flows.json`)
+5. Press "import"
+
 ## 4) Run Your First Schedule (Appsmith)
 
 1. Enter Appsmith: `http://localhost:8080`
@@ -72,9 +85,18 @@ Check mapping config:
 curl http://localhost:8000/admin/mapping/
 ```
 
-## 6) Prepare Data for Scheduling (API / Advanced)
 
-The scheduler ingests jobs via mapping configuration. In current backend flow, extraction reads SQL job data from the mapping table (for example, `jobs`) and derives machine resources.
+## 6) Prepare Data for Scheduling
+
+You can add and manage job data directly through the Appsmith web interface (recommended for most users):
+
+1. Open Appsmith at `http://localhost:8080`.
+2. Use the provided UI to add jobs, machines, and other scheduling data—no coding or command-line required.
+
+---
+### Advanced/API Usage: Prepare Data via API
+
+The scheduler ingests jobs via mapping configuration. In the backend flow, extraction reads SQL job data from the mapping table (for example, `jobs`) and derives machine resources.
 
 Minimum job data should support:
 - `job_id`
@@ -85,7 +107,7 @@ Minimum job data should support:
 - `due_date` (recommended)
 - `required_machine_type_id` (used to derive allowed machines)
 
-### Option A: Add records through table API
+**Option A: Add records through table API**
 
 Insert one row:
 
@@ -95,16 +117,18 @@ curl -X PUT "http://localhost:8000/data?table_name=jobs" \
   -d '{"job_id":"J100","duration":6,"domain_start":0,"domain_end":50,"due_date":20,"required_machine_type_id":1}'
 ```
 
-### Option B: Import CSV
+**Option B: Import CSV**
 
 ```bash
 curl -X PUT "http://localhost:8000/import-csv/jobs" \
   -F "csv_file=@/absolute/path/jobs.csv"
 ```
 
-## 7) Configure/Update Mapping (API / Advanced)
 
-Mapping controls how source fields map to scheduler fields.
+---
+### Advanced/API Usage: Configure/Update Mapping
+
+Mapping controls how source fields map to scheduler fields. This is only needed for advanced customization or integration.
 
 Get current mapping:
 
@@ -138,7 +162,11 @@ curl -X POST http://localhost:8000/admin/mapping/ \
   }'
 ```
 
-## 8) Run the Scheduler (API / Advanced)
+
+---
+### Advanced/API Usage: Run the Scheduler via API
+
+You can run the scheduler from the Appsmith UI (recommended for most users). For automation or integration, use the API:
 
 Basic run:
 
@@ -156,7 +184,13 @@ curl -X POST http://localhost:8000/run_scheduler \
   -d '{"config": {"job_mapping": {"table_name": "jobs"}}}'
 ```
 
+
 ## 9) Retrieve Results
+
+You can view results and schedules directly in the Appsmith UI (recommended for most users).
+
+---
+### Advanced/API Usage: Retrieve Results
 
 Most recent run:
 
@@ -168,9 +202,15 @@ Result format is typically:
 - top-level job IDs
 - per job: solved `start`, `end`, `resources` (plus model vars)
 
+
 ## 10) Common Admin Tasks
 
-### Discover schema
+Most admin tasks can be performed through the Appsmith UI. Only use the following API commands if you need direct access or automation.
+
+---
+### Advanced/API Usage: Admin Tasks
+
+**Discover schema**
 
 ```bash
 curl http://localhost:8000/admin/tables
@@ -179,7 +219,7 @@ curl http://localhost:8000/admin/graph/labels
 curl http://localhost:8000/admin/graph/edge-types
 ```
 
-### Create a new table
+**Create a new table**
 
 ```bash
 curl -X PUT http://localhost:8000/admin/new-table/new_jobs \
@@ -187,7 +227,7 @@ curl -X PUT http://localhost:8000/admin/new-table/new_jobs \
   -d '[{"name":"job_id","type":"TEXT","primary_key":true},{"name":"duration","type":"INTEGER"}]'
 ```
 
-### Update row values
+**Update row values**
 
 ```bash
 curl -X POST "http://localhost:8000/update?table_name=jobs" \
