@@ -4,8 +4,11 @@ Manufacturing scheduling platform with a FastAPI backend, PostgreSQL + Apache AG
 
 ## Documentation
 
-- Full project documentation: [docs/App_Documentation.md](docs/App_Documentation.md)
-- How-to user guide (step-by-step): [docs/User_Guide.md](docs/User_Guide.md)
+- Full project documentation: [documentations/App_Documentation.md](documentations/App_Documentation.md)
+- How-to user guide (step-by-step): [documentations/User_Guide.md](documentations/User_Guide.md)
+- Developer notes: [documentations/Developer_Notes.md](documentations/Developer_Notes.md)
+- Backend details: [aps_backend/backend_details.md](aps_backend/backend_details.md)
+- Scheduler details: [aps_backend/scheduler/scheduler_details.md](aps_backend/scheduler/scheduler_details.md)
 
 ## Quick Start
 
