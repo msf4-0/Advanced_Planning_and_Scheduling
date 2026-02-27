@@ -9,6 +9,8 @@ Manufacturing scheduling platform with a FastAPI backend, PostgreSQL + Apache AG
 - Developer notes: [documentations/Developer_Notes.md](documentations/Developer_Notes.md)
 - Backend details: [aps_backend/backend_details.md](aps_backend/backend_details.md)
 - Scheduler details: [aps_backend/scheduler/scheduler_details.md](aps_backend/scheduler/scheduler_details.md)
+- [Google OR-Tools documentation](https://developers.google.com/optimization/reference)
+- [ERP-Next documentation](https://docs.frappe.io/erpnext/introduction) 
 
 ## Quick Start
 
@@ -38,9 +40,10 @@ On a fresh install, Appsmith will prompt you to create the first admin account w
 
 1. Open Appsmith in your browser: `http://localhost:8080`
 2. Complete the onboarding and create your admin account (email/password).
-3. Import the app manually:
+3. If you're prompted to setup datasource, press "skip" on the top right corner
+4. Import the app manually:
    - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside backups folders).
-4. Invite additional users as needed (Share/Invite workspace).
+5. Invite additional users as needed (Share/Invite workspace).
 
 ### 4) Run your first schedule
 
@@ -49,6 +52,9 @@ On a fresh install, Appsmith will prompt you to create the first admin account w
 3. Press the "+" Icon to Add Jobs then fill in the necessary details
 4. Return to scheduling menu by pressing "schedule" button
 5. Run Schedule by pressing the "Start Schedule" button
+
+> **Note:**  
+> If no data exists yet and you want to add resources (machines/employees), create the corresponding types first, then add the resources.
 
 ## Core Services
 
