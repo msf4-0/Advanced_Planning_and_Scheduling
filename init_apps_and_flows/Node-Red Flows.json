@@ -135,7 +135,7 @@
         "id": "3bf6c603dfb9e0ac",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 1",
+        "name": "get table schema",
         "func": "// Extract table name from inject\nconst tableName = msg.payload.table_name;\n\n// Store table name for later use\nflow.set('currentTable', tableName);\n\n// Query to get schema information from MySQL\n// MySQL node expects query in msg.topic\nmsg.topic = `DESCRIBE \\`${tableName}\\`;`;\n\n// Indicator for switch\nmsg.step = 'describe'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -143,7 +143,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1100,
+        "x": 1110,
         "y": 620,
         "wires": [
             [
@@ -203,7 +203,7 @@
         "id": "efae1d2ff7d78969",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 2",
+        "name": "convert & create",
         "func": "const tableName = flow.get('currentTable');\n\nconst typeMapping = {\n    'varchar': 'VARCHAR',\n    'char': 'CHAR',\n    'int': 'INTEGER',\n    'bigint': 'BIGINT',\n    'smallint': 'SMALLINT',\n    'tinyint': 'SMALLINT',\n    'mediumint': 'INTEGER',\n    'datetime': 'TIMESTAMP',\n    'timestamp': 'TIMESTAMP',\n    'text': 'TEXT',\n    'mediumtext': 'TEXT',\n    'longtext': 'TEXT',\n    'tinytext': 'TEXT',\n    'decimal': 'NUMERIC',\n    'numeric': 'NUMERIC',\n    'float': 'REAL',\n    'double': 'DOUBLE PRECISION',\n    'date': 'DATE',\n    'time': 'TIME',\n    'year': 'SMALLINT',\n    'blob': 'BYTEA',\n    'mediumblob': 'BYTEA',\n    'longblob': 'BYTEA',\n    'tinyblob': 'BYTEA',\n    'binary': 'BYTEA',\n    'varbinary': 'BYTEA',\n    'enum': 'VARCHAR',\n    'set': 'VARCHAR',\n    'json': 'JSONB',\n    'bool': 'BOOLEAN',\n    'boolean': 'BOOLEAN'\n};\n\nlet columns = msg.payload.map(col => {\n    let typeMatch = col.Type.match(/^(\\w+)(\\((.+)\\))?/);\n    let baseType = typeMatch[1].toLowerCase();\n    let typeParams = typeMatch[3];\n    \n    let pgType = typeMapping[baseType] || 'TEXT';\n    \n    if (typeParams && (pgType === 'VARCHAR' || pgType === 'CHAR' || pgType === 'NUMERIC')) {\n        pgType += `(${typeParams})`;\n    }\n    \n    let nullable = col.Null === 'YES' ? '' : ' NOT NULL';\n    \n    let defaultValue = '';\n    if (col.Default !== null && col.Default !== undefined) {\n        if (col.Default === 'CURRENT_TIMESTAMP') {\n            defaultValue = ' DEFAULT CURRENT_TIMESTAMP';\n        } else if (typeof col.Default === 'string') {\n            defaultValue = ` DEFAULT '${col.Default}'`;\n        } else {\n            defaultValue = ` DEFAULT ${col.Default}`;\n        }\n    }\n    \n    let primaryKey = col.Key === 'PRI' ? ' PRIMARY KEY' : '';\n    \n    return `\"${col.Field}\" ${pgType}${nullable}${defaultValue}${primaryKey}`;\n});\n\nconst createStatement = `CREATE TABLE IF NOT EXISTS \"${tableName}\" (${columns.join(', ')})`;\n\n// PostgreSQL node expects query in msg.query\nmsg.query = createStatement;\n\nnode.warn(`Creating table: ${tableName}`);\n\n// Indicator for switch node\nmsg.step = 'create'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -211,7 +211,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1760,
+        "x": 1780,
         "y": 480,
         "wires": [
             [
@@ -223,7 +223,7 @@
         "id": "90acc16baddad137",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 3",
+        "name": "get table data",
         "func": "const tableName = flow.get('currentTable');\n\n// Query to get all data from the MySQL table\n// MySQL node expects query in msg.topic\nmsg.topic = `SELECT * FROM \\`${tableName}\\``;\n\n// Indicator for switch node\nmsg.step = 'selectRows'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -231,7 +231,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1340,
+        "x": 1360,
         "y": 620,
         "wires": [
             [
@@ -243,7 +243,7 @@
         "id": "55507fbe9e1c4e5a",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 4",
+        "name": "Insert data",
         "func": "const tableName = flow.get('currentTable');\nconst rows = msg.payload;\n\nif (!rows || rows.length === 0) {\n    node.warn(`No data to insert for table: ${tableName}`);\n    msg.payload = null;\n    return msg;\n}\n\nconst columns = Object.keys(rows[0]);\nconst columnList = columns.map(col => `\"${col}\"`).join(', ');\n\nlet values = [];\n\nrows.forEach(row => {\n    let rowValues = columns.map(col => {\n        let value = row[col];\n        \n        if (value === null || value === undefined) {\n            return 'NULL';\n        }\n        \n        if (value instanceof Date) {\n            return `'${value.toISOString()}'`;\n        }\n        \n        if (typeof value === 'string') {\n            return `'${value.replace(/'/g, \"''\")}'`;\n        }\n        \n        if (typeof value === 'boolean') {\n            return value ? 'TRUE' : 'FALSE';\n        }\n        \n        return value;\n    });\n    \n    values.push(`(${rowValues.join(', ')})`);\n});\n\nconst insertStatement = `INSERT INTO \"${tableName}\" (${columnList}) VALUES ${values.join(', ')} ON CONFLICT DO NOTHING`;\n\n// PostgreSQL node expects query in msg.query\nmsg.query = insertStatement;\n\nnode.warn(`Inserting ${rows.length} rows into ${tableName}`);\n\n// Indicator for switch node\nmsg.step = 'insert'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -251,7 +251,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1760,
+        "x": 1770,
         "y": 600,
         "wires": [
             [
@@ -310,7 +310,7 @@
         "id": "c8bf2335d3cc19f9",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 5",
+        "name": "get table names",
         "func": "msg.topic = `\nSELECT table_name\nFROM information_schema.tables t\nWHERE t.table_schema = '_dc54e3ae4a9024bb'\nAND t.table_name LIKE 'tab%'\nAND EXISTS (\n    SELECT 1\n    FROM information_schema.columns c\n    WHERE c.table_schema = t.table_schema\n    AND c.table_name = t.table_name\n    AND c.column_name = 'docstatus'\n)\nAND (\n    -- Core manufacturing only\n    table_name IN (\n        'tabBOM',\n        'tabWork Order',\n        'tabJob Card',\n        'tabProduction Plan',\n        'tabWorkstation',\n        'tabOperation',\n        'tabItem',\n        'tabWarehouse',\n        'tabStock Ledger Entry',\n        'tabBin',\n        'tabSales Order',\n        'tabPurchase Order',\n        'tabCompany',\n        'tabUOM'\n    )\n    OR table_name LIKE 'tabBOM %'  -- BOM Item, BOM Operation, etc.\n    OR table_name LIKE 'tabStock Entry%'\n    OR table_name LIKE 'tabBatch%'\n    OR table_name LIKE 'tabSerial%'\n)\nORDER BY \n    CASE \n        WHEN table_name = 'tabCompany' THEN 1\n        WHEN table_name = 'tabUOM' THEN 2\n        WHEN table_name = 'tabItem' THEN 3\n        WHEN table_name = 'tabWarehouse' THEN 4\n        WHEN table_name = 'tabWorkstation' THEN 5\n        WHEN table_name = 'tabOperation' THEN 6\n        WHEN table_name = 'tabBOM' THEN 7\n        WHEN table_name LIKE 'tabBOM %' THEN 8\n        WHEN table_name = 'tabSales Order' THEN 9\n        WHEN table_name = 'tabPurchase Order' THEN 10\n        WHEN table_name = 'tabProduction Plan' THEN 11\n        WHEN table_name = 'tabWork Order' THEN 12\n        WHEN table_name = 'tabJob Card' THEN 13\n        WHEN table_name = 'tabStock Ledger Entry' THEN 14\n        WHEN table_name = 'tabBin' THEN 15\n        ELSE 100\n    END,\n    table_name;\n`;\n\nmsg.step = 'get'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -318,7 +318,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1100,
+        "x": 1120,
         "y": 540,
         "wires": [
             [
@@ -404,7 +404,7 @@
         "id": "a4e4f805325591c2",
         "type": "function",
         "z": "f6f2187d.f17ca8",
-        "name": "function 6",
+        "name": "get all table names",
         "func": "msg.topic = `\nSELECT table_name\nFROM information_schema.tables t\nWHERE t.table_schema = '_dc54e3ae4a9024bb'\nAND t.table_name LIKE 'tab%'\nAND EXISTS (\n    SELECT 1\n    FROM information_schema.columns c\n    WHERE c.table_schema = t.table_schema\n    AND c.table_name = t.table_name\n    AND c.column_name = 'docstatus'\n)\n`;\n\nmsg.step = 'get'\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -412,7 +412,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1100,
+        "x": 1130,
         "y": 420,
         "wires": [
             [
@@ -528,7 +528,7 @@
         ]
     },
     {
-        "id": "411c69421dd063d6",
+        "id": "cfd564592e435b51",
         "type": "global-config",
         "env": [],
         "modules": {
