@@ -44,7 +44,7 @@ On a fresh install, Appsmith will prompt you to create the first admin account w
 1. Open Appsmith in your browser: `http://localhost:8080`
 2. Complete the onboarding and create your admin account (email/password).
 3. Import the app manually:
-   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside the `backups/` folder).
+   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (`init_apps_and_flows/APS-Schedule V0.4.json`).
 4. Invite additional users as needed (Share/Invite workspace).
 
 ## 4) Import Node-red Flow for import integration between Appsmith and ERP-Next

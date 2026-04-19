@@ -134,12 +134,18 @@ Use the provided install script for your OS:
 
 This will copy `.env.example` to `.env` (if needed) and start all services. If the script works, skip to manual steps below.
 
+> **Important:**
+> Ensure your required credentials are set in `.env` after running the install script.
+> PostgreSQL must be running and healthy before Appsmith starts.
+
 ### Manual start/stop
 
 Start all services:
 ```bash
 docker compose up -d --build
 ```
+
+> **Warning:** Start `postgres` first (or verify it is healthy) before accessing `appsmith`.
 
 Stop all services:
 ```bash
@@ -155,6 +161,8 @@ Rebuild backend only:
 ```bash
 docker compose build aps-backend && docker compose up -d aps-backend
 ```
+
+After services are up, open Appsmith and create the first admin account (email/password) on first login before using the app.
 
 ## 8. Data and Backup Notes
 

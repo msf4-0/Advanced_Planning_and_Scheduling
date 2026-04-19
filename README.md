@@ -18,6 +18,10 @@ Manufacturing scheduling platform with a FastAPI backend, PostgreSQL + Apache AG
 
 If the install script does not work for your environment, follow the manual steps starting from step 1.
 
+> **Important:**
+> Set your credentials in `.env` after running the install script.
+> PostgreSQL must be running and healthy before Appsmith starts.
+
 ### 1) Start all services
 
 From repository root:
@@ -25,6 +29,8 @@ From repository root:
 ```bash
 docker compose up -d --build
 ```
+
+> **Warning:** Start `postgres` first (or confirm it is healthy) before using `appsmith`.
 
 ### 2) Verify key services
 
@@ -38,11 +44,13 @@ docker compose up -d --build
 
 On a fresh install, Appsmith will prompt you to create the first admin account when you visit `http://localhost:8080`.
 
+You must set your Appsmith login credentials (admin email/password) on first access before using the app.
+
 1. Open Appsmith in your browser: `http://localhost:8080`
 2. Complete the onboarding and create your admin account (email/password).
 3. If you're prompted to setup datasource, press "skip" on the top right corner
 4. Import the app manually:
-   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (inside backups folders).
+   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (`init_apps_and_flows/APS-Schedule V0.4.json`).
 5. Invite additional users as needed (Share/Invite workspace).
 
 ### 4) Run your first schedule
