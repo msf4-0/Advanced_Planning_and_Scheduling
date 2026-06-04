@@ -17,6 +17,7 @@ class SchedulerConstraint:
         self.constraints = []
         self.add_constraint(self.precedence_constraint)
         self.add_constraint(self.no_overlap_constraint)
+        self.add_constraint(self.prep_job_constraint)
 
     def add_constraint(self, constraint_fn: Callable[[cp_model.CpModel, dict, dict], None]):
         """
@@ -37,32 +38,85 @@ class SchedulerConstraint:
 
     def precedence_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
-        Enforce sequencing: if a job (or product block) has a 'predecessor', it must start after the predecessor ends.
-        Uses the dynamic key for 'predecessor' from config.json fields mapping.
+        Enforce sequencing: if a job has predecessors, it must start after ALL predecessors end (tight packing).
+        Handles both 'predecessor' (single ID) and 'predecessors' (list of IDs).
         """
-        pred_key = 'predecessor'  # This can be made dynamic if needed
         for job, props in jobs.items():
-            pred = props.get(pred_key)
-            if pred and pred in job_vars:
-                model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
-            else:
-                logging.warning(f"Job {job} has no predecessor assigned or predecessor not in job_vars; skipping precedence constraint.")
+            # Aggregate all possible predecessors from both singular and plural keys
+            preds = set()
+            
+            # Check single 'predecessor' key
+            if props.get('predecessor'):
+                preds.add(props['predecessor'])
+                
+            # Check 'predecessors' list key
+            multi_preds = props.get('predecessors')
+            if isinstance(multi_preds, list):
+                preds.update(multi_preds)
+
+            for pred in preds:
+                if pred in job_vars:
+                    model.Add(job_vars[job]['start'] >= job_vars[pred]['end'])
+                else:
+                    logging.warning(f"Job {job}: Predecessor '{pred}' not found in job_vars; skipping this link.")
 
     def no_overlap_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
         """
-        Ensure no two jobs assigned to the same resources overlap in time.
-        Uses the dynamic key for 'resources' from config.json fields mapping.
+        Ensure no two jobs assigned to the same resource overlap in time.
+        Handles BOTH fixed resources (in job properties) AND dynamic resource assignments.
         """
-        resources_key = 'resources'
+        # Method 1: Fixed resources (existing behavior)
         resources_to_intervals = {}
         for job, props in jobs.items():
-            resources = props.get(resources_key)
-            if resources is not None:
-                if resources not in resources_to_intervals:
-                    resources_to_intervals[resources] = []
-                resources_to_intervals[resources].append(job_vars[job]['interval'])
-            else:
-                logging.warning(f"Job {job} has no resources assigned; skipping no-overlap constraint.")
+            fixed_resources = props.get('resources')  # If explicitly set
+            if fixed_resources is not None:
+                if fixed_resources not in resources_to_intervals:
+                    resources_to_intervals[fixed_resources] = []
+                resources_to_intervals[fixed_resources].append(job_vars[job]['interval'])
+        
+        # Apply no-overlap for fixed resources
         for intervals in resources_to_intervals.values():
             if len(intervals) > 1:
                 model.AddNoOverlap(intervals)
+        
+        # Method 2: Dynamic resources (decision variables)
+        # For jobs that can be assigned to any allowed resource
+        for job_i, props_i in jobs.items():
+            if props_i.get('resources') is None:  # Not pre-assigned
+                for job_j, props_j in jobs.items():
+                    if job_i < job_j and props_j.get('resources') is None:  # Avoid duplicates
+                        # If both jobs assigned to same machine, they cannot overlap
+                        resource_i = job_vars[job_i]['resources']
+                        resource_j = job_vars[job_j]['resources']
+                        
+                        # Create implication: if same resource, then no overlap
+                        # If resource_i == resource_j, then intervals don't overlap
+                        for res in set(list(props_i.get('allowed_resources', [1])) + 
+                                    list(props_j.get('allowed_resources', [1]))):
+                            # When both are assigned to res, enforce no-overlap
+                            model.Add(job_vars[job_i]['end'] <= job_vars[job_j]['start']).OnlyEnforceIf(
+                                [resource_i == res, resource_j == res]
+                            )
+                            model.Add(job_vars[job_j]['end'] <= job_vars[job_i]['start']).OnlyEnforceIf(
+                                [resource_i == res, resource_j == res]
+                            )
+
+    def prep_job_constraint(self, model: cp_model.CpModel, job_vars: dict, jobs: dict):
+        """
+        Enforce that prep jobs start before main jobs.
+        Job property: 'prep_for' = {'job_name': 'target_job', 'days_before': 1}
+        Example: prep job must start 1 day (24 time units) before the target job starts.
+        """
+        for job, props in jobs.items():
+            prep_config = props.get('prep_for')
+            if prep_config:
+                target_job = prep_config.get('job_name')
+                days_before = prep_config.get('days_before', 1)
+                offset = days_before * 24  # Convert days to time units
+                
+                if target_job in job_vars:
+                    # prep job must start at least 'offset' time units before target job starts
+                    model.Add(job_vars[job]['end'] <= job_vars[target_job]['start'])
+                    model.Add(job_vars[target_job]['start'] >= job_vars[job]['start'] + offset)
+                else:
+                    logging.warning(f"Job {job}: Prep target '{target_job}' not found.")

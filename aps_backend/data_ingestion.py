@@ -66,6 +66,7 @@ class DataIngestion:
 
 			# Build a dict of job properties using internal keys mapped to DB columns
 			job_props = {key: props.get(col) for key, col in fields.items()}
+			job_props['buffer'] = int(props.get('buffer', 0)) # Extract lead time/buffer
 			machine_type_id = props.get('required_machine_type_id')
 			if machine_type_id is not None:
 				allowed = self.db.fetch(
@@ -82,16 +83,23 @@ class DataIngestion:
 			else:
 				job_props['resources'] = None
 
-			# Normalize predecessor field (if present)
-			predecessor = job_props.get('predecessor')
-			if predecessor:
-				# Try to match case-insensitively to a job ID
-				pred_key = predecessor.lower()
-				if pred_key in job_id_map:
-					job_props['predecessor'] = job_id_map[pred_key]
-				else:
-					logging.warning(f"Job {job_id} predecessor '{predecessor}' does not match any job ID; removing predecessor.")
-					job_props['predecessor'] = None
+			# Normalize predecessor field (handles single ID or comma-separated list)
+			raw_pred = job_props.get('predecessor')
+			job_props['predecessors'] = []
+			if raw_pred:
+				# If it's a string, split by comma; otherwise wrap in a list
+				candidates = [p.strip() for p in str(raw_pred).split(',')] if isinstance(raw_pred, str) else [raw_pred]
+				
+				for p in candidates:
+					if not p: continue
+					p_key = str(p).lower()
+					if p_key in job_id_map:
+						job_props['predecessors'].append(job_id_map[p_key])
+					else:
+						logging.warning(f"Job {job_id} predecessor '{p}' does not match any job ID; skipping.")
+			
+			# Maintain 'predecessor' for backward compatibility (stores first item)
+			job_props['predecessor'] = job_props['predecessors'][0] if job_props['predecessors'] else None
 
 			jobs[job_id] = job_props  # Add to jobs dict
 

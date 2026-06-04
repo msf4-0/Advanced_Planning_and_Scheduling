@@ -41,7 +41,7 @@ def run_scheduler_endpoint(input: SchedulerInput = Body(None)):
 			logging.info(f"(API) Updating schema mapping with config: {input.config}")
 			schema.update_mapping(input.config, use_db=False)
 
-		result = main()
+		result = main(external_data=input.data if input else None)
 		
 		db.add("schedule_result", {"result": json.dumps(result)})
 
@@ -244,7 +244,7 @@ mock_data = {
 
 logging.basicConfig(level=logging.INFO)
 
-def main():
+def main(external_data: Optional[Dict[str, Any]] = None):
 	# Database connection
 	# conn = DBTable().get_connection_graph()
 	conn = DBTable().get_connection()
@@ -255,9 +255,14 @@ def main():
 	# logging.info(f"(APP) Current mapping config: {mapper.get_mapping()}")
 	ingestion = DataIngestion(mapper)
 
-
-	# Extract all data for the scheduler
-	extracted = ingestion.extract_all()
+	if external_data:
+		logging.info("Using provided external data for scheduling.")
+		extracted = external_data
+	else:
+		logging.info("No external data provided. Extracting from database...")
+		# Extract all data for the scheduler from DB
+		extracted = ingestion.extract_all()
+		
 	logging.info(f"Extracted data: {extracted}")
 
 	jobs = extracted.get('jobs', {})
@@ -301,5 +306,3 @@ if __name__ == "__main__":
 		print(output)
 	else:
 		print("No feasible schedule found.")
-
-
