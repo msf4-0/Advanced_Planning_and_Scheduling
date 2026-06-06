@@ -1,23 +1,60 @@
 import React, { useState, useEffect } from 'react';
 
-// Dynamically use the injected environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Dynamically use the injected environment variable or fallback to the nginx proxy '/api' prefix
+// When running in Docker with the provided nginx config, API routes are served under '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function App() {
+  const [view, setView] = useState('schedule');
   const [schedule, setSchedule] = useState([]);
+  const [backlog, setBacklog] = useState([]);
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [metrics, setMetrics] = useState({ makespan: 0, tardiness: 0 });
+  const [showForm, setShowForm] = useState(false);
+  const [newTask, setNewTask] = useState({
+    job_id: '',
+    duration: 1,
+    allowed_resources: '1',
+    predecessor: '',
+    due_date: 0,
+    resources: ''
+  });
+
+  // Fetch unscheduled tasks from backend
+  const fetchBacklog = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/data?table_name=jobs`);
+      if (response.ok) {
+        const data = await response.json();
+        setBacklog(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching backlog:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch current schedule from FastAPI backend
   const fetchSchedule = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/schedule`);
+      const response = await fetch(`${API_BASE_URL}/recent-schedule`);
       if (response.ok) {
         const data = await response.json();
-        setSchedule(data.tasks || []);
-        setMetrics(data.metrics || { makespan: 0, tardiness: 0 });
+        // The backend returns { "success": true, "result": { "result": { ...jobs... } } }
+        const jobMap = data.result?.result || {};
+        const scheduleArray = Object.entries(jobMap).map(([jobId, values]) => ({
+          job_id: jobId,
+          ...values
+        }));
+        setSchedule(scheduleArray);
+
+        // Dynamically calculate makespan (max end time) from results
+        const maxEnd = scheduleArray.reduce((max, job) => Math.max(max, job.end || 0), 0);
+        setMetrics({ makespan: maxEnd, tardiness: 0 });
       }
     } catch (error) {
       console.error("Error fetching schedule execution data:", error);
@@ -30,9 +67,10 @@ export default function App() {
   const triggerOptimization = async () => {
     setOptimizing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/optimize`, {
+      const response = await fetch(`${API_BASE_URL}/run_scheduler`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
       });
       if (response.ok) {
         await fetchSchedule();
@@ -44,15 +82,99 @@ export default function App() {
     }
   };
 
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        job_id: newTask.job_id,
+        duration: parseInt(newTask.duration),
+        allowed_resources: newTask.allowed_resources.split(',').map(r => parseInt(r.trim())).filter(r => !isNaN(r)),
+        predecessor: newTask.predecessor || null,
+        due_date: parseInt(newTask.due_date),
+        resources: newTask.resources ? parseInt(newTask.resources) : null
+      };
+
+      const response = await fetch(`${API_BASE_URL}/data?table_name=jobs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        setShowForm(false);
+        setNewTask({ job_id: '', duration: 1, allowed_resources: '1', predecessor: '', due_date: 0, resources: '' });
+        fetchBacklog();
+      }
+    } catch (error) {
+      console.error("Failed to add task:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSchedule();
+    fetchBacklog();
   }, []);
+
+  console.log("APS Engine UI Loaded. Current View:", view);
 
   return (
     <div style={styles.container}>
+      {/* Add Task Modal */}
+      {showForm && (
+        <div style={styles.formModal}>
+          <form style={styles.formContent} onSubmit={handleAddTask}>
+            <h2 style={{marginBottom: '20px'}}>Add New Scheduling Task</h2>
+            
+            <label style={styles.label}>Job ID (Unique Name)</label>
+            <input style={styles.input} required value={newTask.job_id} onChange={e => setNewTask({...newTask, job_id: e.target.value})} placeholder="e.g. BATCH_101" />
+            
+            <div style={{display: 'flex', gap: '16px'}}>
+              <div style={{flex: 1}}>
+                <label style={styles.label}>Duration (hrs)</label>
+                <input style={styles.input} type="number" required value={newTask.duration} onChange={e => setNewTask({...newTask, duration: e.target.value})} />
+              </div>
+              <div style={{flex: 1}}>
+                <label style={styles.label}>Due Date (hrs)</label>
+                <input style={styles.input} type="number" value={newTask.due_date} onChange={e => setNewTask({...newTask, due_date: e.target.value})} />
+              </div>
+            </div>
+
+            <label style={styles.label}>Allowed Resources (IDs, comma separated)</label>
+            <input style={styles.input} value={newTask.allowed_resources} onChange={e => setNewTask({...newTask, allowed_resources: e.target.value})} placeholder="e.g. 1, 2, 3" />
+
+            <label style={styles.label}>Predecessor Job ID (Optional)</label>
+            <input style={styles.input} value={newTask.predecessor} onChange={e => setNewTask({...newTask, predecessor: e.target.value})} placeholder="e.g. BATCH_100" />
+
+            <label style={styles.label}>Fixed Resource Assignment (Optional)</label>
+            <input style={styles.input} value={newTask.resources} onChange={e => setNewTask({...newTask, resources: e.target.value})} placeholder="e.g. 1" />
+
+            <div style={styles.formActions}>
+              <button type="button" onClick={() => setShowForm(false)} style={styles.cancelButton}>Cancel</button>
+              <button type="submit" style={styles.submitButton}>Create Task</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Header */}
       <header style={styles.header}>
-        <h1 style={styles.title}>Advanced Planning & Scheduling (APS) Engine</h1>
+        <div>
+          <h1 style={styles.title}>Advanced Planning & Scheduling (APS) Engine v2.1</h1>
+          <nav style={styles.nav}>
+            <button 
+              onClick={() => setView('schedule')} 
+              style={{...styles.navButton, ...(view === 'schedule' ? styles.activeNav : {})}}
+            >
+              Operational Schedule
+            </button>
+            <button 
+              onClick={() => setView('backlog')} 
+              style={{...styles.navButton, ...(view === 'backlog' ? styles.activeNav : {})}}
+            >
+              Task Backlog
+            </button>
+          </nav>
+        </div>
         <button 
           onClick={triggerOptimization} 
           disabled={optimizing} 
@@ -82,43 +204,86 @@ export default function App() {
 
       {/* Schedule Table View */}
       <main style={styles.mainContent}>
-        <div style={styles.tableCard}>
-          <div style={styles.tableHeader}>
-            <h2>Operational Schedule Outputs</h2>
-            <button onClick={fetchSchedule} style={styles.refreshButton}>Refresh Data</button>
-          </div>
-          
-          {loading ? (
-            <p style={styles.message}>Loading execution plans...</p>
-          ) : schedule.length === 0 ? (
-            <p style={styles.message}>No active schedule found. Run optimization to generate allocations.</p>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.thRow}>
-                  <th style={styles.th}>Job ID</th>
-                  <th style={styles.th}>Resource / Machine</th>
-                  <th style={styles.th}>Start Time</th>
-                  <th style={styles.th}>End Time</th>
-                  <th style={styles.th}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((task, index) => (
-                  <tr key={index} style={styles.tr}>
-                    <td style={styles.td}><strong>{task.job_id}</strong></td>
-                    <td style={styles.td}>{task.resource_id}</td>
-                    <td style={styles.td}>{task.start_time}</td>
-                    <td style={styles.td}>{task.end_time}</td>
-                    <td style={styles.td}>
-                      <span style={styles.badge}>Scheduled</span>
-                    </td>
+        {view === 'schedule' ? (
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}>
+              <h2>Operational Schedule Outputs</h2>
+              <button onClick={fetchSchedule} style={styles.refreshButton}>Refresh Data</button>
+            </div>
+            
+            {loading ? (
+              <p style={styles.message}>Loading execution plans...</p>
+            ) : schedule.length === 0 ? (
+              <p style={styles.message}>No active schedule found. Run optimization to generate allocations.</p>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.thRow}>
+                    <th style={styles.th}>Job ID</th>
+                    <th style={styles.th}>Resource / Machine</th>
+                    <th style={styles.th}>Start Time</th>
+                    <th style={styles.th}>End Time</th>
+                    <th style={styles.th}>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {schedule.map((task, index) => (
+                    <tr key={index} style={styles.tr}>
+                      <td style={styles.td}><strong>{task.job_id}</strong></td>
+                      <td style={styles.td}>{task.resources}</td>
+                      <td style={styles.td}>{task.start}</td>
+                      <td style={styles.td}>{task.end}</td>
+                      <td style={styles.td}>
+                        <span style={styles.badge}>Scheduled</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : (
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}>
+              <h2>Unscheduled Task Backlog</h2>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={() => setShowForm(true)} style={{...styles.button, backgroundColor: '#16a34a'}}>+ Add New Task</button>
+                <button onClick={fetchBacklog} style={styles.refreshButton}>Refresh</button>
+              </div>
+            </div>
+            
+            {loading ? (
+              <p style={styles.message}>Loading backlog...</p>
+            ) : backlog.length === 0 ? (
+              <p style={styles.message}>No unscheduled tasks found. Add a task to get started.</p>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.thRow}>
+                    <th style={styles.th}>Job ID</th>
+                    <th style={styles.th}>Duration</th>
+                    <th style={styles.th}>Predecessor</th>
+                    <th style={styles.th}>Allowed Resources</th>
+                    <th style={styles.th}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backlog.map((task, index) => (
+                    <tr key={index} style={styles.tr}>
+                      <td style={styles.td}><strong>{task.job_id}</strong></td>
+                      <td style={styles.td}>{task.duration || task.properties?.duration} hrs</td>
+                      <td style={styles.td}>{task.predecessor || task.properties?.predecessor || '-'}</td>
+                      <td style={styles.td}>{(task.allowed_resources || task.properties?.allowed_resources || []).join(', ')}</td>
+                      <td style={styles.td}>
+                        <span style={{...styles.badge, backgroundColor: '#fef3c7', color: '#92400e'}}>Unscheduled</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
@@ -143,5 +308,15 @@ const styles = {
   tr: { borderBottom: '1px solid #e5e7eb' },
   td: { padding: '12px' },
   message: { textAlign: 'center', padding: '40px', color: '#6b7280' },
-  badge: { backgroundColor: '#dcfce7', color: '#14532d', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: '500' }
+  badge: { backgroundColor: '#dcfce7', color: '#14532d', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: '500' },
+  nav: { display: 'flex', gap: '12px', marginTop: '12px' },
+  navButton: { background: 'none', border: 'none', padding: '8px 16px', cursor: 'pointer', borderBottom: '2px solid transparent', fontSize: '14px', color: '#6b7280' },
+  activeNav: { borderBottomColor: '#2563eb', color: '#2563eb', fontWeight: 'bold' },
+  formModal: { background: 'rgba(0,0,0,0.5)', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  formContent: { background: '#fff', padding: '32px', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' },
+  label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: '#374151' },
+  input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', marginBottom: '16px', fontSize: '14px', boxSizing: 'border-box' },
+  formActions: { display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' },
+  cancelButton: { background: '#f3f4f6', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' },
+  submitButton: { background: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' },
 };
