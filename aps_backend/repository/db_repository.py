@@ -118,7 +118,7 @@ class DBTable:
             return new_record
         except Exception as e:
             logging.error("Error adding to %s: %s", table_name, e)
-            return []
+            raise e
         finally:
             cur.close()
             conn.close()

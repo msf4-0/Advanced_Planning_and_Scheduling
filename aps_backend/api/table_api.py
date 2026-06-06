@@ -103,6 +103,8 @@ def add_table_data(
             record, 
             table_list=valid_tables
             )
+        if not result:
+            raise HTTPException(status_code=500, detail=f"Failed to insert record into {table_name}.")
         return [dict(row) if not isinstance(row, dict) else row for row in result]
 
     except Exception as e:

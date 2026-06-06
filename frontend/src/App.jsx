@@ -111,11 +111,15 @@ export default function App() {
       const payload = {
         job_id: newTask.job_id,
         duration: parseInt(newTask.duration),
-        allowed_resources: newTask.allowed_resources.split(',').map(r => parseInt(r.trim())).filter(r => !isNaN(r)),
         predecessor: newTask.predecessor || null,
-        due_date: parseInt(newTask.due_date),
-        resources: newTask.resources ? parseInt(newTask.resources) : null
+        due_date: parseInt(newTask.due_date)
       };
+
+      if (newTask.resources) {
+        // Map fixed assigned resource to the jobs table's locked_machine field.
+        payload.locked_machine = parseInt(newTask.resources);
+        payload.locked = true;
+      }
 
       const response = await fetch(`${API_BASE_URL}/data?table_name=jobs`, {
         method: 'PUT',
@@ -123,10 +127,13 @@ export default function App() {
         body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      if (response.ok && Array.isArray(result) && result.length > 0) {
         setShowForm(false);
         setNewTask({ job_id: '', duration: 1, allowed_resources: '1', predecessor: '', due_date: 0, resources: '' });
         fetchBacklog();
+      } else {
+        console.error('Failed to add task, backend response:', result);
       }
     } catch (error) {
       console.error("Failed to add task:", error);
