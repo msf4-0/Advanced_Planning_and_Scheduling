@@ -20,6 +20,13 @@ export default function App() {
     due_date: 0,
     resources: ''
   });
+  const [machines, setMachines] = useState([]);
+  const [showMachineForm, setShowMachineForm] = useState(false);
+  const [newMachine, setNewMachine] = useState({
+    machine_id: '',
+    type: '',
+    capacity: 1
+  });
 
   // Fetch unscheduled tasks from backend
   const fetchBacklog = async () => {
@@ -32,6 +39,22 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error fetching backlog:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch machines/resources from backend
+  const fetchMachines = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/data?table_name=machines`);
+      if (response.ok) {
+        const data = await response.json();
+        setMachines(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching machines:", error);
     } finally {
       setLoading(false);
     }
@@ -110,9 +133,37 @@ export default function App() {
     }
   };
 
+  const handleAddMachine = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        machine_id: parseInt(newMachine.machine_id),
+        type: newMachine.type,
+        capacity: parseInt(newMachine.capacity)
+      };
+
+      const response = await fetch(`${API_BASE_URL}/data?table_name=machines`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        setShowMachineForm(false);
+        setNewMachine({ machine_id: '', type: '', capacity: 1 });
+        fetchMachines();
+      } else {
+        console.error("Failed to add machine. Response status:", response.status);
+      }
+    } catch (error) {
+      console.error("Failed to add machine:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSchedule();
     fetchBacklog();
+    fetchMachines();
   }, []);
 
   console.log("APS Engine UI Loaded. Current View:", view);
@@ -156,6 +207,29 @@ export default function App() {
         </div>
       )}
 
+      {/* Add Machine Modal */}
+      {showMachineForm && (
+        <div style={styles.formModal}>
+          <form style={styles.formContent} onSubmit={handleAddMachine}>
+            <h2 style={{marginBottom: '20px'}}>Add New Machine/Resource</h2>
+            
+            <label style={styles.label}>Machine ID (Numeric)</label>
+            <input style={styles.input} type="number" required value={newMachine.machine_id} onChange={e => setNewMachine({...newMachine, machine_id: e.target.value})} placeholder="e.g. 1" />
+            
+            <label style={styles.label}>Machine Type</label>
+            <input style={styles.input} required value={newMachine.type} onChange={e => setNewMachine({...newMachine, type: e.target.value})} placeholder="e.g. CNC, Lathe, Milling" />
+            
+            <label style={styles.label}>Capacity (parallel jobs)</label>
+            <input style={styles.input} type="number" required value={newMachine.capacity} onChange={e => setNewMachine({...newMachine, capacity: e.target.value})} min="1" />
+
+            <div style={styles.formActions}>
+              <button type="button" onClick={() => setShowMachineForm(false)} style={styles.cancelButton}>Cancel</button>
+              <button type="submit" style={styles.submitButton}>Create Machine</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Header */}
       <header style={styles.header}>
         <div>
@@ -172,6 +246,12 @@ export default function App() {
               style={{...styles.navButton, ...(view === 'backlog' ? styles.activeNav : {})}}
             >
               Task Backlog
+            </button>
+            <button 
+              onClick={() => setView('machines')} 
+              style={{...styles.navButton, ...(view === 'machines' ? styles.activeNav : {})}}
+            >
+              Machines/Resources
             </button>
           </nav>
         </div>
@@ -242,7 +322,7 @@ export default function App() {
               </table>
             )}
           </div>
-        ) : (
+        ) : view === 'backlog' ? (
           <div style={styles.tableCard}>
             <div style={styles.tableHeader}>
               <h2>Unscheduled Task Backlog</h2>
@@ -277,6 +357,41 @@ export default function App() {
                       <td style={styles.td}>
                         <span style={{...styles.badge, backgroundColor: '#fef3c7', color: '#92400e'}}>Unscheduled</span>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : (
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}>
+              <h2>Machines & Resources</h2>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button onClick={() => setShowMachineForm(true)} style={{...styles.button, backgroundColor: '#16a34a'}}>+ Add New Machine</button>
+                <button onClick={fetchMachines} style={styles.refreshButton}>Refresh</button>
+              </div>
+            </div>
+            
+            {loading ? (
+              <p style={styles.message}>Loading machines...</p>
+            ) : machines.length === 0 ? (
+              <p style={styles.message}>No machines found. Add a machine to get started.</p>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.thRow}>
+                    <th style={styles.th}>Machine ID</th>
+                    <th style={styles.th}>Type</th>
+                    <th style={styles.th}>Capacity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {machines.map((machine, index) => (
+                    <tr key={index} style={styles.tr}>
+                      <td style={styles.td}><strong>{machine.machine_id}</strong></td>
+                      <td style={styles.td}>{machine.type}</td>
+                      <td style={styles.td}>{machine.capacity}</td>
                     </tr>
                   ))}
                 </tbody>
