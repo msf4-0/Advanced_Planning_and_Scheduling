@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Dict, List, Any
 
 from APSEngine import APSEngine
 from aps_backend.classes.ProcessNode import ProcessNode
@@ -27,6 +28,7 @@ def run() -> dict:
     operation_repo = Repository("operations", conn_manager)
     dependency_repo = Repository("operation_dependencies", conn_manager)
     material_required_repo = Repository("operation_materials", conn_manager)
+    work_order_repo = Repository("work_orders", conn_manager)  # ← NEW
     runs_log_repo = Repository("scheduling_runs", conn_manager)
 
     # STEP 2: EXTRACT DATA & GENERATE THE IN-MEMORY GRAPH
@@ -137,12 +139,11 @@ def run() -> dict:
             
             # Prepare update record (includes the ID to match the record)
             update_record = {
-                "id": operation.id,  # Required for batch_update to find the right record
+                "id": operation.id,
                 "optimized_start_minute": int(operation.optimized_start),
                 "optimized_end_minute": int(operation.optimized_end),
                 "scheduled_start_time": scheduled_start,
-                "scheduled_end_time": scheduled_end,
-                "status": "Scheduled"
+                "scheduled_end_time": scheduled_end
             }
             updates_batch.append(update_record)
             
@@ -155,15 +156,27 @@ def run() -> dict:
                 "end_time": scheduled_end.strftime("%Y-%m-%d %H:%M:%S")
             }
         
-        # Execute batch update (single transaction, all or nothing)
+        # Execute batch update for operations
         total_updated = operation_repo.batch_update(updates_batch, id_column="id")
-        print(f"      ✓ Batch updated {total_updated} operations")
+        print(f"      ✓ Batch updated {total_updated} operations with scheduling times")
         
-        # Log success state into the real relational tracking table
+        # Get unique work_order IDs that were scheduled
+        work_order_ids = set(op.job_id for op in process_node_list)
+        
+        work_order_updates = [
+            {"id": wo_id, "status": "Scheduled"}
+            for wo_id in work_order_ids
+        ]
+        
+        if work_order_updates:
+            total_wo_updated = work_order_repo.batch_update(work_order_updates, id_column="id")
+            print(f"      ✓ Updated {total_wo_updated} work orders to 'Scheduled' status")
+        
+        # ========== STEP 4C: Log success ==========
         runs_log_repo.add(data={
             "run_status": "Success",
             "completed_at": datetime.now(),
-            "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations."
+            "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations. Scheduled {len(work_order_ids)} work orders."
         })
 
         print("\n==========================================")
