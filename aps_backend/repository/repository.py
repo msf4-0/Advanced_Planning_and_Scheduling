@@ -305,11 +305,15 @@ class Repository:
                 category_id=5
             )
         """
+        if not filters:
+            logger.warning("update_where called with no filters - this would update ALL rows")
+            return 0
+        
         try:
-            _, sanitized_data, _ = ValidationPipeline.validate_and_sanitize_update(
+            _, sanitized_data, sanitized_filters = ValidationPipeline.validate_and_sanitize_update(
                 self.table_name,
                 data,
-                filters or {},
+                filters,
                 self.allowed_tables
             )
         except ValueError as e:
@@ -318,7 +322,7 @@ class Repository:
         
         builder = QueryBuilder(self.table_name)
         
-        for col, val in filters.items():
+        for col, val in sanitized_filters.items():
             builder.where(col, val)
         
         sql, params = builder.build_update(sanitized_data)
@@ -471,3 +475,160 @@ class Repository:
     ) -> bool:
         """Change a column's data type."""
         return self.schema.alter_column_type(self.table_name, column_name, new_type, using_clause)
+    
+    # ==================== BATCH OPERATIONS ====================
+    
+    def batch_add(self, data_list: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        """
+        Insert multiple records in a single transaction.
+        
+        Args:
+            data_list: List of dictionaries (each is a record to insert)
+        
+        Returns:
+            List of inserted records (with IDs if using RETURNING)
+        
+        Example:
+            records = [
+                {"name": "Widget A", "price": 10.00},
+                {"name": "Widget B", "price": 20.00},
+                {"name": "Widget C", "price": 30.00}
+            ]
+            results = repo.batch_add(records)
+        """
+        if not data_list:
+            return []
+        
+        results = []
+        try:
+            with self.transaction():
+                for data in data_list:
+                    try:
+                        result = self.add(data)
+                        if result:
+                            results.append(result)
+                    except Exception as e:
+                        logger.error("Error adding record in batch: %s", e)
+                        raise  # Will trigger transaction rollback
+            return results
+        except Exception as e:
+            logger.error("Batch add failed: %s", e)
+            return []
+    
+    def batch_update(self, updates: List[Dict[str, Any]], id_column: str = "id") -> int:
+        """
+        Update multiple records by ID in a single transaction.
+        
+        Args:
+            updates: List of dicts, each with id_column + update fields
+            id_column: The column to use as the primary key (default: "id")
+        
+        Returns:
+            Total number of rows updated
+        
+        Example:
+            updates = [
+                {"id": 1, "price": 15.00, "status": "updated"},
+                {"id": 2, "price": 25.00, "status": "updated"},
+                {"id": 3, "price": 35.00, "status": "updated"}
+            ]
+            total_updated = repo.batch_update(updates)
+        """
+        if not updates:
+            return 0
+        
+        total_updated = 0
+        try:
+            with self.transaction():
+                for record in updates:
+                    if id_column not in record:
+                        logger.warning("Record missing '%s' column, skipping: %s", id_column, record)
+                        continue
+                    
+                    id_value = record[id_column]
+                    # Remove the ID from the data dict (don't update the ID itself)
+                    update_data = {k: v for k, v in record.items() if k != id_column}
+                    
+                    try:
+                        rows = self.update(id_value, update_data)
+                        total_updated += rows
+                    except Exception as e:
+                        logger.error("Error updating record with %s=%s: %s", id_column, id_value, e)
+                        raise  # Will trigger transaction rollback
+            return total_updated
+        except Exception as e:
+            logger.error("Batch update failed: %s", e)
+            return 0
+    
+    def batch_delete(self, id_values: List[Any]) -> int:
+        """
+        Delete multiple records by ID in a single transaction.
+        
+        Args:
+            id_values: List of primary key values to delete
+        
+        Returns:
+            Total number of rows deleted
+        
+        Example:
+            ids_to_delete = [1, 2, 3, 4, 5]
+            total_deleted = repo.batch_delete(ids_to_delete)
+        """
+        if not id_values:
+            return 0
+        
+        total_deleted = 0
+        try:
+            with self.transaction():
+                for id_val in id_values:
+                    try:
+                        rows = self.delete(id_val)
+                        total_deleted += rows
+                    except Exception as e:
+                        logger.error("Error deleting record with id=%s: %s", id_val, e)
+                        raise  # Will trigger transaction rollback
+            return total_deleted
+        except Exception as e:
+            logger.error("Batch delete failed: %s", e)
+            return 0
+    
+    def batch_upsert(
+        self,
+        data_list: List[Dict[str, Any]],
+        conflict_columns: List[str]
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Upsert multiple records in a single transaction.
+        
+        Args:
+            data_list: List of records to upsert
+            conflict_columns: Columns that trigger conflict detection
+        
+        Returns:
+            List of upserted records
+        
+        Example:
+            records = [
+                {"email": "user1@example.com", "name": "Alice"},
+                {"email": "user2@example.com", "name": "Bob"}
+            ]
+            results = repo.batch_upsert(records, conflict_columns=["email"])
+        """
+        if not data_list:
+            return []
+        
+        results = []
+        try:
+            with self.transaction():
+                for data in data_list:
+                    try:
+                        result = self.upsert(data, conflict_columns)
+                        if result:
+                            results.append(result)
+                    except Exception as e:
+                        logger.error("Error upserting record in batch: %s", e)
+                        raise  # Will trigger transaction rollback
+            return results
+        except Exception as e:
+            logger.error("Batch upsert failed: %s", e)
+            return []
