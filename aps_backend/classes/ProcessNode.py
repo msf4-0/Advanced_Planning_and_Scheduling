@@ -38,3 +38,9 @@ class ProcessNode:
         if not self.input_materials:
             return 0
         return max(material.available_date for material in self.input_materials)
+
+    def add_input_material(self, supply_node):
+        """Binds an incoming raw material batch required for this operation."""
+        if supply_node not in self.input_materials:
+            self.input_materials.append(supply_node)
+            supply_node.register_consumer(self)
