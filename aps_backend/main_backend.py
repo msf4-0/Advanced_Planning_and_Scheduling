@@ -4,13 +4,14 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 from fastapi import FastAPI, HTTPException, Body
 
-# Infrastructure & Core Logic Layer
 from repository import Repository, DatabaseConfig, ConnectionManager
 from classes import ScheduleCreator
-
+from api import crud_routes
 
 app = FastAPI(title="APS Production Scheduling Engine API")
 logging.basicConfig(level=logging.INFO)
+
+app.include_router(crud_routes.router)
 
 @app.post("/run_scheduler", tags=["Schedule"])
 def run_scheduler_endpoint():
