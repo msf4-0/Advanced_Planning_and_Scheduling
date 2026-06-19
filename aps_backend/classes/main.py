@@ -1,6 +1,7 @@
 import sys
 
-from numpy.matlib import require
+from datetime import datetime, timedelta
+
 from APSEngine import APSEngine
 from aps_backend.classes.ProcessNode import ProcessNode
 from aps_backend.classes.ResourceNode import ResourceNode
@@ -114,12 +115,30 @@ def run():
     if result_status == "SUCCESS":
         print("\n[4/4] Optimization Successful! Extracting calculated schedule:")
         print("----------------------------------------------------------")
-        for op in processNodes:
-            print(f"      Task ID: {op.id:<8} | Job: {op.job_id:<6} | Start Minute: {op.optimized_start:<4} | End Minute: {op.optimized_end:<4}")
+        for operation in processNodeList:
+            print(f"      Task ID: {operation.id:<8} | Job: {operation.job_id:<6} | Start Minute: {operation.optimized_start:<4} | End Minute: {operation.optimized_end:<4}")
         print("----------------------------------------------------------")
 
         print("      Writing optimized timestamps back to the relational database...")
-        # repo.save_optimized_schedule(processNodes)
+
+        # Calculate real baseline stamp for minute 0
+        baselineTime = datetime.now()
+
+        # iterate through solved process node list
+        for operation in processNodeList:
+            # convert solved minutes to actual dates
+            scheduledStart = baselineTime + timedelta(minutes=int(operation.optimized_start))
+            scheduledEnd = baselineTime + timedelta(minutes=int(operation.optimized_end))
+            updateData = {
+                "optimized_start_minute": int(operation.optimized_start),
+                "optimized_end_minute": int(operation.optimized_end),
+                "scheduled_start_time": scheduledStart,
+                "scheduled_end_time": scheduledEnd,
+                "status": "Scheduled"
+            }
+
+            operationRepo.update(id_value=operation.id, data=updateData)
+        
         print("\n==========================================")
         print("        PIPELINE COMPLETED SUCCESSFULLY   ")
         print("==========================================")
