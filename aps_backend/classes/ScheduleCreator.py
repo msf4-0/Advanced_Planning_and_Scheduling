@@ -28,7 +28,7 @@ def run() -> dict:
     operation_repo = Repository("operations", conn_manager)
     dependency_repo = Repository("operation_dependencies", conn_manager)
     material_required_repo = Repository("operation_materials", conn_manager)
-    work_order_repo = Repository("work_orders", conn_manager)  # ← NEW
+    work_order_repo = Repository("work_orders", conn_manager)
     runs_log_repo = Repository("scheduling_runs", conn_manager)
 
     # STEP 2: EXTRACT DATA & GENERATE THE IN-MEMORY GRAPH
@@ -54,7 +54,7 @@ def run() -> dict:
     process_nodes = {}
     for operation in db_operations:
         # Ignore completed jobs
-        if operation.get("status") == "done":
+        if operation.get("status") == "Done":
             continue
 
         node = ProcessNode(
@@ -67,7 +67,7 @@ def run() -> dict:
         # Link the capacity: register ProcessNode to its assigned resource
         assigned_resource_id = operation["assigned_resource_id"]
         if assigned_resource_id in resource_nodes:
-            resource_nodes[assigned_resource_id].register_operation(node)
+            node.add_compatible_resource(resource_nodes[assigned_resource_id])
 
     # C. Add the graph edges using the 'operation_dependencies' table
     for edge in db_dependencies:
@@ -76,10 +76,10 @@ def run() -> dict:
 
         # Connect object pointers if both target nodes exist in the active graph
         if (upstream_id in process_nodes) and (downstream_id in process_nodes):
-            upstream_node = process_nodes[upstream_id]
-            downstream_node = process_nodes[downstream_id]
+            current_op = process_nodes[upstream_id]
+            downstream_op = process_nodes[downstream_id]
 
-            upstream_node.add_next_operation(downstream_node)
+            current_op.add_next_operation(downstream_op)
 
     # D1. Map the 'materials' table rows into typed SupplyNode objects
     supply_nodes = {}
@@ -143,7 +143,8 @@ def run() -> dict:
                 "optimized_start_minute": int(operation.optimized_start),
                 "optimized_end_minute": int(operation.optimized_end),
                 "scheduled_start_time": scheduled_start,
-                "scheduled_end_time": scheduled_end
+                "scheduled_end_time": scheduled_end,
+                "status": "Scheduled" # Update status so the frontend engine maps it
             }
             updates_batch.append(update_record)
             
@@ -172,7 +173,7 @@ def run() -> dict:
             total_wo_updated = work_order_repo.batch_update(work_order_updates, id_column="id")
             print(f"      ✓ Updated {total_wo_updated} work orders to 'Scheduled' status")
         
-        # ========== STEP 4C: Log success ==========
+        # Log success to standard 'scheduling_runs' log tracking table columns
         runs_log_repo.add(data={
             "run_status": "Success",
             "completed_at": datetime.now(),
