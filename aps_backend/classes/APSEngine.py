@@ -61,6 +61,15 @@ class APSEngine:
         for resource in resource_nodes:
             # Grab all intervals competing for this specific machine/workstation
             machine_intervals = [interval_vars[op.id] for op in resource.get_all_process_nodes()]
+
+            for start_blackout, end_blackout in resource.unavailable_windows:
+                blackout_suffix = f"blackout_{resource.id}_{start_blackout}"
+                maintenance_interval = self.model.NewFixedSizeIntervalVar(
+                    start_blackout,
+                    end_blackout - start_blackout,
+                    blackout_suffix
+                )
+                machine_intervals.append(maintenance_interval)
             
             if machine_intervals:
                 # Force OR-Tools to ensure these jobs do not stack on top of each other
