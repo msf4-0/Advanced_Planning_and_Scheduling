@@ -1,4 +1,4 @@
-from ProcessNode import ProcessNode
+from .ProcessNode import ProcessNode
 
 class ResourceNode:
     def __init__(self, resource_id: str, resource_type: str = "Machine"):

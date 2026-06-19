@@ -1,7 +1,8 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ProcessNode import ProcessNode
+    from .ProcessNode import ProcessNode
 
 class SupplyNode:
     def __init__(self, materialId: str, name: str, quantityAvailable: float, available_date: int = 0):

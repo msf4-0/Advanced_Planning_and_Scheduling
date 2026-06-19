@@ -1,7 +1,7 @@
 from ortools.sat.python import cp_model
 from typing import List
-from ProcessNode import ProcessNode
-from ResourceNode import ResourceNode
+from .ProcessNode import ProcessNode
+from .ResourceNode import ResourceNode
 
 class APSEngine:
     def __init__(self, horizon_days: int = 30):

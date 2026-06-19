@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from APSEngine import APSEngine
-from aps_backend.classes.ProcessNode import ProcessNode
-from aps_backend.classes.ResourceNode import ResourceNode
-from aps_backend.classes.SupplyNode import SupplyNode
+from .APSEngine import APSEngine
+from .ProcessNode import ProcessNode
+from .ResourceNode import ResourceNode
+from .SupplyNode import SupplyNode
 from repository import Repository, DatabaseConfig, ConnectionManager
 
 def run() -> dict:
