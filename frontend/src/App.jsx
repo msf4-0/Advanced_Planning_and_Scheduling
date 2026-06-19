@@ -97,6 +97,8 @@ export default function App() {
       });
       if (response.ok) {
         await fetchSchedule();
+        await fetchBacklog();
+        setView('schedule');
       }
     } catch (error) {
       console.error("Failed to trigger optimization pipeline:", error);
@@ -164,6 +166,26 @@ export default function App() {
       }
     } catch (error) {
       console.error("Failed to add machine:", error);
+    }
+  };
+
+  const handleDeleteTask = async (jobId) => {
+    if (!window.confirm(`Are you sure you want to delete job ${jobId}?`)) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/data?table_name=jobs`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId })
+      });
+
+      if (response.ok) {
+        fetchBacklog();
+      } else {
+        console.error("Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
     }
   };
 
@@ -352,6 +374,7 @@ export default function App() {
                     <th style={styles.th}>Predecessor</th>
                     <th style={styles.th}>Allowed Resources</th>
                     <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,6 +386,14 @@ export default function App() {
                       <td style={styles.td}>{(task.allowed_resources || task.properties?.allowed_resources || []).join(', ')}</td>
                       <td style={styles.td}>
                         <span style={{...styles.badge, backgroundColor: '#fef3c7', color: '#92400e'}}>Unscheduled</span>
+                      </td>
+                      <td style={styles.td}>
+                        <button 
+                          onClick={() => handleDeleteTask(task.job_id)}
+                          style={{...styles.button, backgroundColor: '#dc2626', padding: '6px 12px', fontSize: '12px'}}
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
