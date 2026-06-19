@@ -1,5 +1,3 @@
-import sys
-
 from datetime import datetime, timedelta
 
 from APSEngine import APSEngine
@@ -8,7 +6,11 @@ from aps_backend.classes.ResourceNode import ResourceNode
 from aps_backend.classes.SupplyNode import SupplyNode
 from repository import Repository, DatabaseConfig, ConnectionManager
 
-def run():
+def run() -> dict:
+    """
+    Orchestrates data extraction, builds the in-memory graph twin,
+    executes Google OR-Tools optimization, and saves timestamps back to DB.
+    """
     print("""
         ==========================================\n
           APS OPTIMIZATION ENGINE PIPELINE START  \n
@@ -25,6 +27,7 @@ def run():
     operationRepo = Repository("operations", conn_manager)
     depedencyRepo = Repository("operation_dependencies", conn_manager)
     materialRequiredRepo = Repository("operation_materials", conn_manager)
+    runs_log_repo = Repository("scheduling_runs", conn_manager)
 
     # STEP 2: EXTRACT DATA & GENERATE THE IN-MEMORY GRAPH
     print("[2/4] Fetching flat records and building the RAM graph twin...")
@@ -98,7 +101,6 @@ def run():
 
             currentProcessNode.add_input_material(currentSupplyNode)
 
-
     print(f"      Graph ready: {len(processNodes)} operations, {len(resourceNodes)} resources, {len(supplyNodes)} inventory items loaded.")
 
     # STEP 3: EXECUTE MATHEMATICAL OPTIMIZATION
@@ -123,12 +125,14 @@ def run():
 
         # Calculate real baseline stamp for minute 0
         baselineTime = datetime.now()
+        output_summary = {}
 
         # iterate through solved process node list
         for operation in processNodeList:
             # convert solved minutes to actual dates
             scheduledStart = baselineTime + timedelta(minutes=int(operation.optimized_start))
             scheduledEnd = baselineTime + timedelta(minutes=int(operation.optimized_end))
+            
             updateData = {
                 "optimized_start_minute": int(operation.optimized_start),
                 "optimized_end_minute": int(operation.optimized_end),
@@ -138,14 +142,36 @@ def run():
             }
 
             operationRepo.update(id_value=operation.id, data=updateData)
+            
+            # Map structural data metrics into local runtime dictionary variables
+            output_summary[operation.id] = {
+                "work_order_id": operation.job_id,
+                "start_minute": int(operation.optimized_start),
+                "end_minute": int(operation.optimized_end),
+                "start_time": scheduledStart.strftime("%Y-%m-%d %H:%M:%S"),
+                "end_time": scheduledEnd.strftime("%Y-%m-%d %H:%M:%S")
+            }
         
+        # Log success state into the real relational tracking table
+        runs_log_repo.add(data={
+            "run_status": "Success",
+            "completed_at": datetime.now(),
+            "log_messages": f"Engine successfully optimized and processed {len(processNodeList)} shop floor operations."
+        })
+
         print("\n==========================================")
         print("        PIPELINE COMPLETED SUCCESSFULLY   ")
         print("==========================================")
+        return output_summary
+        
     else:
         print(f"\n[!] Pipeline Failed: {result_status}")
-        print("    Please verify resource capacities, calendars, or job links for deadlocks.")
-        sys.exit(1)
+        runs_log_repo.add(data={
+            "run_status": "Failed",
+            "completed_at": datetime.now(),
+            "log_messages": f"Solver Engine optimization failed with output token status: {result_status}"
+        })
+        raise ValueError(f"APS Optimization Pipeline failed with status code token: {result_status}")
 
 if __name__ == "__main__":
     run()
