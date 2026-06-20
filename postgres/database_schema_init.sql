@@ -29,6 +29,11 @@ CREATE TABLE resources (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+COMMENT ON TABLE resources IS 'Physical production assets and shop floor capacities capable of executing factory routing tasks.';
+COMMENT ON COLUMN resources.id IS 'Unique identifier for the work center. Maps to ResourceNode.id (e.g., workstation name from ERPNext).';
+COMMENT ON COLUMN resources.resource_type IS 'The resource categorization boundary. Acceptable types include: Machine, Human, Tooling.';
+COMMENT ON COLUMN resources.is_active IS 'Toggle constraint flag to temporarily remove broken or unavailable assets from the solver view.';
+
 -- 2. Materials / Inventory Items
 CREATE TABLE materials (
     id VARCHAR(50) PRIMARY KEY,
@@ -36,6 +41,11 @@ CREATE TABLE materials (
     quantity_available NUMERIC(12, 4) DEFAULT 0.0,
     available_date_minutes INT DEFAULT 0 -- Earliest available time converted to timeline integer minutes
 );
+
+COMMENT ON TABLE materials IS 'Raw raw stock material tracking registry ledger used for bill-of-materials restriction lookups.';
+COMMENT ON COLUMN materials.id IS 'Unique material stock keeping code identifier. Maps to the Item Code properties in ERPNext.';
+COMMENT ON COLUMN materials.quantity_available IS 'The raw numeric current physical stock level available immediately inside warehouse storage containers.';
+COMMENT ON COLUMN materials.available_date_minutes IS 'Calculated timeline arrival offset integer representing when upcoming purchase receipts land on disk.';
 
 -- 3. Manufacturing / Work Orders
 CREATE TABLE work_orders (
@@ -45,6 +55,11 @@ CREATE TABLE work_orders (
     due_date TIMESTAMP NOT NULL,
     status VARCHAR(20) DEFAULT 'Draft' -- 'Draft', 'Scheduled', 'In Progress', 'Done'
 );
+
+COMMENT ON TABLE work_orders IS 'The ultimate parent customer demand orders anchoring manufacturing requirements.';
+COMMENT ON COLUMN work_orders.id IS 'Primary Work Order sequence code key (e.g., standard serialized nomenclature MFG-WO-2026-00001).';
+COMMENT ON COLUMN work_orders.due_date IS 'The ultimate customer delivery deadline used by the solver objective loop to calculate total system lateness.';
+COMMENT ON COLUMN work_orders.status IS 'Transactional state lifecycles: Draft, Approved, Scheduled, In Progress, Done.';
 
 -- =========================================================================
 -- ZONE B: THE GRAPH ENGINE & RESULTS (THE TRANSITION LAYER)
@@ -65,12 +80,23 @@ CREATE TABLE operations (
     scheduled_end_time TIMESTAMP NULL
 );
 
+COMMENT ON TABLE operations IS 'Individual step-by-step processing tasks that populate active memory as ProcessNode graph objects.';
+COMMENT ON COLUMN operations.id IS 'Unique child operation step primary key. Instantiated via ERPNext child table operation row hashes.';
+COMMENT ON COLUMN operations.sequence_number IS 'The engineering workflow route processing hierarchy priority order index (e.g., 10, 20, 30).';
+COMMENT ON COLUMN operations.duration_minutes IS 'The raw processing runtime capacity window required to execute the job task step block.';
+COMMENT ON COLUMN operations.optimized_start_minute IS 'The raw mathematical integer solution output variable calculated by Google OR-Tools CP-SAT solver.';
+COMMENT ON COLUMN operations.scheduled_start_time IS 'Real calendar datetime timestamp string calculated by combining current pipeline run execution baseline and optimized minutes.';
+
 -- 5. DAG Edges Matrix (Connects operations as a structural network graph in memory)
 CREATE TABLE operation_dependencies (
     upstream_op_id VARCHAR(50) REFERENCES operations(id) ON DELETE CASCADE,
     downstream_op_id VARCHAR(50) REFERENCES operations(id) ON DELETE CASCADE,
     PRIMARY KEY (upstream_op_id, downstream_op_id)
 );
+
+COMMENT ON TABLE operation_dependencies IS 'The multi-dependency network adjacency matrix storing directed acyclic graph (DAG) connection pointers.';
+COMMENT ON COLUMN operation_dependencies.upstream_op_id IS 'The source operation block task required to finish executing first before unlocking the subsequent child node path.';
+COMMENT ON COLUMN operation_dependencies.downstream_op_id IS 'The destination dependent operation step blocked until the preceding parental processing window collapses.';
 
 -- 6. Operation Materials Link (BOM Requirements)
 CREATE TABLE operation_materials (
@@ -79,6 +105,8 @@ CREATE TABLE operation_materials (
     quantity_required NUMERIC(12, 4) NOT NULL,
     PRIMARY KEY (operation_id, material_id)
 );
+
+COMMENT ON TABLE operation_materials IS 'Junction profile link defining specific bill of materials inventory draw demands for particular operations.';
 
 -- =========================================================================
 -- ZONE C: CALENDARS, SHIFTS, & ITEM MASTER TEMPLATES
@@ -93,6 +121,8 @@ CREATE TABLE factory_shifts (
     end_time TIME NOT NULL
 );
 
+COMMENT ON TABLE factory_shifts IS 'Operational working time parameters defining resource runtime availability ranges across the weekly horizon.';
+
 -- 8. Factory Closures & Holidays
 CREATE TABLE factory_holidays (
     id SERIAL PRIMARY KEY,
@@ -100,12 +130,16 @@ CREATE TABLE factory_holidays (
     description VARCHAR(100)
 );
 
+COMMENT ON TABLE factory_holidays IS 'Global blackout dates representing factory closures where all processing variables are strictly frozen.';
+
 -- 9. Product Masters (SKU Blueprint Library)
 CREATE TABLE items (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     sku VARCHAR(50) UNIQUE NOT NULL
 );
+
+COMMENT ON TABLE items IS 'The item master master definition catalog profile storing finished product templates.';
 
 -- 10. Routing Blueprint Templates (Used to auto-generate operations for new orders)
 CREATE TABLE routing_templates (
@@ -115,6 +149,8 @@ CREATE TABLE routing_templates (
     required_resource_type VARCHAR(50) NOT NULL,
     standard_duration_minutes INT NOT NULL
 );
+
+COMMENT ON TABLE routing_templates IS 'Engineering blueprint masters used to auto-generate baseline operations arrays whenever a fresh manufacturing request arrives.';
 
 -- =========================================================================
 -- ZONE D: MANAGEMENT, RUN LOGS, & ACCESS CONTROL
@@ -138,8 +174,10 @@ CREATE TABLE scheduling_runs (
     log_messages TEXT                 -- Captures solver stats or data errors
 );
 
+COMMENT ON TABLE scheduling_runs IS 'System audit history tracking logs recording calculation run states, duration markers, and solver exceptions.';
+
 -- =========================================================================
--- INDEX OPTIMIZATIONS (Ensures lightning-fast ingestion for your Python RAM loader)
+-- INDEX OPTIMIZATIONS
 -- =========================================================================
 CREATE INDEX idx_ops_work_order ON operations(work_order_id);
 CREATE INDEX idx_ops_resource ON operations(assigned_resource_id);
