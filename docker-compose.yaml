@@ -1,21 +1,7 @@
 services:
-  # appsmith:
-  #   image: appsmith/appsmith-ce:release
-  #   container_name: appsmith
-  #   ports:
-  #     - "8080:80"
-  #   environment:
-  #     APPSMITH_ENCRYPTION_PASSWORD: ${APPSMITH_ENCRYPTION_PASSWORD}
-  #     APPSMITH_ENCRYPTION_SALT: ${APPSMITH_ENCRYPTION_SALT}
-  #   volumes:
-  #     - ./appsmith-stacks:/appsmith-stacks
-  #   restart: unless-stopped
-  #   networks:
-  #     - internal
 
   postgres:
     image: apache/age:release_PG15_1.6.0
-    # image: apache/age:release_PG17_1.6.0
     container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -30,58 +16,9 @@ services:
     networks:
       - internal
 
-  # erpnext-db:
-  #   image: 1devops2/erpnextdb:15
-  #   container_name: erpnextdb
-  #   ports:
-  #     - "3306:3306"
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-  #   volumes:
-  #     - ./conf:/etc/mysql/conf.d
-  #     - erpnet-db-data:/var/lib/mysql
-  #   networks:
-  #     - erpnet
-  #     - internal
-  #   restart: unless-stopped
-
-  # erpnext-app:
-  #   image: 1devops2/erpnext:15
-  #   container_name: erpnextapp
-  #   ports:
-  #     - "8001:8000"
-  #     - "9000:9000"
-  #   depends_on:
-  #     - erpnext-db
-  #   volumes:
-  #     - erpnext-sites:/home/frappe/frappe-bench/sites
-  #     - erpnext-logs:/home/frappe/frappe-bench/logs
-  #   command: bash -c "cd /home/frappe/frappe-bench && bench start"
-  #   networks:
-  #     - erpnet
-  #     - internal
-  #   restart: unless-stopped
-
-  # node-red:
-  #   image: nodered/node-red:latest
-  #   environment:
-  #     - TZ=Malaysia
-  #     - NODE_RED_CREDENTIAL_SECRET=${NODE_RED_CREDENTIAL_SECRET}
-  #   container_name: node_red
-  #   ports:
-  #     - "1880:1880"
-  #   volumes:
-  #     - node-red-data:/data
-  #   restart: unless-stopped
-  #   networks:
-  #     - internal
-  #     - node-red-net
-
   aps-backend:
-    build: ./aps_backend  # Or use image: your-backend-image
+    build: ./aps_backend
     container_name: aps-backend
-    # ports:
-    #   - "8000:8000"
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -105,8 +42,6 @@ services:
       args:
         - VITE_API_URL=
     container_name: aps-frontend
-    # ports:
-    #   - "3000:80"
     restart: unless-stopped
     depends_on:
       - aps-backend
@@ -128,17 +63,8 @@ services:
     restart: unless-stopped
 
 networks:
-  erpnet:
-    driver: bridge
   internal:
-    driver: bridge
-  node-red-net:
     driver: bridge
 
 volumes:
   postgres-data:
-  appsmith-stacks:
-  erpnet-db-data:
-  erpnext-sites:
-  erpnext-logs:
-  node-red-data:
