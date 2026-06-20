@@ -27,8 +27,8 @@ export const api = {
   },
 
   triggerOptimization: async () => {
-    // Triggers the background creator engine pipeline routing
-    const response = await fetch(`${API_BASE_URL.replace('/api/v1', '')}/run_scheduler`, {
+    // Call /run_scheduler endpoint directly
+    const response = await fetch(`/run_scheduler`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({})
@@ -44,11 +44,11 @@ export const api = {
       const payload = await response.json();
       return payload.data; // Strips out the generic route count envelope wrappers
     }
-    throw new Error('Failed to fetch operations backlog matrix');
+    throw new Error('Failed to fetch operations backlog');
   },
 
   addTask: async (task) => {
-    // Structure payload properties to exactly align with the PostgreSQL operations schema
+    // Structure payload to match PostgreSQL operations schema
     const payload = {
       id: task.job_id, // Unique primary key identifier hash tracking string
       work_order_id: task.work_order_id || 'MANUAL-WO', 
@@ -59,21 +59,28 @@ export const api = {
     };
 
     const response = await fetch(`${API_BASE_URL}/operations`, {
-      method: 'POST', // Swapped out legacy PUT with correct semantic standard POST creator route
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error('Failed to create factory operation record entry');
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to create operation: ${error}`);
+    }
     return await response.json();
   },
 
   deleteTask: async (operationId) => {
-    // Passes identification keys via query strings (?id_value=X) to align with python controllers
+    // Pass ID via query string to match backend DELETE handler
     const response = await fetch(`${API_BASE_URL}/operations?id_value=${encodeURIComponent(operationId)}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
     });
-    if (!response.ok) throw new Error('Failed to drop targeted operation record from canvas');
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to delete operation: ${error}`);
+    }
     return response.json();
   },
 
@@ -84,14 +91,14 @@ export const api = {
       const payload = await response.json();
       return payload.data;
     }
-    throw new Error('Failed to fetch physical factory resources catalog');
+    throw new Error('Failed to fetch physical factory resources');
   },
 
   addMachine: async (machine) => {
-    // Map object structures precisely matching the PostgreSQL resources table
+    // Map to match PostgreSQL resources table schema
     const payload = {
       id: machine.machine_id.toString(),
-      name: machine.name || `${machine.type} Studio Unit`,
+      name: machine.name || `${machine.type} Unit`,
       resource_type: machine.type || 'Machine',
       is_active: true
     };
@@ -102,7 +109,10 @@ export const api = {
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error('Failed to save asset work center capacity resource');
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to create resource: ${error}`);
+    }
     return await response.json();
   }
 };
