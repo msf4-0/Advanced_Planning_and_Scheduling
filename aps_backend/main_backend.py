@@ -1,8 +1,7 @@
 import logging
 import uvicorn
 from datetime import datetime
-from typing import Any, Dict, Optional
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException
 
 from repository import Repository, DatabaseConfig, ConnectionManager
 from classes import ScheduleCreator
