@@ -72,6 +72,7 @@ CREATE TABLE operations (
     sequence_number INT NOT NULL,     -- Route hierarchy tracking (10, 20, 30...)
     duration_minutes INT NOT NULL,    
     assigned_resource_id VARCHAR(50) REFERENCES resources(id),
+    status VARCHAR(20) DEFAULT 'Draft',
     
     -- OUTPUT SCHEDULE RESULTS COMPUTED BY GOOGLE OR-TOOLS
     optimized_start_minute INT DEFAULT -1, 
@@ -86,6 +87,7 @@ COMMENT ON COLUMN operations.sequence_number IS 'The engineering workflow route 
 COMMENT ON COLUMN operations.duration_minutes IS 'The raw processing runtime capacity window required to execute the job task step block.';
 COMMENT ON COLUMN operations.optimized_start_minute IS 'The raw mathematical integer solution output variable calculated by Google OR-Tools CP-SAT solver.';
 COMMENT ON COLUMN operations.scheduled_start_time IS 'Real calendar datetime timestamp string calculated by combining current pipeline run execution baseline and optimized minutes.';
+COMMENT ON COLUMN operations.status IS 'The active execution state of this individual task step. Tracking values include: Draft, Scheduled, In Progress, Done.';
 
 -- 5. DAG Edges Matrix (Connects operations as a structural network graph in memory)
 CREATE TABLE operation_dependencies (
