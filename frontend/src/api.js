@@ -1,27 +1,39 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
+// Helper function to map a database row to a universally compatible frontend object
+const mapOperationToUniversalTask = (op) => ({
+  // Shared properties
+  job_id: op.id,
+  work_order_id: op.work_order_id,
+  status: op.status,
+  
+  // BacklogView specific requirements
+  duration: op.duration_minutes,
+  predecessor: op.predecessor || '-',
+  allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
+  
+  // ScheduleView specific requirements
+  resources: op.assigned_resource_id || 'Any Machine',
+  start: op.scheduled_start_time || `${op.optimized_start_minute || 0} mins`,
+  end: op.scheduled_end_time || `${op.optimized_end_minute || 0} mins`,
+  
+  // Keep original numeric offsets for timeline calculations if needed by charts
+  start_minute: op.optimized_start_minute,
+  end_minute: op.optimized_end_minute
+});
+
 export const api = {
-  // Schedule endpoints
+  // 1. SCHEDULE ENDPOINTS
   fetchSchedule: async () => {
     const response = await fetch(`${API_BASE_URL}/operations`);
     if (response.ok) {
       const payload = await response.json();
-      const rawOperations = payload.data || []; // Extracts from generic {"data": [...]} wrapper
+      const rawOperations = payload.data || [];
       
-      // Filter out completed tasks so the Gantt chart reflects active runtime states
+      // Filter out completed, only map active schedules using the universal structure
       return rawOperations
         .filter(op => op.status !== 'Done')
-        .map(op => ({
-          job_id: op.id, // Maps operations.id back to chart task component views
-          work_order_id: op.work_order_id,
-          duration: op.duration_minutes,
-          resource_id: op.assigned_resource_id,
-          start_minute: op.optimized_start_minute,
-          end_minute: op.optimized_end_minute,
-          start_time: op.scheduled_start_time,
-          end_time: op.scheduled_end_time,
-          status: op.status
-        }));
+        .map(mapOperationToUniversalTask);
     }
     throw new Error('Failed to fetch optimized operations schedule');
   },
@@ -37,20 +49,15 @@ export const api = {
     return response.json();
   },
 
-  // Jobs/Tasks endpoints
+  // 2. JOBS / TASKS ENDPOINTS
   fetchBacklog: async () => {
     const response = await fetch(`${API_BASE_URL}/operations`);
     if (response.ok) {
       const payload = await response.json();
-      const rawOperations = payload.data || []; // Strip out the generic route count wrappers
+      const rawOperations = payload.data || [];
 
-      return rawOperations.map(op => ({
-        job_id: op.id,
-        duration: op.duration_minutes,
-        predecessor: op.predecessor || '-',
-        allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
-        status: op.status
-      }));
+      // Maps the backlog using the exact same universal properties structure
+      return rawOperations.map(mapOperationToUniversalTask);
     }
     throw new Error('Failed to fetch operations backlog');
   },
@@ -96,7 +103,7 @@ export const api = {
     return response.json();
   },
 
-  // Machines/Resources endpoints
+  // 3. MACHINES / RESOURCES ENDPOINTS
   fetchMachines: async () => {
     const response = await fetch(`${API_BASE_URL}/resources`);
     if (response.ok) {
@@ -106,7 +113,7 @@ export const api = {
       return rawMachines.map(m => ({
         machine_id: m.id,
         type: m.resource_type || m.name || '',
-        capacity: m.capacity || Uint16Array
+        capacity: m.capacity || 1
       }));
     }
     throw new Error('Failed to fetch physical factory resources');
