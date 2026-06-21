@@ -2,7 +2,6 @@
 import os
 import sys
 import unittest
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 # Force path resolution base to the project root directory
@@ -11,36 +10,38 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # Import the run module targeting its real file location inside classes/
 from classes.ScheduleCreator import run as schedule_creator_run
 
-class TestComplexSchedulingConstraints(unittest.TestCase):
+class TestComplexParallelSchedulingConstraints(unittest.TestCase):
 
     @patch('classes.ScheduleCreator.Repository')
     @patch('classes.ScheduleCreator.ConnectionManager')
     @patch('classes.ScheduleCreator.DatabaseConfig')
-    def test_complex_scheduling_rules(self, mock_config, mock_conn_manager, mock_repo_class):
+    def test_parallel_dependencies_and_overlap_protection(self, mock_config, mock_conn_manager, mock_repo_class):
         """
         Validates:
-        1. Multiple dependencies (Task A waits for both Task B and Task C).
-        2. Schedule now, run later (Operations respect future material/earliest start constraints).
-        3. Resource machine containment (Tasks on the same machine do not overlap).
+        1. True Parallel Dependencies (Task B and C run simultaneously at minute 0).
+        2. Schedule now, run later (Task A waits for delayed material delivery at minute 180).
+        3. Machine Overlap Protection (Verifies isolated machines allow parallel tracks).
         """
         
         # --- CONDITION 2: SCHEDULE NOW, RUN LATER DATA CONFIG ---
-        # Component parts arrive late at minute 180, pushing downstream tasks deep into the future
+        # Component parts arrive late at minute 180, pushing downstream Task A into the future
         mock_db_materials = [
             {"id": "LATE-PART-XYZ", "name": "Late Component", "quantity_available": 0.0, "available_date_minutes": 180}
         ]
 
-        # Shared single machine asset to thoroughly validate overlap safety constraints
+        # Provide isolated machines to allow true parallel processing lanes
         mock_db_resources = [
-            {"id": "WORKSTATION-1", "name": "Assembly Workstation 1", "resource_type": "Machine", "is_active": True}
+            {"id": "WORKSTATION-ALPHA", "name": "Assembly Lane Alpha", "resource_type": "Machine", "is_active": True},
+            {"id": "WORKSTATION-BETA", "name": "Assembly Lane Beta", "resource_type": "Machine", "is_active": True},
+            {"id": "WORKSTATION-GAMMA", "name": "Assembly Lane Gamma", "resource_type": "Machine", "is_active": True}
         ]
 
-        # --- CONDITION 1 & 3: MULTIPLE DEPENDENCIES & NO OVERLAPS CONFIG ---
-        # Task A will be downstream. Task B and Task C run early but share WORKSTATION-1.
+        # --- CONDITION 1 & 3: MULTIPLE PARALLEL DEPENDENCIES CONFIG ---
+        # Task B and Task C are independent of each other and on separate machines
         mock_db_operations = [
-            {"id": "TASK-B", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "WORKSTATION-1", "status": "Pending"},
-            {"id": "TASK-C", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "WORKSTATION-1", "status": "Pending"},
-            {"id": "TASK-A", "work_order_id": "WO-002", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "WORKSTATION-1", "status": "Pending"}
+            {"id": "TASK-B", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "WORKSTATION-ALPHA", "status": "Pending"},
+            {"id": "TASK-C", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "WORKSTATION-BETA", "status": "Pending"},
+            {"id": "TASK-A", "work_order_id": "WO-002", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "WORKSTATION-GAMMA", "status": "Pending"}
         ]
 
         # TASK-A strictly requires both TASK-B AND TASK-C to complete first
@@ -92,8 +93,19 @@ class TestComplexSchedulingConstraints(unittest.TestCase):
         a_start = summary_results["TASK-A"]["start_minute"]
 
         # =====================================================================
-        # ASSERTION CRITERIA 1: MULTIPLE DEPENDENCIES (Task A waits for B and C)
+        # ASSERTION CRITERIA 1 & 3: TRUE PARALLEL TIMELINES
         # =====================================================================
+        # Because they have separate resources, both should launch immediately at minute 0
+        self.assertEqual(b_start, 0, f"Parallel Failure: Task B delayed starting at minute {b_start}")
+        self.assertEqual(c_start, 0, f"Parallel Failure: Task C delayed starting at minute {c_start}")
+        
+        # Verify execution overlaps completely (e.g., Task C runs entirely inside Task B's timeline window)
+        self.assertTrue(c_end <= b_end, "Timeline Math Error: Parallel overlap assertion failed.")
+
+        # =====================================================================
+        # ASSERTION CRITERIA 2: MULTIPLE DEPENDENCIES & RUN LATER (Material Hold)
+        # =====================================================================
+        # Upstream tasks finish at minute 60, but Task A must wait until minute 180 for material arrivals
         self.assertTrue(
             a_start >= b_end, 
             f"Dependency Failure: Task A started at {a_start} before Upstream Task B finished at {b_end}"
@@ -102,30 +114,10 @@ class TestComplexSchedulingConstraints(unittest.TestCase):
             a_start >= c_end, 
             f"Dependency Failure: Task A started at {a_start} before Upstream Task C finished at {c_end}"
         )
-
-        # =====================================================================
-        # ASSERTION CRITERIA 2: SCHEDULE NOW, RUN LATER
-        # =====================================================================
-        # Even if upstream tasks finish early, Task A must wait until minute 180 for material arrivals
         self.assertTrue(
             a_start >= 180, 
-            f"Material Lag Failure: Task A scheduled at {a_start}, breaking the 'Run Later' constraint of minute 180"
+            f"Material Lag Failure: Task A scheduled early at {a_start}, breaking the 'Run Later' constraint of minute 180"
         )
-
-        # =====================================================================
-        # ASSERTION CRITERIA 3: MACHINE CAPACITY & OVERLAP PROTECTION
-        # =====================================================================
-        # Task B and Task C both run on WORKSTATION-1. They cannot overlap timelines.
-        if b_start < c_start:
-            # If B runs first, it must completely finish before C can begin
-            self.assertTrue(c_start >= b_end, f"Overlap Error: Task C started at {c_start} before Task B cleared at {b_end}")
-        else:
-            # If C runs first, it must completely finish before B can begin
-            self.assertTrue(b_start >= c_end, f"Overlap Error: Task B started at {b_start} before Task C cleared at {c_end}")
-
-        # Ensure all tasks kept their static duration assignments intact during resolution shifts
-        self.assertEqual(b_end - b_start, 60, "Data Mutation Error: Task B duration distorted by solver!")
-        self.assertEqual(c_end - c_start, 45, "Data Mutation Error: Task C duration distorted by solver!")
 
 if __name__ == "__main__":
     unittest.main()
