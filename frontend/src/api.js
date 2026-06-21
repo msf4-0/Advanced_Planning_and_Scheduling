@@ -42,7 +42,15 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/operations`);
     if (response.ok) {
       const payload = await response.json();
-      return payload.data; // Strips out the generic route count envelope wrappers
+      const rawOperations = payload.data || []; // Strip out the generic route count wrappers
+
+      return rawOperations.map(op => ({
+        job_id: op.id,
+        duration: op.duration_minutes,
+        predecessor: op.predecessor || '-',
+        allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
+        status: op.status
+      }));
     }
     throw new Error('Failed to fetch operations backlog');
   },
@@ -53,8 +61,12 @@ export const api = {
       id: task.job_id, // Unique primary key identifier hash tracking string
       work_order_id: task.work_order_id || 'MANUAL-WO', 
       sequence_number: parseInt(task.sequence_number) || 10,
-      duration_minutes: parseInt(task.duration),
-      assigned_resource_id: task.resources || null,
+      duration_minutes: parseInt(task.duration) * 60,
+
+      predecessor: task.predecessor || null,
+      due_date: task.due_date ? parseInt(task.due_date) : null,
+      
+      assigned_resource_id: task.resources ? task.resources.toString() : null,
       status: 'Draft'
     };
 
@@ -89,7 +101,13 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/resources`);
     if (response.ok) {
       const payload = await response.json();
-      return payload.data;
+      const rawMachines = payload.data || [];
+
+      return rawMachines.map(m => ({
+        machine_id: m.id,
+        type: m.resource_type || m.name || '',
+        capacity: m.capacity || Uint16Array
+      }));
     }
     throw new Error('Failed to fetch physical factory resources');
   },
@@ -98,8 +116,9 @@ export const api = {
     // Map to match PostgreSQL resources table schema
     const payload = {
       id: machine.machine_id.toString(),
-      name: machine.name || `${machine.type} Unit`,
+      name: machine.name || `${machine.type} Unit ${machine.machine_id}`,
       resource_type: machine.type || 'Machine',
+      capacity: machine.capacity ? parseInt(machine.capacity) : 1,
       is_active: true
     };
 
