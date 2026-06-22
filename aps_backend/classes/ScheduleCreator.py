@@ -11,11 +11,9 @@ def run() -> dict:
     Orchestrates data extraction, builds the in-memory graph twin,
     executes Google OR-Tools optimization, and saves timestamps back to DB.
     """
-    print("""
-        ==========================================
-          APS OPTIMIZATION ENGINE PIPELINE START  
-        ==========================================
-        """)
+    print("==========================================")
+    print("  APS OPTIMIZATION ENGINE PIPELINE START  ")
+    print("==========================================")
 
     # STEP 1: INITIALIZE THE REPOSITORY LAYER
     print("[1/4] Connecting to database repository...")
@@ -179,8 +177,8 @@ def run() -> dict:
             "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations. Scheduled {len(work_order_ids)} work orders."
         })
 
-        print("\n==========================================")
-        print("        PIPELINE COMPLETED SUCCESSFULLY   ")
+        print("==========================================")
+        print("     PIPELINE COMPLETED SUCCESSFULLY      ")
         print("==========================================")
         return output_summary
         
