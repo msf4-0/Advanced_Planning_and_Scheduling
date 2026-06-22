@@ -6,7 +6,7 @@ High-level data access API that orchestrates all database operations.
 import logging
 from typing import Any, Dict, List, Optional
 
-from .db_connection import ConnectionManager, DatabaseConfig
+from .db_connection import ConnectionManager
 from .db_validation import ValidationPipeline, InputValidator
 from .db_query_builder import QueryBuilder
 from .db_executor import QueryExecutor
@@ -538,8 +538,14 @@ class Repository:
             return 0
         
         total_updated = 0
+        original_autocommit = self.connection.autocommit
         try:
-            with self.transaction():
+            # Use context manager for cleaner transaction handling
+            self.connection.autocommit = False
+            
+            with self.tx:
+                logger.info(f"Batch update transaction started for {len(updates)} records")
+                
                 for record in updates:
                     if id_column not in record:
                         logger.warning("Record missing '%s' column, skipping: %s", id_column, record)
@@ -549,16 +555,27 @@ class Repository:
                     # Remove the ID from the data dict (don't update the ID itself)
                     update_data = {k: v for k, v in record.items() if k != id_column}
                     
-                    try:
-                        rows = self.update(id_value, update_data)
-                        total_updated += rows
-                    except Exception as e:
-                        logger.error("Error updating record with %s=%s: %s", id_column, id_value, e)
-                        raise  # Will trigger transaction rollback
+                    if not update_data:
+                        logger.debug(f"No update data for {id_column}={id_value}, skipping")
+                        continue
+                    
+                    builder = QueryBuilder(self.table_name)
+                    builder.where(id_column, id_value)
+                    sql, params = builder.build_update(update_data)
+
+                    with self.connection.cursor() as cursor:
+                        cursor.execute(sql, params)
+                        total_updated += cursor.rowcount
+            
+            logger.info(f"Batch update committed: {total_updated} rows updated total")
             return total_updated
         except Exception as e:
-            logger.error("Batch update failed: %s", e)
+            logger.error("Batch update failed, rolling back: %s", e)
+            self.connection.rollback()
             return 0
+
+        finally:
+            self.connection.autocommit = original_autocommit
     
     def batch_delete(self, id_values: List[Any]) -> int:
         """

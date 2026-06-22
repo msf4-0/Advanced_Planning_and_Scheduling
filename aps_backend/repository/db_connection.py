@@ -51,6 +51,7 @@ class ConnectionManager:
         try:
             conn = psycopg2.connect(**self.config.to_dict())
             # Ensure PostgreSQL session uses UTC
+            conn.autocommit = True
             with conn.cursor() as cur:
                 cur.execute("SET TIME ZONE 'UTC';")
             return conn
