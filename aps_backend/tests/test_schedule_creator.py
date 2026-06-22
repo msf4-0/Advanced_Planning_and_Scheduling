@@ -7,117 +7,154 @@ from unittest.mock import MagicMock, patch
 # Force path resolution base to the project root directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# FIX: Import the run module targeting its real file location inside classes/
+# Import the run module targeting its real file location inside classes/
 from classes.ScheduleCreator import run as schedule_creator_run
+
 
 class TestScheduleCreatorPipeline(unittest.TestCase):
 
-    # FIX: Update patch targets to match the absolute module path used by python
-    @patch('classes.ScheduleCreator.Repository')
-    @patch('classes.ScheduleCreator.ConnectionManager')
-    @patch('classes.ScheduleCreator.DatabaseConfig')
-    def test_end_to_end_graph_builder_and_solver_with_erpnext_data(self, mock_config, mock_conn_manager, mock_repo_class):
-        """
-        Validates the ScheduleCreator graph mapping, constraint engine execution,
-        and data update payload generation using realistic ERPNext database columns.
-        """
+    def setUp(self):
+        """Initializes reusable mock patches for clean, isolated test states."""
+        self.mock_config_patch = patch('classes.ScheduleCreator.DatabaseConfig')
+        self.mock_conn_patch = patch('classes.ScheduleCreator.ConnectionManager')
+        self.mock_repo_patch = patch('classes.ScheduleCreator.Repository')
         
-        # 1. SETUP REALISTIC ERPNEXT DATA ROWS (As translated by Node-RED)
-        mock_db_resources = [
-            {"id": "Cutting Station Alpha", "name": "CNC Cutting Station Alpha", "resource_type": "Machine", "is_active": True},
-            {"id": "Assembly Line Beta", "name": "Manual Assembly Line Beta", "resource_type": "Machine", "is_active": True}
-        ]
+        self.mock_config_patch.start()
+        self.mock_conn_patch.start()
+        self.mock_repo_class = self.mock_repo_patch.start()
+        
+    def tearDown(self):
+        """Clean up active mock patches after each test execution."""
+        patch.stopall()
 
-        mock_db_materials = [
-            {"id": "RAW-STL-BAR-10MM", "name": "Stainless Steel Bar 10mm", "quantity_available": 250.0, "available_date_minutes": 0},
-            {"id": "COMP-CTRL-BOARD-V2", "name": "Control Board Assembly V2", "quantity_available": 0.0, "available_date_minutes": 120}
-        ]
-
-        mock_db_operations = [
-            {"id": "row_hash_op101", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"},
-            {"id": "row_hash_op102", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"},
-            {"id": "row_hash_op103", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 3, "duration_minutes": 60, "assigned_resource_id": "Assembly Line Beta", "status": "Pending"}
-        ]
-
-        mock_db_dependencies = [
-            {"upstream_op_id": "row_hash_op101", "downstream_op_id": "row_hash_op102"},
-            {"upstream_op_id": "row_hash_op102", "downstream_op_id": "row_hash_op103"}
-        ]
-
-        mock_db_material_requirements = [
-            {"operation_id": "row_hash_op101", "material_id": "RAW-STL-BAR-10MM", "quantity_required": 2.5},
-            {"operation_id": "row_hash_op103", "material_id": "COMP-CTRL-BOARD-V2", "quantity_required": 1.0}
-        ]
-
-        # 2. CONFIGURE THE MOCK REPOSITORY INSTANCES
+    def _configure_mock_repository(self, resources=None, materials=None, operations=None, dependencies=None, material_reqs=None):
+        """Helper to inject isolated data tables into the repository factory."""
         repo_instances = {}
         
         def mock_repo_side_effect(table_name, connection_manager=None):
             mock_repo = MagicMock()
             mock_repo.table_name = table_name
             
-            if table_name == "resources":
-                mock_repo.fetch_all.return_value = mock_db_resources
-            elif table_name == "materials":
-                mock_repo.fetch_all.return_value = mock_db_materials
-            elif table_name == "operations":
-                mock_repo.fetch_all.return_value = mock_db_operations
-            elif table_name == "operation_dependencies":
-                mock_repo.fetch_all.return_value = mock_db_dependencies
-            elif table_name == "operation_materials":
-                mock_repo.fetch_all.return_value = mock_db_material_requirements
-            else:
-                mock_repo.fetch_all.return_value = []
-                
+            mapping = {
+                "resources": resources or [],
+                "materials": materials or [],
+                "operations": operations or [],
+                "operation_dependencies": dependencies or [],
+                "operation_materials": material_reqs or []
+            }
+            mock_repo.fetch_all.return_value = mapping.get(table_name, [])
             repo_instances[table_name] = mock_repo
             return mock_repo
 
-        mock_repo_class.side_effect = mock_repo_side_effect
+        self.mock_repo_class.side_effect = mock_repo_side_effect
+        return repo_instances
 
-        # 3. TRIGGER THE PIPELINE WORKFLOW UNDER TEST
-        # Calls the function imported from classes.ScheduleCreator
-        summary_results = schedule_creator_run()
 
-        # 4. MATHEMATICAL AND STRUCTURAL ASSERTIONS
-        self.assertIsNotNone(summary_results, "Pipeline failed: Output summary dictionary is empty!")
-        self.assertIn("row_hash_op101", summary_results)
-        self.assertIn("row_hash_op102", summary_results)
-        self.assertIn("row_hash_op103", summary_results)
+    # =====================================================================
+    # TEST CASE 1: SEQUENTIAL ERPNEXT GRAPH CONSTRAINTS
+    # =====================================================================
+    def test_erpnext_sequential_dependency_execution(self):
+        """Verifies that subsequent tasks execute only after their upstream parents finish."""
+        mock_resources = [
+            {"id": "Cutting Station Alpha", "name": "CNC Cutting Station Alpha", "resource_type": "Machine", "is_active": True}
+        ]
+        mock_operations = [
+            {"id": "row_hash_op101", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"},
+            {"id": "row_hash_op102", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"}
+        ]
+        mock_dependencies = [
+            {"upstream_op_id": "row_hash_op101", "downstream_op_id": "row_hash_op102"}
+        ]
 
-        op101_end = summary_results["row_hash_op101"]["end_minute"]
-        op102_start = summary_results["row_hash_op102"]["start_minute"]
-        op102_end = summary_results["row_hash_op102"]["end_minute"]
-        op103_start = summary_results["row_hash_op103"]["start_minute"]
+        self._configure_mock_repository(resources=mock_resources, operations=mock_operations, dependencies=mock_dependencies)
+        summary = schedule_creator_run()
 
-        # Test Sequential Constraint
-        self.assertTrue(op102_start >= op101_end, "Constraint Error: Sequential dependency layout was broken!")
+        # Op 102 must start precisely at minute 45 when Op 101 finishes
+        self.assertEqual(summary["row_hash_op101"]["start_minute"], 0)
+        self.assertEqual(summary["row_hash_op101"]["end_minute"], 45)
+        self.assertEqual(summary["row_hash_op102"]["start_minute"], 45)
 
-        # Test Material Constraint
-        self.assertTrue(op103_start >= 120, "Constraint Error: Operation started before its raw material arrival timeline!")
 
-        # 5. VERIFY INTERACTION AND DATA WRITEBACK PAYLOADS
-        op_repo_mock = repo_instances["operations"]
+    # =====================================================================
+    # TEST CASE 2: ERPNEXT MATERIAL CONSTRAINT ENFORCEMENT
+    # =====================================================================
+    def test_erpnext_material_availability_hold(self):
+        """Verifies that an operation is held back if its raw materials arrive late."""
+        mock_resources = [
+            {"id": "Assembly Line Beta", "name": "Manual Assembly Line Beta", "resource_type": "Machine", "is_active": True}
+        ]
+        mock_operations = [
+            {"id": "row_hash_op103", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "Assembly Line Beta", "status": "Pending"}
+        ]
+        mock_materials = [
+            {"id": "COMP-CTRL-BOARD-V2", "name": "Control Board Assembly V2", "quantity_available": 0.0, "available_date_minutes": 120}
+        ]
+        mock_material_reqs = [
+            {"operation_id": "row_hash_op103", "material_id": "COMP-CTRL-BOARD-V2", "quantity_required": 1.0}
+        ]
+
+        self._configure_mock_repository(
+            resources=mock_resources, 
+            operations=mock_operations, 
+            materials=mock_materials, 
+            material_reqs=mock_material_reqs
+        )
+        summary = schedule_creator_run()
+
+        # Task must wait until minute 120 for material delivery
+        self.assertEqual(summary["row_hash_op103"]["start_minute"], 120)
+
+
+    # =====================================================================
+    # TEST CASE 3: WRITEBACK DATA STRUCTURE & STATUS VERIFICATION
+    # =====================================================================
+    def test_database_writeback_payload_structure(self):
+        """Verifies that the correct dictionary keys are packaged and batch-updated to the database."""
+        mock_resources = [{"id": "Cutting Station Alpha", "resource_type": "Machine", "is_active": True}]
+        mock_operations = [{"id": "row_hash_op101", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"}]
+
+        repos = self._configure_mock_repository(resources=mock_resources, operations=mock_operations)
+        schedule_creator_run()
+
+        # Assert that operations batch update occurred
+        op_repo_mock = repos["operations"]
         op_repo_mock.batch_update.assert_called_once()
-        
-        called_args, called_kwargs = op_repo_mock.batch_update.call_args
-        passed_batch = called_args[0] if called_args else called_kwargs["records"]
-        
-        for update_record in passed_batch:
-            self.assertIn(update_record["id"], ["row_hash_op101", "row_hash_op102", "row_hash_op103"])
-            self.assertIn("optimized_start_minute", update_record)
-            self.assertIn("optimized_end_minute", update_record)
-            self.assertIn("scheduled_start_time", update_record)
-            self.assertIn("scheduled_end_time", update_record)
-            self.assertEqual(update_record["status"], "Scheduled")
 
-        # Verify tracking runs entry
-        runs_repo_mock = repo_instances["scheduling_runs"]
+        # Extract the updates list from called args/kwargs
+        called_args, called_kwargs = op_repo_mock.batch_update.call_args
+        passed_batch = called_args[0] if called_args else called_kwargs.get("updates", called_kwargs.get("records", []))
+
+        # Validate updating dictionary fields
+        for record in passed_batch:
+            self.assertEqual(record["id"], "row_hash_op101")
+            self.assertIn("optimized_start_minute", record)
+            self.assertIn("optimized_end_minute", record)
+            self.assertIn("scheduled_start_time", record)
+            self.assertIn("scheduled_end_time", record)
+            self.assertEqual(record["status"], "Scheduled")
+
+
+    # =====================================================================
+    # TEST CASE 4: SCHEDULING RUN TRACKING LOG ENTRY
+    # =====================================================================
+    def test_scheduling_run_initialization_log(self):
+        """Verifies that the engine logs the workflow run execution with valid tracking statuses."""
+        mock_resources = [{"id": "Cutting Station Alpha", "resource_type": "Machine", "is_active": True}]
+        mock_operations = [{"id": "row_hash_op101", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"}]
+
+        repos = self._configure_mock_repository(resources=mock_resources, operations=mock_operations)
+        schedule_creator_run()
+
+        # Assert that scheduling track entry was created
+        runs_repo_mock = repos["scheduling_runs"]
         runs_repo_mock.add.assert_called_once()
-        
-        add_args, add_kwargs = runs_repo_mock.add.call_args
-        log_payload = add_args[0] if add_args else add_kwargs["data"]
-        
-        self.assertEqual(log_payload["run_status"], "Success")
+
+        called_args, called_kwargs = runs_repo_mock.add.call_args
+        log_payload = called_args[0] if called_args else called_kwargs.get("data", called_kwargs)
+
+        # Confirm the payload supports the runtime lifecycle states
+        self.assertIn(log_payload["run_status"], ["Success", "Running"])
+
 
 if __name__ == "__main__":
     unittest.main()

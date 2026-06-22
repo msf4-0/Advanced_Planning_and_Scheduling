@@ -10,114 +10,122 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # Import the run module targeting its real file location inside classes/
 from classes.ScheduleCreator import run as schedule_creator_run
 
+
 class TestComplexParallelSchedulingConstraints(unittest.TestCase):
 
-    @patch('classes.ScheduleCreator.Repository')
-    @patch('classes.ScheduleCreator.ConnectionManager')
-    @patch('classes.ScheduleCreator.DatabaseConfig')
-    def test_parallel_dependencies_and_overlap_protection(self, mock_config, mock_conn_manager, mock_repo_class):
-        """
-        Validates:
-        1. True Parallel Dependencies (Task B and C run simultaneously at minute 0).
-        2. Schedule now, run later (Task A waits for delayed material delivery at minute 180).
-        3. Machine Overlap Protection (Verifies isolated machines allow parallel tracks).
-        """
+    def setUp(self):
+        """Initializes reusable mock structures for clean, isolated test runs."""
+        self.mock_config_patch = patch('classes.ScheduleCreator.DatabaseConfig')
+        self.mock_conn_patch = patch('classes.ScheduleCreator.ConnectionManager')
+        self.mock_repo_patch = patch('classes.ScheduleCreator.Repository')
         
-        # --- CONDITION 2: SCHEDULE NOW, RUN LATER DATA CONFIG ---
-        # Component parts arrive late at minute 180, pushing downstream Task A into the future
-        mock_db_materials = [
-            {"id": "LATE-PART-XYZ", "name": "Late Component", "quantity_available": 0.0, "available_date_minutes": 180}
-        ]
-
-        # Provide isolated machines to allow true parallel processing lanes
-        mock_db_resources = [
-            {"id": "WORKSTATION-ALPHA", "name": "Assembly Lane Alpha", "resource_type": "Machine", "is_active": True},
-            {"id": "WORKSTATION-BETA", "name": "Assembly Lane Beta", "resource_type": "Machine", "is_active": True},
-            {"id": "WORKSTATION-GAMMA", "name": "Assembly Lane Gamma", "resource_type": "Machine", "is_active": True}
-        ]
-
-        # --- CONDITION 1 & 3: MULTIPLE PARALLEL DEPENDENCIES CONFIG ---
-        # Task B and Task C are independent of each other and on separate machines
-        mock_db_operations = [
-            {"id": "TASK-B", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "WORKSTATION-ALPHA", "status": "Pending"},
-            {"id": "TASK-C", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "WORKSTATION-BETA", "status": "Pending"},
-            {"id": "TASK-A", "work_order_id": "WO-002", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "WORKSTATION-GAMMA", "status": "Pending"}
-        ]
-
-        # TASK-A strictly requires both TASK-B AND TASK-C to complete first
-        mock_db_dependencies = [
-            {"upstream_op_id": "TASK-B", "downstream_op_id": "TASK-A"},
-            {"upstream_op_id": "TASK-C", "downstream_op_id": "TASK-A"}
-        ]
-
-        # TASK-A also requires the late component material arrival (Condition 2)
-        mock_db_material_requirements = [
-            {"operation_id": "TASK-A", "material_id": "LATE-PART-XYZ", "quantity_required": 1.0}
-        ]
-
-        # --- CONFIGURE THE MOCK REPOSITORY FACTORY ---
-        repo_instances = {}
+        self.mock_config_patch.start()
+        self.mock_conn_patch.start()
+        self.mock_repo_class = self.mock_repo_patch.start()
         
+    def tearDown(self):
+        """Clean up active mock patches after each test execution."""
+        patch.stopall()
+
+    def _configure_mock_repository(self, resources=None, materials=None, operations=None, dependencies=None, material_reqs=None):
+        """Helper to inject specific operational mock data shapes safely into the solver."""
         def mock_repo_side_effect(table_name, connection_manager=None):
             mock_repo = MagicMock()
             mock_repo.table_name = table_name
             
-            if table_name == "resources":
-                mock_repo.fetch_all.return_value = mock_db_resources
-            elif table_name == "materials":
-                mock_repo.fetch_all.return_value = mock_db_materials
-            elif table_name == "operations":
-                mock_repo.fetch_all.return_value = mock_db_operations
-            elif table_name == "operation_dependencies":
-                mock_repo.fetch_all.return_value = mock_db_dependencies
-            elif table_name == "operation_materials":
-                mock_repo.fetch_all.return_value = mock_db_material_requirements
-            else:
-                mock_repo.fetch_all.return_value = []
-                
-            repo_instances[table_name] = mock_repo
+            mapping = {
+                "resources": resources or [],
+                "materials": materials or [],
+                "operations": operations or [],
+                "operation_dependencies": dependencies or [],
+                "operation_materials": material_reqs or []
+            }
+            mock_repo.fetch_all.return_value = mapping.get(table_name, [])
             return mock_repo
 
-        mock_repo_class.side_effect = mock_repo_side_effect
+        self.mock_repo_class.side_effect = mock_repo_side_effect
 
-        # --- EXECUTE THE SOLVER ENGINE PIPELINE ---
-        summary_results = schedule_creator_run()
 
-        # Extract calculated scheduling minutes output variables
-        b_start = summary_results["TASK-B"]["start_minute"]
-        b_end = summary_results["TASK-B"]["end_minute"]
-        
-        c_start = summary_results["TASK-C"]["start_minute"]
-        c_end = summary_results["TASK-C"]["end_minute"]
-        
-        a_start = summary_results["TASK-A"]["start_minute"]
+    # =====================================================================
+    # TEST CASE 1: MACHINE OVERLAP PROTECTION & PARALLEL LANES
+    # =====================================================================
+    def test_isolated_machines_allow_true_parallel_execution(self):
+        """Verifies independent tasks on separate machines launch simultaneously at minute 0."""
+        mock_resources = [
+            {"id": "MCH-ALPHA", "name": "Lane Alpha", "resource_type": "Machine", "is_active": True},
+            {"id": "MCH-BETA", "name": "Lane Beta", "resource_type": "Machine", "is_active": True}
+        ]
+        mock_operations = [
+            {"id": "TASK-B", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "MCH-ALPHA", "status": "Pending"},
+            {"id": "TASK-C", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "MCH-BETA", "status": "Pending"}
+        ]
 
-        # =====================================================================
-        # ASSERTION CRITERIA 1 & 3: TRUE PARALLEL TIMELINES
-        # =====================================================================
-        # Because they have separate resources, both should launch immediately at minute 0
-        self.assertEqual(b_start, 0, f"Parallel Failure: Task B delayed starting at minute {b_start}")
-        self.assertEqual(c_start, 0, f"Parallel Failure: Task C delayed starting at minute {c_start}")
-        
-        # Verify execution overlaps completely (e.g., Task C runs entirely inside Task B's timeline window)
-        self.assertTrue(c_end <= b_end, "Timeline Math Error: Parallel overlap assertion failed.")
+        self._configure_mock_repository(resources=mock_resources, operations=mock_operations)
+        summary = schedule_creator_run()
 
-        # =====================================================================
-        # ASSERTION CRITERIA 2: MULTIPLE DEPENDENCIES & RUN LATER (Material Hold)
-        # =====================================================================
-        # Upstream tasks finish at minute 60, but Task A must wait until minute 180 for material arrivals
-        self.assertTrue(
-            a_start >= b_end, 
-            f"Dependency Failure: Task A started at {a_start} before Upstream Task B finished at {b_end}"
+        # Both tasks must start immediately at minute 0
+        self.assertEqual(summary["TASK-B"]["start_minute"], 0)
+        self.assertEqual(summary["TASK-C"]["start_minute"], 0)
+
+
+    # =====================================================================
+    # TEST CASE 2: MULTIPLE PARALLEL DEPENDENCIES (THE JOIN/MERGE)
+    # =====================================================================
+    def test_downstream_task_waits_for_all_upstream_dependencies_to_complete(self):
+        """Verifies a downstream task waits for the absolute latest completing parent task."""
+        mock_resources = [
+            {"id": "MCH-A", "resource_type": "Machine", "is_active": True},
+            {"id": "MCH-B", "resource_type": "Machine", "is_active": True},
+            {"id": "MCH-C", "resource_type": "Machine", "is_active": True}
+        ]
+        # Task B takes 60 min, Task C takes 45 min. Both run in parallel at minute 0.
+        mock_operations = [
+            {"id": "TASK-B", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 60, "assigned_resource_id": "MCH-A", "status": "Pending"},
+            {"id": "TASK-C", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "MCH-B", "status": "Pending"},
+            {"id": "TASK-A", "work_order_id": "WO-002", "sequence_number": 2, "duration_minutes": 30, "assigned_resource_id": "MCH-C", "status": "Pending"}
+        ]
+        mock_dependencies = [
+            {"upstream_op_id": "TASK-B", "downstream_op_id": "TASK-A"},
+            {"upstream_op_id": "TASK-C", "downstream_op_id": "TASK-A"}
+        ]
+
+        self._configure_mock_repository(resources=mock_resources, operations=mock_operations, dependencies=mock_dependencies)
+        summary = schedule_creator_run()
+
+        # Task A should start immediately at minute 60 (exactly when the longer parent Task B finishes)
+        self.assertEqual(summary["TASK-A"]["start_minute"], 60, "Task A should optimize tightly to minute 60.")
+
+
+    # =====================================================================
+    # TEST CASE 3: MATERIAL ARRIVAL LAGS (SCHEDULE NOW, RUN LATER)
+    # =====================================================================
+    def test_material_availability_date_forces_future_scheduling_hold(self):
+        """Verifies that inventory arrival constraints correctly push optimization timelines out."""
+        mock_resources = [
+            {"id": "MCH-C", "resource_type": "Machine", "is_active": True}
+        ]
+        mock_operations = [
+            {"id": "TASK-A", "work_order_id": "WO-002", "sequence_number": 1, "duration_minutes": 30, "assigned_resource_id": "MCH-C", "status": "Pending"}
+        ]
+        # Component parts arrive late at minute 180
+        mock_materials = [
+            {"id": "LATE-PART-XYZ", "name": "Late Component", "quantity_available": 0.0, "available_date_minutes": 180}
+        ]
+        mock_material_reqs = [
+            {"operation_id": "TASK-A", "material_id": "LATE-PART-XYZ", "quantity_required": 1.0}
+        ]
+
+        self._configure_mock_repository(
+            resources=mock_resources, 
+            operations=mock_operations, 
+            materials=mock_materials, 
+            material_reqs=mock_material_reqs
         )
-        self.assertTrue(
-            a_start >= c_end, 
-            f"Dependency Failure: Task A started at {a_start} before Upstream Task C finished at {c_end}"
-        )
-        self.assertTrue(
-            a_start >= 180, 
-            f"Material Lag Failure: Task A scheduled early at {a_start}, breaking the 'Run Later' constraint of minute 180"
-        )
+        summary = schedule_creator_run()
+
+        # Task A has no parent tasks, but must hold until minute 180 for inventory
+        self.assertEqual(summary["TASK-A"]["start_minute"], 180, "Task A failed to enforce the inventory lag date.")
+
 
 if __name__ == "__main__":
     unittest.main()
