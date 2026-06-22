@@ -479,41 +479,47 @@ class Repository:
     # ==================== BATCH OPERATIONS ====================
     
     def batch_add(self, data_list: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
-        """
-        Insert multiple records in a single transaction.
-        
-        Args:
-            data_list: List of dictionaries (each is a record to insert)
-        
-        Returns:
-            List of inserted records (with IDs if using RETURNING)
-        
-        Example:
-            records = [
-                {"name": "Widget A", "price": 10.00},
-                {"name": "Widget B", "price": 20.00},
-                {"name": "Widget C", "price": 30.00}
-            ]
-            results = repo.batch_add(records)
-        """
+        """Insert multiple records in a single transaction using low-level cursors."""
         if not data_list:
             return []
         
         results = []
+        original_autocommit = self.connection.autocommit
+        
         try:
-            with self.transaction():
+            self.connection.autocommit = False
+            
+            with self.tx:
+                logger.info(f"Batch add transaction started for {len(data_list)} records")
                 for data in data_list:
-                    try:
-                        result = self.add(data)
-                        if result:
-                            results.append(result)
-                    except Exception as e:
-                        logger.error("Error adding record in batch: %s", e)
-                        raise  # Will trigger transaction rollback
+                    InputValidator.validate_dict(data, allow_empty=False)
+                    
+                    # Direct validation mapping without executing individual transactions
+                    _, sanitized = ValidationPipeline.validate_and_sanitize_add(
+                        self.table_name, data, self.allowed_tables
+                    )
+                    
+                    builder = QueryBuilder(self.table_name)
+                    sql, params = builder.build_insert(sanitized)
+                    
+                    # Use a clean, isolated row cursor dictionary factory
+                    from psycopg2.extras import RealDictCursor
+                    with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                        cursor.execute(sql, params)
+                        rows = cursor.fetchall()
+                        results.append(rows)
+                        
+            logger.info(f"Batch add committed: {len(results)} records inserted total")
             return results
+            
         except Exception as e:
-            logger.error("Batch add failed: %s", e)
+            logger.error("Batch add failed, rolling back: %s", e)
+            self.connection.rollback()
             return []
+            
+        finally:
+            self.connection.autocommit = original_autocommit
+
     
     def batch_update(self, updates: List[Dict[str, Any]], id_column: str = "id") -> int:
         """
@@ -595,19 +601,32 @@ class Repository:
             return 0
         
         total_deleted = 0
+        original_autocommit = self.connection.autocommit
+        
         try:
-            with self.transaction():
+            self.connection.autocommit = False
+            
+            with self.tx:
+                logger.info(f"Batch delete transaction started for {len(id_values)} records")
                 for id_val in id_values:
-                    try:
-                        rows = self.delete(id_val)
-                        total_deleted += rows
-                    except Exception as e:
-                        logger.error("Error deleting record with id=%s: %s", id_val, e)
-                        raise  # Will trigger transaction rollback
+                    builder = QueryBuilder(self.table_name)
+                    builder.where("id", id_val)
+                    sql, params = builder.build_delete()
+                    
+                    with self.connection.cursor() as cursor:
+                        cursor.execute(sql, params)
+                        total_deleted += cursor.rowcount
+                        
+            logger.info(f"Batch delete committed: {total_deleted} rows deleted total")
             return total_deleted
+            
         except Exception as e:
-            logger.error("Batch delete failed: %s", e)
+            logger.error("Batch delete failed, rolling back: %s", e)
+            self.connection.rollback()
             return 0
+            
+        finally:
+            self.connection.autocommit = original_autocommit
     
     def batch_upsert(
         self,
@@ -635,17 +654,33 @@ class Repository:
             return []
         
         results = []
+        original_autocommit = self.connection.autocommit
+        InputValidator.validate_conflict_columns(conflict_columns)
+        
         try:
-            with self.transaction():
+            self.connection.autocommit = False
+            
+            with self.tx:
+                logger.info(f"Batch upsert transaction started for {len(data_list)} records")
                 for data in data_list:
-                    try:
-                        result = self.upsert(data, conflict_columns)
-                        if result:
-                            results.append(result)
-                    except Exception as e:
-                        logger.error("Error upserting record in batch: %s", e)
-                        raise  # Will trigger transaction rollback
+                    InputValidator.validate_dict(data)
+                    
+                    builder = QueryBuilder(self.table_name)
+                    sql, params = builder.build_upsert(data, conflict_columns)
+                    
+                    from psycopg2.extras import RealDictCursor
+                    with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                        cursor.execute(sql, params)
+                        rows = cursor.fetchall()
+                        results.append(rows)
+                        
+            logger.info(f"Batch upsert committed: {len(results)} records processed total")
             return results
+            
         except Exception as e:
-            logger.error("Batch upsert failed: %s", e)
+            logger.error("Batch upsert failed, rolling back: %s", e)
+            self.connection.rollback()
             return []
+            
+        finally:
+            self.connection.autocommit = original_autocommit
