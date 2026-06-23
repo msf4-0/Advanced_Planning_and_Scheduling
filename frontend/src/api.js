@@ -9,7 +9,8 @@ const mapOperationToUniversalTask = (op) => ({
   
   // BacklogView specific requirements
   duration: op.duration_minutes,
-  predecessor: op.predecessor || '-',
+  // CHANGED: Removed default fallback string so our stitcher can control it cleanly
+  predecessor: op.predecessor,
   allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
   
   // ScheduleView specific requirements
@@ -25,15 +26,36 @@ const mapOperationToUniversalTask = (op) => ({
 export const api = {
   // 1. SCHEDULE ENDPOINTS
   fetchSchedule: async () => {
-    const response = await fetch(`${API_BASE_URL}/operations`);
-    if (response.ok) {
-      const payload = await response.json();
-      const rawOperations = payload.data || [];
+    const [opsRes, depsRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/operations`),
+      fetch(`${API_BASE_URL}/operation_dependencies`)
+    ]);
+
+    if (opsRes.ok && depsRes.ok) {
+      const opsPayload = await opsRes.json();
+      const depsPayload = await depsRes.json();
       
-      // Filter out completed, only map active schedules using the universal structure
+      const rawOperations = opsPayload.data || [];
+      const rawDependencies = depsPayload.data || [];
+
+      // Group dependencies by downstream task identifier
+      const dependencyMap = {};
+      rawDependencies.forEach(edge => {
+        if (!dependencyMap[edge.downstream_op_id]) {
+          dependencyMap[edge.downstream_op_id] = [];
+        }
+        dependencyMap[edge.downstream_op_id].push(edge.upstream_op_id);
+      });
+
       return rawOperations
         .filter(op => op.status !== 'Done')
-        .map(mapOperationToUniversalTask);
+        .map(op => {
+          const upstreamList = dependencyMap[op.id] || [];
+          return mapOperationToUniversalTask({
+            ...op,
+            predecessor: upstreamList.length > 0 ? upstreamList.join(', ') : '-'
+          });
+        });
     }
     throw new Error('Failed to fetch optimized operations schedule');
   },
@@ -51,47 +73,96 @@ export const api = {
 
   // 2. JOBS / TASKS ENDPOINTS
   fetchBacklog: async () => {
-    const response = await fetch(`${API_BASE_URL}/operations`);
-    if (response.ok) {
-      const payload = await response.json();
-      const rawOperations = payload.data || [];
+    const [opsRes, depsRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/operations`),
+      fetch(`${API_BASE_URL}/operation_dependencies`)
+    ]);
 
-      // Maps the backlog using the exact same universal properties structure
-      return rawOperations.map(mapOperationToUniversalTask);
+    if (opsRes.ok && depsRes.ok) {
+      const opsPayload = await opsRes.json();
+      const depsPayload = await depsRes.json();
+      
+      const rawOperations = opsPayload.data || [];
+      const rawDependencies = depsPayload.data || [];
+
+      // Group dependencies by downstream task identifier
+      const dependencyMap = {};
+      rawDependencies.forEach(edge => {
+        if (!dependencyMap[edge.downstream_op_id]) {
+          dependencyMap[edge.downstream_op_id] = [];
+        }
+        dependencyMap[edge.downstream_op_id].push(edge.upstream_op_id);
+      });
+
+      return rawOperations.map(op => {
+        const upstreamList = dependencyMap[op.id] || [];
+        return mapOperationToUniversalTask({
+          ...op,
+          predecessor: upstreamList.length > 0 ? upstreamList.join(', ') : '-'
+        });
+      });
     }
     throw new Error('Failed to fetch operations backlog');
   },
 
   addTask: async (task) => {
-    // Structure payload to match PostgreSQL operations schema
-    const payload = {
-      id: task.job_id, // Unique primary key identifier hash tracking string
+    const operationPayload = {
+      id: task.job_id,
       work_order_id: task.work_order_id || 'MANUAL-WO', 
       sequence_number: parseInt(task.sequence_number) || 10,
       duration_minutes: parseInt(task.duration) * 60,
-
-      predecessor: task.predecessor || null,
-      due_date: task.due_date ? parseInt(task.due_date) : null,
-      
-      assigned_resource_id: task.resources ? task.resources.toString() : null,
+      // Safely check for empty string inputs from your form state baseline
+      due_date: (task.due_date !== '' && task.due_date !== null) ? parseInt(task.due_date) : null,
+      assigned_resource_id: (task.resources && task.resources.trim() !== '') ? task.resources.trim().toString() : null,
       status: 'Draft'
     };
 
-    const response = await fetch(`${API_BASE_URL}/operations`, {
+    // Step A: Insert task entry into the operations table
+    const opResponse = await fetch(`${API_BASE_URL}/operations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(operationPayload)
     });
 
-    if (!response.ok) {
-      const error = await response.text();
+    if (!opResponse.ok) {
+      const error = await opResponse.text();
       throw new Error(`Failed to create operation: ${error}`);
     }
-    return await response.json();
+
+    // Step B: Loop insert links into operation_dependencies relation matrix
+    if (task.predecessor && task.predecessor.trim() !== '') {
+      const upstreamIds = task.predecessor.split(',').map(id => id.trim()).filter(Boolean);
+
+      for (const upstreamId of upstreamIds) {
+        const dependencyPayload = {
+          upstream_op_id: upstreamId,
+          downstream_op_id: task.job_id
+        };
+
+        const depResponse = await fetch(`${API_BASE_URL}/operation_dependencies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dependencyPayload)
+        });
+
+        if (!depResponse.ok) {
+          const error = await depResponse.text();
+          throw new Error(`Failed to link dependency ${upstreamId}: ${error}`);
+        }
+      }
+    }
+
+    // Return a guaranteed success payload back to App.jsx
+    return { success: true };
   },
 
   deleteTask: async (operationId) => {
-    // Pass ID via query string to match backend DELETE handler
+    // Clean up dependent child connections first to ensure relational integrity
+    await fetch(`${API_BASE_URL}/operation_dependencies?id_value=${encodeURIComponent(operationId)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.debug("Cleared task dependency relational map elements", err));
+
     const response = await fetch(`${API_BASE_URL}/operations?id_value=${encodeURIComponent(operationId)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }

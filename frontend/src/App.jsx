@@ -18,12 +18,13 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [newTask, setNewTask] = useState({
     job_id: '',
-    duration: 1,
-    allowed_resources: '1',
+    work_order_id: '', // ADDED: Required matching database constraint element
+    duration: '',      // Changed baseline to empty string for safe entry scaling
     predecessor: '',
-    due_date: 0,
+    due_date: '',
     resources: ''
   });
+
   const [machines, setMachines] = useState([]);
   const [showMachineForm, setShowMachineForm] = useState(false);
   const [newMachine, setNewMachine] = useState({
@@ -90,21 +91,30 @@ export default function App() {
   };
 
   // Handle add task
-  const handleAddTask = async (e) => {
-    e.preventDefault();
-    try {
-      const result = await api.addTask(newTask);
-      if (Array.isArray(result) && result.length > 0) {
-        setShowForm(false);
-        setNewTask({ job_id: '', duration: 1, allowed_resources: '1', predecessor: '', due_date: 0, resources: '' });
-        fetchBacklog();
-      } else {
-        console.error('Failed to add task, backend response:', result);
+    const handleAddTask = async (e) => {
+      e.preventDefault();
+      try {
+        const result = await api.addTask(newTask);
+        
+        // CHANGED: Verifies wrapper success state flag token values
+        if (result && result.success) {
+          setShowForm(false);
+          setNewTask({ 
+            job_id: '', 
+            work_order_id: '', 
+            duration: '', 
+            predecessor: '', 
+            due_date: '', 
+            resources: '' 
+          });
+          fetchBacklog();
+        } else {
+          console.error('Failed to add task, backend response:', result);
+        }
+      } catch (error) {
+        console.error("Failed to add task:", error);
       }
-    } catch (error) {
-      console.error("Failed to add task:", error);
-    }
-  };
+    };
 
   // Handle add machine
   const handleAddMachine = async (e) => {
