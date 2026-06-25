@@ -37,7 +37,7 @@ export default function App() {
   const fetchBacklog = async () => {
     setLoading(true);
     try {
-      const data = await api.fetchBacklog();
+      const data = await api.jobs.fetchBacklog();
       setBacklog(data || []);
     } catch (error) {
       console.error("Error fetching backlog:", error);
@@ -50,7 +50,7 @@ export default function App() {
   const fetchMachines = async () => {
     setLoading(true);
     try {
-      const data = await api.fetchMachines();
+      const data = await api.machines.fetchMachines();
       setMachines(data || []);
     } catch (error) {
       console.error("Error fetching machines:", error);
@@ -63,7 +63,7 @@ export default function App() {
   const fetchSchedule = async () => {
     setLoading(true);
     try {
-      const scheduleArray = await api.fetchSchedule();
+      const scheduleArray = await api.schedule.fetchSchedule();
       setSchedule(scheduleArray);
 
       const maxEnd = scheduleArray.reduce((max, job) => Math.max(max, job.end || 0), 0);
@@ -79,7 +79,7 @@ export default function App() {
   const triggerOptimization = async () => {
     setOptimizing(true);
     try {
-      await api.triggerOptimization();
+      await api.schedule.triggerOptimization();
       await fetchSchedule();
       await fetchBacklog();
       setView('schedule');
@@ -94,7 +94,7 @@ export default function App() {
     const handleAddTask = async (e) => {
       e.preventDefault();
       try {
-        const result = await api.addTask(newTask);
+        const result = await api.jobs.addTask(newTask);
         
         // CHANGED: Verifies wrapper success state flag token values
         if (result && result.success) {
@@ -120,7 +120,7 @@ export default function App() {
   const handleAddMachine = async (e) => {
     e.preventDefault();
     try {
-      await api.addMachine(newMachine);
+      await api.machines.addMachine(newMachine);
       setShowMachineForm(false);
       setNewMachine({ machine_id: '', type: '', capacity: 1 });
       fetchMachines();
@@ -134,7 +134,7 @@ export default function App() {
     if (!window.confirm(`Are you sure you want to delete job ${jobId}?`)) return;
     
     try {
-      await api.deleteTask(jobId);
+      await api.jobs.deleteTask(jobId);
       fetchBacklog();
     } catch (error) {
       console.error("Error deleting task:", error);
