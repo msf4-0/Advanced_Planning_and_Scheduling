@@ -9,7 +9,6 @@ const mapOperationToUniversalTask = (op) => ({
   
   // BacklogView specific requirements
   duration: op.duration_minutes,
-  // CHANGED: Removed default fallback string so our stitcher can control it cleanly
   predecessor: op.predecessor,
   allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
   
@@ -111,8 +110,7 @@ export const api = {
       work_order_id: task.work_order_id || 'MANUAL-WO', 
       sequence_number: parseInt(task.sequence_number) || 10,
       duration_minutes: parseInt(task.duration) * 60,
-      // Safely check for empty string inputs from your form state baseline
-      due_date: (task.due_date !== '' && task.due_date !== null) ? parseInt(task.due_date) : null,
+      // FIXED: due_date is completely removed here to prevent PostgreSQL column mismatches
       assigned_resource_id: (task.resources && task.resources.trim() !== '') ? task.resources.trim().toString() : null,
       status: 'Draft'
     };

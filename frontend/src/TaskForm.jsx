@@ -6,8 +6,17 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
     <div style={styles.formModal}>
       <div style={styles.formContent}>
         <h2>Add New Task</h2>
+        
+        {/* Validation subtitle indicator */}
+        <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '15px' }}>
+          * Indicates a required operational field
+        </p>
+
         <form onSubmit={onSubmit}>
-          <label style={styles.label}>Job ID (Unique String)</label>
+          {/* 1. JOB ID - REQUIRED */}
+          <label style={styles.label}>
+            Job ID (Unique String) <span style={{ color: '#ef4444' }}>*</span>
+          </label>
           <input
             type="text"
             value={newTask.job_id || ''}
@@ -17,7 +26,10 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
             required
           />
 
-          <label style={styles.label}>Work Order ID</label>
+          {/* 2. WORK ORDER ID - REQUIRED */}
+          <label style={styles.label}>
+            Work Order ID <span style={{ color: '#ef4444' }}>*</span>
+          </label>
           <input
             type="text"
             value={newTask.work_order_id || ''}
@@ -27,7 +39,10 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
             required
           />
 
-          <label style={styles.label}>Duration (Hours)</label>
+          {/* 3. DURATION - REQUIRED */}
+          <label style={styles.label}>
+            Duration (Hours) <span style={{ color: '#ef4444' }}>*</span>
+          </label>
           <input
             type="number"
             value={newTask.duration || ''}
@@ -37,7 +52,10 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
             required
           />
 
-          <label style={styles.label}>Predecessor Job ID(s)</label>
+          {/* 4. PREDECESSOR - OPTIONAL */}
+          <label style={styles.label}>
+            Predecessor Job ID(s) <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 'normal' }}>(Optional)</span>
+          </label>
           <input
             type="text"
             value={newTask.predecessor || ''}
@@ -46,16 +64,10 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
             placeholder="e.g., OP-100, OP-099 (Separate with commas)"
           />
 
-          <label style={styles.label}>Due Date (Minutes Offset)</label>
-          <input
-            type="number"
-            value={newTask.due_date || ''}
-            onChange={(e) => setNewTask({...newTask, due_date: e.target.value})}
-            style={styles.input}
-            min="0"
-          />
-
-          <label style={styles.label}>Assign to Specific Machine ID (optional)</label>
+          {/* 5. MACHINE ID - OPTIONAL */}
+          <label style={styles.label}>
+            Assign to Specific Machine ID <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 'normal' }}>(Optional)</span>
+          </label>
           <input
             type="text"
             value={newTask.resources || ''}
