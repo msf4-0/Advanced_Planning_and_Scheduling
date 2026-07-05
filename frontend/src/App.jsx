@@ -9,6 +9,7 @@ import { TaskForm } from './form/TaskForm';
 import { MachineForm } from './form/MachineForm';
 import { WorkorderView } from './view/WorkorderView';
 import { WorkorderForm } from './form/WorkorderForm';
+import { GanttChartView } from './view/GanttChartView';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -205,6 +206,16 @@ export default function App() {
             >
               Schedule
             </button>
+
+            <button 
+              onClick={() => setView('gantt')} 
+              style={{
+                ...styles.navButton,
+                ...(view === 'gantt' ? styles.activeNav : {})
+              }}
+            >
+              📊 Gantt Chart
+            </button>
             
             <button
               onClick={() => setView('backlog')}
@@ -317,6 +328,15 @@ export default function App() {
             )}
           </>
         )}
+
+        {view === 'gantt' && (
+          <GanttChartView 
+            schedule={schedule}
+            loading={loading}
+            onRefresh={fetchSchedule}
+          />
+        )}
+        
       </main>
     </div>
   );
