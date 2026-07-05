@@ -1,5 +1,5 @@
 import React from 'react';
-import { styles } from './styles';
+import { styles } from '../styles';
 
 export function BacklogView({ backlog, loading, onRefresh, onAddClick, onDeleteTask }) {
   return (

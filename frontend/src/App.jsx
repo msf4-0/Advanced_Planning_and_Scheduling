@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { api } from './api';
 import { styles } from './styles';
 import { KPICards } from './KPICards';
-import { ScheduleView } from './ScheduleView';
-import { BacklogView } from './BacklogView';
-import { MachinesView } from './MachinesView';
-import { TaskForm } from './TaskForm';
-import { MachineForm } from './MachineForm';
-import { WorkorderView } from './WorkorderView';
-import { WorkorderForm } from './WorkorderForm';
+import { ScheduleView } from './view/ScheduleView';
+import { BacklogView } from './view/BacklogView';
+import { MachinesView } from './view/MachinesView';
+import { TaskForm } from './form/TaskForm';
+import { MachineForm } from './form/MachineForm';
+import { WorkorderView } from './view/WorkorderView';
+import { WorkorderForm } from './form/WorkorderForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
