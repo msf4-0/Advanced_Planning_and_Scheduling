@@ -27,25 +27,24 @@ export const workorderApi = {
 
   /**
    * Creates a new machine/resource
-   * @param {Object} machine - Machine object with machine_id, type, capacity, name
+   * @param {Object} workorder - Machine object with machine_id, type, capacity, name
    * @returns {Promise<Object>} Created machine response
    */
-  addWorkorders: async (machine) => {
+  addWorkorders: async (workorder) => {
     const payload = {
-      id: machine.machine_id.toString(),
-      name: machine.name || `${machine.type} Unit ${machine.machine_id}`,
-      resource_type: machine.type || 'Machine',
-      capacity: machine.capacity ? parseInt(machine.capacity) : 1,
-      is_active: true
+      workorder_id: workorder.work_order_id,
+      target_item_id: workorder.target_item_id,
+      quantity: workorder.quantity_to_make,
+      due_date: workorder.due_date
     };
 
-    const response = await fetch(`${API_CONFIG.BASE_URL}/resources`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/work_orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    await handleApiError(response, 'Failed to create resource');
+    await handleApiError(response, 'Failed to create workorder');
     return await response.json();
   }
 };
