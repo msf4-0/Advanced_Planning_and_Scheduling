@@ -1,7 +1,7 @@
 import React from 'react';
 import { styles } from './styles';
 
-export function BacklogView({ workorder, loading, onRefresh, onAddClick, onDeleteTask }) {
+export function WorkorderView({ workorder, loading, onRefresh, onAddClick, onDeleteTask }) {
   return (
     <div style={styles.tableCard}>
       <div style={styles.tableHeader}>
@@ -29,18 +29,32 @@ export function BacklogView({ workorder, loading, onRefresh, onAddClick, onDelet
             </tr>
           </thead>
           <tbody>
-            {workorder.map((task, index) => (
+            {workorder.map((item, index) => (
               <tr key={index} style={styles.tr}>
-                <td style={styles.td}><strong>{task.job_id}</strong></td>
-                <td style={styles.td}>{task.duration || task.properties?.duration} hrs</td>
-                <td style={styles.td}>{task.predecessor || task.properties?.predecessor || '-'}</td>
-                <td style={styles.td}>{(task.allowed_resources || task.properties?.allowed_resources || []).join(', ')}</td>
                 <td style={styles.td}>
-                  <span style={{...styles.badge, backgroundColor: '#fef3c7', color: '#92400e'}}>Unscheduled</span>
+                  <strong>{item.workorder_id}</strong>
+                </td>
+                <td style={styles.td}>
+                  {item.target_item_id}
+                </td>
+                <td style={styles.td}>
+                  {item.quantity} units
+                </td>
+                <td style={styles.td}>
+                  {item.due_date || '-'}
+                </td>
+                <td style={styles.td}>
+                  <span style={{
+                    ...styles.badge,
+                    backgroundColor: item.status === 'Completed' ? '#d1fae5' : '#fef3c7',
+                    color: item.status === 'Completed' ? '#065f46' : '#92400e'
+                  }}>
+                    {item.status || 'Unscheduled'}
+                  </span>
                 </td>
                 <td style={styles.td}>
                   <button 
-                    onClick={() => onDeleteTask(task.job_id)}
+                    onClick={() => onDeleteTask(item.workorder_id)}
                     style={{...styles.button, backgroundColor: '#dc2626', padding: '6px 12px', fontSize: '12px'}}
                   >
                     Delete
