@@ -36,7 +36,17 @@ export function BacklogView({ backlog, loading, onRefresh, onAddClick, onDeleteT
                 <td style={styles.td}>{task.predecessor || task.properties?.predecessor || '-'}</td>
                 <td style={styles.td}>{(task.allowed_resources || task.properties?.allowed_resources || []).join(', ')}</td>
                 <td style={styles.td}>
-                  <span style={{...styles.badge, backgroundColor: '#fef3c7', color: '#92400e'}}>Unscheduled</span>
+                  <span style={{
+                      ...styles.badge,
+                      backgroundColor: task.status === 'Scheduled' ? '#dbeafe' : // Soft Blue
+                                       task.status === 'Completed' ? '#d1fae5' : // Soft Green
+                                       '#fef3c7',                                // Yellow (Unscheduled)
+                      color: task.status === 'Scheduled' ? '#1e40af' : 
+                             task.status === 'Completed' ? '#065f46' : 
+                             '#92400e'
+                    }}>
+                      {task.status || 'Unscheduled'}
+                  </span>
                 </td>
                 <td style={styles.td}>
                   <button 

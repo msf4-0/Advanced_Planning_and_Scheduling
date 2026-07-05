@@ -32,7 +32,17 @@ export function ScheduleView({ schedule, loading, onRefresh }) {
                 <td style={styles.td}>{task.start}</td>
                 <td style={styles.td}>{task.end}</td>
                 <td style={styles.td}>
-                  <span style={styles.badge}>Scheduled</span>
+                  <span style={{
+                      ...styles.badge,
+                      backgroundColor: task.status === 'Completed' ? '#d1fae5' : 
+                                       task.status === 'In Progress' ? '#fee2e2' : 
+                                       '#dbeafe', // Scheduled default
+                      color: task.status === 'Completed' ? '#065f46' : 
+                             task.status === 'In Progress' ? '#991b1b' : 
+                             '#1e40af'
+                    }}>
+                      {task.status || 'Scheduled'}
+                  </span>
                 </td>
               </tr>
             ))}
