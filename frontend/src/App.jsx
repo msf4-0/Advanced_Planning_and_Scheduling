@@ -7,6 +7,8 @@ import { BacklogView } from './BacklogView';
 import { MachinesView } from './MachinesView';
 import { TaskForm } from './TaskForm';
 import { MachineForm } from './MachineForm';
+import { WorkorderView } from './WorkorderView';
+import { WorkorderForm } from './WorkorderForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -32,6 +34,44 @@ export default function App() {
     type: '',
     capacity: 1
   });
+
+  const [workorderData, setWorkorderData] = useState([]);
+  const [showWorkorderForm, setShowWorkorderForm] = useState(false);
+  const [newWorkorder, setNewWorkorder] = useState({
+    work_order_id: '',
+    target_item_id: '',
+    quantity_to_make: 0,
+    due_date: ''
+  })
+
+  const fetchWorkorderData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.workorder.fetchWorkorders()
+      setWorkorderData(data || []);
+    } catch (error) {
+      console.error(("Error fetching workorder:", error))
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  const handleAddWorkorder = async (e) => {
+    e.preventDefault();
+    try {
+      await api.workorder.addWorkorders(newWorkorder);
+      setShowWorkorderForm(false);
+      setNewWorkorder({
+        work_order_id: '',
+        target_item_id: '',
+        quantity_to_make: 0,
+        due_date: ''
+      });
+      fetchWorkorderData();
+    } catch (error) {
+      console.error("Failed to add workorder:", error)
+    }
+  };
 
   // Fetch unscheduled tasks
   const fetchBacklog = async () => {
@@ -146,6 +186,7 @@ export default function App() {
     fetchSchedule();
     fetchBacklog();
     fetchMachines();
+    fetchWorkorderData();
   }, []);
 
   return (
@@ -164,6 +205,7 @@ export default function App() {
             >
               Schedule
             </button>
+            
             <button
               onClick={() => setView('backlog')}
               style={{
@@ -182,6 +224,17 @@ export default function App() {
             >
               Machines
             </button>
+            
+            <button
+              onClick={() => setView('workorder')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'workorder' ? styles.activeNav : {})
+              }}
+            >
+              Workorders
+            </button>
+            
           </nav>
         </div>
         <button 
@@ -240,6 +293,26 @@ export default function App() {
                 setNewMachine={setNewMachine}
                 onSubmit={handleAddMachine}
                 onClose={() => setShowMachineForm(false)}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'workorder' && (
+          <>
+            <WorkorderView 
+              workorder={workorderData} 
+              loading={loading}
+              onRefresh={fetchWorkorderData}
+              onAddClick={() => setShowWorkorderForm(true)}
+              onDeleteTask={(id) => console.log("Delete workorder", id)}
+            />
+            {showWorkorderForm && (
+              <WorkorderForm 
+                newWorkorder={newWorkorder}
+                setNewWorkorder={setNewWorkorder}
+                onSubmit={handleAddWorkorder}
+                onClose={() => setShowWorkorderForm(false)}
               />
             )}
           </>
