@@ -4,6 +4,7 @@
 
 -- Clean out existing data before seeding to prevent primary key duplicates
 -- Tables are truncated in reverse dependency order
+TRUNCATE TABLE scheduled_tasks RESTART IDENTITY CASCADE;
 TRUNCATE TABLE scheduling_runs RESTART IDENTITY CASCADE;
 TRUNCATE TABLE users RESTART IDENTITY CASCADE;
 TRUNCATE TABLE routing_templates RESTART IDENTITY CASCADE;
@@ -138,6 +139,17 @@ INSERT INTO factory_shifts (resource_id, day_of_week, start_time, end_time) VALU
 -- =========================================================================
 -- 10. SEED ACCESS CONTROL SYSTEM USERS (Table: users)
 -- =========================================================================
--- Initializing seed user credentials for administrative logging access control
-INSERT INTO users (username, password_hash, role) VALUES
-('admin_planner', '$2b$12$K39pX8LAsdfv019234857ulajskdfh12394857ahskdfj', 'Admin');
+INSERT INTO users (id, username, password_hash, role) VALUES
+(1, 'admin_planner', '$2b$12$K39pX8LAsdfv019234857ulajskdfh12394857ahskdfj', 'Admin');
+
+-- =========================================================================
+-- 11. OPTIONAL: SEED HISTORICAL SCHEDULE RESULTS (Tables: scheduling_runs & scheduled_tasks)
+-- =========================================================================
+-- This establishes a dummy previous successful calculation run so the frontend has starting metrics.
+INSERT INTO scheduling_runs (id, triggered_by, run_status, started_at, completed_at, log_messages) VALUES
+(101, 1, 'Success', NOW() - INTERVAL '1 hour', NOW() - INTERVAL '59 minutes', 'CP-SAT solved successfully. Objective: 0 (No tardy penalty).');
+
+-- Link a simulated schedule snapshot matching the layout run output (from 8:00 AM baseline)
+INSERT INTO scheduled_tasks (run_id, operation_id, optimized_start_minute, optimized_end_minute, scheduled_start_time, scheduled_end_time) VALUES
+(101, 'op_wo1_10', 0, 45,   NOW() - INTERVAL '30 minutes', NOW() + INTERVAL '15 minutes'),
+(101, 'op_wo1_20', 180, 210, NOW() + INTERVAL '150 minutes', NOW() + INTERVAL '180 minutes'); -- Delayed by microchips arriving at Minute 180
