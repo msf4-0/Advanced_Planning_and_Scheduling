@@ -79,27 +79,45 @@ def run_scheduler_endpoint():
 @app.get("/recent-schedule", tags=["Schedule"])
 def get_schedule():
     """
-    Fetch the execution parameters and status details of the most 
-    recent scheduler optimization run recorded in the database schema.
+    Fetch the complete schedule details (meta run information + all scheduled tasks)
+    of the most recent successful schedule run.
     """
 
     try:
         config = DatabaseConfig()
         conn_manager = ConnectionManager(config)
         
-        # Clean Fix: Map strictly to the actual 'scheduling_runs' schema layout
         runs_repo = Repository("scheduling_runs", conn_manager)
-        result = runs_repo.fetch_all()
+        tasks_repo = Repository("scheduled_tasks", conn_manager)
         
-        # Extract the last processed dictionary item safely from the array list
-        latest = result[-1] if result else {}
+        # 1. Fetch all runs to find the latest successful execution
+        all_runs = runs_repo.fetch_all()
+        successful_runs = [r for r in all_runs if r.get("run_status") == "Success"]
+        
+        if not successful_runs:
+            return {
+                "success": True,
+                "message": "No successful schedule runs found yet.",
+                "run_info": {},
+                "tasks": []
+            }
+            
+        # Get the latest run status details
+        latest_run = successful_runs[-1]
+        run_id = latest_run.get("id")
+        
+        # 2. Fetch all scheduled tasks and filter them by the latest run_id
+        all_tasks = tasks_repo.fetch_all()
+        latest_tasks = [t for t in all_tasks if t.get("run_id") == run_id]
         
         return {
             "success": True,
-            "result": latest
+            "run_info": latest_run,
+            "tasks": latest_tasks
         }
+        
     except Exception as e:
-        logging.error(f"(API) Error fetching recent schedule optimization run log: {e}")
+        logging.error(f"(API) Error fetching recent schedule and associated tasks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
