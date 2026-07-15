@@ -1,3 +1,0 @@
-{
-"machine_id": {{data_table.triggeredRow.machine_id}}
-}

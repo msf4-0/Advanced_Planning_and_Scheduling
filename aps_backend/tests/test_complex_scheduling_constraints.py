@@ -38,7 +38,9 @@ class TestComplexParallelSchedulingConstraints(unittest.TestCase):
                 "materials": materials or [],
                 "operations": operations or [],
                 "operation_dependencies": dependencies or [],
-                "operation_materials": material_reqs or []
+                "operation_materials": material_reqs or [],
+                "scheduled_tasks": [], # Added tracking for the decoupled results table
+                "work_orders": []      # Added tracking for the parent status updates
             }
             mock_repo.fetch_all.return_value = mapping.get(table_name, [])
             return mock_repo

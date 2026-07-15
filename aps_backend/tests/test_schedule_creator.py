@@ -40,7 +40,10 @@ class TestScheduleCreatorPipeline(unittest.TestCase):
                 "materials": materials or [],
                 "operations": operations or [],
                 "operation_dependencies": dependencies or [],
-                "operation_materials": material_reqs or []
+                "operation_materials": material_reqs or [],
+                "scheduled_tasks": [], # Support decoupled tables
+                "work_orders": [],      # Support decoupled tables
+                "scheduling_runs": []  # Support logging runs
             }
             mock_repo.fetch_all.return_value = mapping.get(table_name, [])
             repo_instances[table_name] = mock_repo
@@ -109,29 +112,38 @@ class TestScheduleCreatorPipeline(unittest.TestCase):
     # TEST CASE 3: WRITEBACK DATA STRUCTURE & STATUS VERIFICATION
     # =====================================================================
     def test_database_writeback_payload_structure(self):
-        """Verifies that the correct dictionary keys are packaged and batch-updated to the database."""
+        """Verifies that results are stored in scheduled_tasks and parent work_orders are marked scheduled."""
         mock_resources = [{"id": "Cutting Station Alpha", "resource_type": "Machine", "is_active": True}]
         mock_operations = [{"id": "row_hash_op101", "work_order_id": "MFG-WO-2026-00001", "sequence_number": 1, "duration_minutes": 45, "assigned_resource_id": "Cutting Station Alpha", "status": "Pending"}]
 
         repos = self._configure_mock_repository(resources=mock_resources, operations=mock_operations)
         schedule_creator_run()
 
-        # Assert that operations batch update occurred
-        op_repo_mock = repos["operations"]
-        op_repo_mock.batch_update.assert_called_once()
+        # 1. Assert snapshots were successfully saved to 'scheduled_tasks' instead of operations
+        tasks_repo_mock = repos["scheduled_tasks"]
+        tasks_repo_mock.batch_add.assert_called_once()
 
-        # Extract the updates list from called args/kwargs
-        called_args, called_kwargs = op_repo_mock.batch_update.call_args
-        passed_batch = called_args[0] if called_args else called_kwargs.get("updates", called_kwargs.get("records", []))
+        # Extract snapshot records passed to scheduled_tasks
+        called_args, called_kwargs = tasks_repo_mock.batch_add.call_args
+        passed_batch = called_args[0] if called_args else called_kwargs.get("data_list", called_kwargs.get("records", []))
 
-        # Validate updating dictionary fields
         for record in passed_batch:
-            self.assertEqual(record["id"], "row_hash_op101")
+            self.assertEqual(record["operation_id"], "row_hash_op101")
             self.assertIn("optimized_start_minute", record)
             self.assertIn("optimized_end_minute", record)
             self.assertIn("scheduled_start_time", record)
             self.assertIn("scheduled_end_time", record)
-            self.assertEqual(record["status"], "Scheduled")
+
+        # 2. Assert parent work orders were updated to "Scheduled" status
+        wo_repo_mock = repos["work_orders"]
+        wo_repo_mock.batch_update.assert_called_once()
+
+        wo_args, wo_kwargs = wo_repo_mock.batch_update.call_args
+        wo_batch = wo_args[0] if wo_args else wo_kwargs.get("updates", wo_kwargs.get("records", []))
+
+        for wo_record in wo_batch:
+            self.assertEqual(wo_record["id"], "MFG-WO-2026-00001")
+            self.assertEqual(wo_record["status"], "Scheduled")
 
 
     # =====================================================================

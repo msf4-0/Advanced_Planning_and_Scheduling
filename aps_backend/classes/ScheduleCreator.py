@@ -6,7 +6,7 @@ from .ResourceNode import ResourceNode
 from .SupplyNode import SupplyNode
 from repository import Repository, DatabaseConfig, ConnectionManager
 
-def run() -> dict:
+def run(run_id: int | None = None) -> dict:
     """
     Orchestrates data extraction, builds the in-memory graph twin,
     executes Google OR-Tools optimization, and saves timestamps back to DB.
@@ -27,6 +27,7 @@ def run() -> dict:
     material_required_repo = Repository("operation_materials", conn_manager)
     work_order_repo = Repository("work_orders", conn_manager)
     runs_log_repo = Repository("scheduling_runs", conn_manager)
+    scheduled_tasks_repo = Repository("scheduled_tasks", conn_manager)
 
     # STEP 2: EXTRACT DATA & GENERATE THE IN-MEMORY GRAPH
     print("[2/4] Fetching flat records and building the RAM graph twin...")
@@ -126,7 +127,7 @@ def run() -> dict:
         baseline_time = datetime.now()
         output_summary = {}
 
-        updates_batch = []
+        insert_batch = []
 
         # Iterate through solved process node list and prepare update records
         for operation in process_node_list:
@@ -135,15 +136,15 @@ def run() -> dict:
             scheduled_end = baseline_time + timedelta(minutes=int(operation.optimized_end))
             
             # Prepare update record (includes the ID to match the record)
-            update_record = {
-                "id": operation.id,
+            snapshot_record = {
+                "run_id": run_id,
+                "operation_id": operation.id,
                 "optimized_start_minute": int(operation.optimized_start),
                 "optimized_end_minute": int(operation.optimized_end),
                 "scheduled_start_time": scheduled_start,
-                "scheduled_end_time": scheduled_end,
-                "status": "Scheduled" # Update status so the frontend engine maps it
+                "scheduled_end_time": scheduled_end
             }
-            updates_batch.append(update_record)
+            insert_batch.append(snapshot_record)
             
             # Build output summary
             output_summary[operation.id] = {
@@ -154,10 +155,10 @@ def run() -> dict:
                 "end_time": scheduled_end.strftime("%Y-%m-%d %H:%M:%S")
             }
         
-        # Execute batch update for operations
-        total_updated = operation_repo.batch_update(updates_batch, id_column="id")
-        print(f"      ✓ Batch updated {total_updated} operations with scheduling times")
-        
+        if insert_batch:
+            scheduled_tasks_repo.batch_add(insert_batch)
+            print(f"      ✓ Successfully wrote {len(insert_batch)} allocation rows to 'scheduled_tasks'.")
+            
         # Get unique work_order IDs that were scheduled
         work_order_ids = set(op.job_id for op in process_node_list)
         
@@ -169,13 +170,29 @@ def run() -> dict:
         if work_order_updates:
             total_wo_updated = work_order_repo.batch_update(work_order_updates, id_column="id")
             print(f"      ✓ Updated {total_wo_updated} work orders to 'Scheduled' status")
+
+        # ALSO update the operations table status
+        operation_updates = [
+            {"id": op.id, "status": "Scheduled"}
+            for op in process_node_list
+        ]
         
-        # Log success to standard 'scheduling_runs' log tracking table columns
-        runs_log_repo.add(data={
-            "run_status": "Success",
-            "completed_at": datetime.now(),
-            "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations. Scheduled {len(work_order_ids)} work orders."
-        })
+        if operation_updates:
+            total_ops_updated = operation_repo.batch_update(operation_updates, id_column="id")
+            print(f"      ✓ Updated {total_ops_updated} operations to 'Scheduled' status")
+
+        if run_id:
+            runs_log_repo.update(run_id, {
+                "run_status": "Success",
+                "completed_at": datetime.now(),
+                "log_messages": f"Engine successfully optimized snapshot configuration parameters. Generated allocations for {len(process_node_list)} operations."
+            })
+        else:
+            runs_log_repo.add(data={
+                "run_status": "Success",
+                "completed_at": datetime.now(),
+                "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations. Scheduled {len(work_order_ids)} work orders."
+            })
 
         print("==========================================")
         print("     PIPELINE COMPLETED SUCCESSFULLY      ")
