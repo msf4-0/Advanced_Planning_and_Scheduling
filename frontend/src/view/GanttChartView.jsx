@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { styles } from '../styles';
 
 export function GanttChartView({ schedule, loading, onRefresh }) {
+  const [tooltipDelay, setTooltipDelay] = useState(0); // Milliseconds - change this!
+
   if (loading) return <p style={styles.message}>Loading execution timeline...</p>;
   if (!schedule || schedule.length === 0) {
     return <p style={styles.message}>No active production plan to map. Run optimization first!</p>;
@@ -36,7 +38,7 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
       <div style={{ padding: '12px 16px', backgroundColor: '#f9fafb', borderRadius: '6px', marginBottom: '16px', fontSize: '12px', color: '#6b7280' }}>
         <div><span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#3b82f6', borderRadius: '2px', marginRight: '6px' }}></span>Scheduled Task</div>
         <div><span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '2px', marginRight: '6px' }}></span>Completed Task</div>
-        <div style={{ marginTop: '6px', fontStyle: 'italic' }}>Hover over tasks to see details. Gaps may indicate waiting for predecessors or due date constraints.</div>
+        <div style={{ marginTop: '6px', fontStyle: 'italic' }}>Hover over tasks and gaps to see details.</div>
       </div>
 
       {/* Gantt Container Scroll Wrapper */}
@@ -69,54 +71,15 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
                 {/* Tracks View Window */}
                 <div style={{ position: 'relative', flex: 1, height: '100%' }}>
                   {/* Render tasks */}
-                  {tasks.map((task, index) => {
-                    const leftPos = (task.start_minute || 0) * scale;
-                    const blockWidth = ((task.end_minute || 0) - (task.start_minute || 0)) * scale;
-                  
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          position: 'absolute',
-                          left: `${leftPos}px`,
-                          width: `${Math.max(blockWidth - 2, 8)}px`, 
-                          top: '8px',
-                          height: '36px',
-                          backgroundColor: task.status === 'Completed' ? '#10b981' : '#3b82f6',
-                          color: '#ffffff',
-                          fontSize: '11px',
-                          fontWeight: 'bold',
-                          borderRadius: '4px',
-                          padding: '4px 6px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          border: '1.5px solid #ffffff', 
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
-                          cursor: 'pointer',
-                          boxSizing: 'border-box',
-                          zIndex: 2,
-                          transition: 'all 0.1s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'scaleY(1.08)';
-                          e.currentTarget.style.zIndex = '10';
-                          e.currentTarget.style.borderColor = '#1e3a8a';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'scaleY(1)';
-                          e.currentTarget.style.zIndex = '2';
-                          e.currentTarget.style.borderColor = '#ffffff';
-                        }}
-                        title={buildTooltip(task)}
-                      >
-                        <div style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.15)' }}>{task.job_id}</div>
-                        <div style={{ fontSize: '9px', opacity: 0.9, fontWeight: 'normal' }}>
-                          WO: {task.work_order_id || '-'}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {tasks.map((task, index) => (
+                    <TaskBlock
+                      key={index}
+                      task={task}
+                      index={index}
+                      scale={scale}
+                      tooltipDelay={tooltipDelay}
+                    />
+                  ))}
 
                   {/* Gap indicators - show idle periods */}
                   {tasks.map((task, index) => {
@@ -132,32 +95,15 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
                     const gapWidth = gap * scale;
 
                     return (
-                      <div
+                      <GapIndicator
                         key={`gap-${index}`}
-                        style={{
-                          position: 'absolute',
-                          left: `${gapLeftPos}px`,
-                          width: `${gapWidth}px`,
-                          top: '8px',
-                          height: '36px',
-                          backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                          border: '1px dashed rgba(239, 68, 68, 0.3)',
-                          borderRadius: '2px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '9px',
-                          color: 'rgba(239, 68, 68, 0.6)',
-                          fontWeight: '500',
-                          zIndex: 1,
-                          cursor: 'help'
-                        }}
-                        title={`Gap: ${gap}m between ${task.job_id} and ${tasks[index + 1].job_id}${
-                          tasks[index + 1].predecessor ? `\nNext task waiting for: ${tasks[index + 1].predecessor}` : ''
-                        }`}
-                      >
-                        {gap > 20 ? `${gap}m gap` : gap > 10 ? '⏸' : ''}
-                      </div>
+                        gapLeftPos={gapLeftPos}
+                        gapWidth={gapWidth}
+                        gap={gap}
+                        currentTask={task}
+                        nextTask={tasks[index + 1]}
+                        tooltipDelay={tooltipDelay}
+                      />
                     );
                   })}
                 </div>
@@ -170,6 +116,181 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
 
       {/* Gap Analysis Summary */}
       <GapAnalysisSummary schedule={schedule} />
+    </div>
+  );
+}
+
+/**
+ * Task Block Component - with configurable hover delay
+ */
+function TaskBlock({ task, index, scale, tooltipDelay }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTimeoutRef = React.useRef(null);
+
+  const leftPos = (task.start_minute || 0) * scale;
+  const blockWidth = ((task.end_minute || 0) - (task.start_minute || 0)) * scale;
+
+  const handleMouseEnter = (e) => {
+    e.currentTarget.style.transform = 'scaleY(1.08)';
+    e.currentTarget.style.zIndex = '10';
+    e.currentTarget.style.borderColor = '#1e3a8a';
+
+    // Set timeout for tooltip
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setShowTooltip(true);
+    }, tooltipDelay);
+  };
+
+  const handleMouseLeave = (e) => {
+    e.currentTarget.style.transform = 'scaleY(1)';
+    e.currentTarget.style.zIndex = '2';
+    e.currentTarget.style.borderColor = '#ffffff';
+
+    // Clear timeout and hide tooltip
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    setShowTooltip(false);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${leftPos}px`,
+        width: `${Math.max(blockWidth - 2, 8)}px`, 
+        top: '8px',
+        height: '36px',
+        backgroundColor: task.status === 'Completed' ? '#10b981' : '#3b82f6',
+        color: '#ffffff',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        borderRadius: '4px',
+        padding: '4px 6px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        border: '1.5px solid #ffffff', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+        cursor: 'pointer',
+        boxSizing: 'border-box',
+        zIndex: 2,
+        transition: 'all 0.1s ease'
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      title={buildTooltip(task)}
+    >
+      {/* Tooltip */}
+      {showTooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            backgroundColor: '#1f2937',
+            color: '#ffffff',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            zIndex: 1000,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            bottom: '100%',
+            left: `${leftPos}px`,
+            transform: 'translateY(-8px)',
+            border: '1px solid #374151'
+          }}
+        >
+          {buildTooltip(task).split('\n').map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.15)' }}>{task.job_id}</div>
+      <div style={{ fontSize: '9px', opacity: 0.9, fontWeight: 'normal' }}>
+        WO: {task.work_order_id || '-'}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Gap Indicator Component - with configurable hover delay
+ */
+function GapIndicator({ gapLeftPos, gapWidth, gap, currentTask, nextTask, tooltipDelay }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTimeoutRef = React.useRef(null);
+
+  const handleMouseEnter = () => {
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setShowTooltip(true);
+    }, tooltipDelay);
+  };
+
+  const handleMouseLeave = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    setShowTooltip(false);
+  };
+
+  const tooltipText = `Gap: ${gap}m between ${currentTask.job_id} and ${nextTask.job_id}${
+    nextTask.predecessor ? `\nNext task waiting for: ${nextTask.predecessor}` : ''
+  }`;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${gapLeftPos}px`,
+        width: `${gapWidth}px`,
+        top: '8px',
+        height: '36px',
+        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+        border: '1px dashed rgba(239, 68, 68, 0.3)',
+        borderRadius: '2px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '9px',
+        color: 'rgba(239, 68, 68, 0.6)',
+        fontWeight: '500',
+        zIndex: 1,
+        cursor: 'help',
+        position: 'relative'
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      title={tooltipText}
+    >
+      {/* Tooltip */}
+      {showTooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            zIndex: 1000,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            bottom: '100%',
+            left: `${gapLeftPos + gapWidth / 2}px`,
+            transform: 'translate(-50%, -8px)',
+            border: '1px solid #991b1b'
+          }}
+        >
+          {tooltipText.split('\n').map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      )}
+
+      {gap > 20 ? `${gap}m gap` : gap > 10 ? '⏸' : ''}
     </div>
   );
 }
@@ -246,7 +367,7 @@ function GapAnalysisSummary({ schedule }) {
         </div>
       ))}
       <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.7 }}>
-        💡 <strong>Gaps may indicate:</strong> waiting for predecessors, due date constraints, or setup time
+        💡 <strong>Gaps may indicate:</strong> waiting for predecessors, materials, or due date constraints
       </div>
     </div>
   );
