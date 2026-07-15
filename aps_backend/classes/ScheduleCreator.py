@@ -171,6 +171,16 @@ def run(run_id: int | None = None) -> dict:
             total_wo_updated = work_order_repo.batch_update(work_order_updates, id_column="id")
             print(f"      ✓ Updated {total_wo_updated} work orders to 'Scheduled' status")
 
+        # ALSO update the operations table status
+        operation_updates = [
+            {"id": op.id, "status": "Scheduled"}
+            for op in process_node_list
+        ]
+        
+        if operation_updates:
+            total_ops_updated = operation_repo.batch_update(operation_updates, id_column="id")
+            print(f"      ✓ Updated {total_ops_updated} operations to 'Scheduled' status")
+
         if run_id:
             runs_log_repo.update(run_id, {
                 "run_status": "Success",
