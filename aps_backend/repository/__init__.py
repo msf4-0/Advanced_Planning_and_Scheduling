@@ -1,7 +1,8 @@
-from .db_repository import DBTable
-from .graph_editor import GraphEditor
+from .repository import Repository
+from .db_connection import ConnectionManager, DatabaseConfig
 
 __all__ = [
-    "DBTable",
-    "GraphEditor",
+    "Repository",
+    "ConnectionManager",
+    "DatabaseConfig"
 ]

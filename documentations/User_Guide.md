@@ -103,7 +103,7 @@ Minimum job data should support:
 - `duration`
 - `domain_start`
 - `domain_end`
-- `predecessor` (optional)
+- `predecessor` (optional, can be comma-separated list like "J1, J2")
 - `due_date` (recommended)
 - `required_machine_type_id` (used to derive allowed machines)
 
