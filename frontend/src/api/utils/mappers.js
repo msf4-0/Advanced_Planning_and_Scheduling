@@ -5,23 +5,25 @@
  */
 export const mapOperationToUniversalTask = (op) => ({
   // Shared properties
-  job_id: op.id,
-  work_order_id: op.work_order_id,
-  status: op.status,
+  // Use operation_id (e.g., "op_wo1_10") so it displays meaningfully in the UI tables
+  job_id: op.operation_id || `job-${op.id}`, 
+  work_order_id: op.work_order_id || '-', // Fallback if work order tracking shifts
+  status: op.status || 'Scheduled', // Use backend status, fallback to default
   
   // BacklogView specific requirements
-  duration: op.duration_minutes,
-  predecessor: op.predecessor,
-  allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : [],
+  duration: op.duration_minutes || 0,
+  predecessor: op.predecessor || '-',
+  allowed_resources: op.assigned_resource_id ? [op.assigned_resource_id] : ['Any Machine'],
   
   // ScheduleView specific requirements
-  resources: op.assigned_resource_id || 'Any Machine',
-  start: op.scheduled_start_time || `${op.optimized_start_minute || 0} mins`,
-  end: op.scheduled_end_time || `${op.optimized_end_minute || 0} mins`,
+  // If your backend introduces machine assignment later, this checks it. Otherwise maps to visual blocks.
+  resources: op.assigned_resource_id || op.machine_id || 'Any Machine',
+  start: op.scheduled_start_time ? new Date(op.scheduled_start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : `${op.optimized_start_minute || 0} mins`,
+  end: op.scheduled_end_time ? new Date(op.scheduled_end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : `${op.optimized_end_minute || 0} mins`,
   
-  // Keep original numeric offsets for timeline calculations if needed by charts
-  start_minute: op.optimized_start_minute,
-  end_minute: op.optimized_end_minute
+  // Keep original numeric offsets for timeline calculations in Gantt view
+  start_minute: op.optimized_start_minute ?? 0,
+  end_minute: op.optimized_end_minute ?? 0
 });
 
 /**
