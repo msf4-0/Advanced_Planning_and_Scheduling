@@ -107,7 +107,7 @@ export default function App() {
       const scheduleArray = await api.schedule.fetchSchedule();
       setSchedule(scheduleArray);
 
-      const maxEnd = scheduleArray.reduce((max, job) => Math.max(max, job.end || 0), 0);
+      const maxEnd = scheduleArray.reduce((max, job) => Math.max(max, job.end_minute || 0), 0);
       setMetrics({ makespan: maxEnd, tardiness: 0 });
     } catch (error) {
       console.error("Error fetching schedule execution data:", error);
@@ -188,6 +188,10 @@ export default function App() {
     fetchBacklog();
     fetchMachines();
     fetchWorkorderData();
+    api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
+    api.jobs.fetchBacklog().then(data => console.log(" Backlog Data Input:", data));
+    api.machines.fetchMachines().then(data => console.log(" Machines Data Input:", data));
+    api.workorder.fetchWorkorders().then(data => console.log(" Workorders Data Input:", data));
   }, []);
 
   return (
