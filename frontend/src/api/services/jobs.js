@@ -1,7 +1,7 @@
-// api/services/jobs.js - Jobs and tasks endpoints
+// api/services/jobs.js
 import { API_CONFIG } from '../config.js';
 import { mapOperationToUniversalTask, buildDependencyMap } from '../utils/mappers.js';
-import { handleApiError } from '../utils/errorHandler.js';
+import { handleApiError } from '../utils/errorHandler.js'; // Ensure this is imported
 
 export const jobsApi = {
   /**
@@ -14,24 +14,26 @@ export const jobsApi = {
       fetch(`${API_CONFIG.BASE_URL}/operation_dependencies`)
     ]);
 
-    if (opsRes.ok && depsRes.ok) {
-      const opsPayload = await opsRes.json();
-      const depsPayload = await depsRes.json();
-      
-      const rawOperations = opsPayload.data || [];
-      const rawDependencies = depsPayload.data || [];
+    // 1. Trace exactly which endpoint is causing the failure
+    await handleApiError(opsRes, 'Failed to fetch raw operations data');
+    await handleApiError(depsRes, 'Failed to fetch operation dependencies mapping');
 
-      const dependencyMap = buildDependencyMap(rawDependencies);
+    // 2. Process data only if both explicitly cleared handleApiError checks
+    const opsPayload = await opsRes.json();
+    const depsPayload = await depsRes.json();
+    
+    const rawOperations = opsPayload.data || [];
+    const rawDependencies = depsPayload.data || [];
 
-      return rawOperations.map(op => {
-        const upstreamList = dependencyMap[op.id] || [];
-        return mapOperationToUniversalTask({
-          ...op,
-          predecessor: upstreamList.length > 0 ? upstreamList.join(', ') : '-'
-        });
+    const dependencyMap = buildDependencyMap(rawDependencies);
+
+    return rawOperations.map(op => {
+      const upstreamList = dependencyMap[op.id] || [];
+      return mapOperationToUniversalTask({
+        ...op,
+        predecessor: upstreamList.length > 0 ? upstreamList.join(', ') : '-'
       });
-    }
-    throw new Error('Failed to fetch operations backlog');
+    });
   },
 
   /**
