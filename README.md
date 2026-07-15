@@ -1,81 +1,66 @@
-# SHRDC Internship - APS Scheduling Platform
+# Advanced Planning and Scheduling (APS)
 
-Manufacturing scheduling platform with a FastAPI backend, PostgreSQL + Apache AGE graph support, Appsmith, ERPNext, and Node-RED services orchestrated via Docker Compose.
+A comprehensive scheduling and planning system developed during the SHRDC internship.
+
+## Project Structure
+
+- **aps_backend/** - Backend API service
+- **frontend/** - Frontend application
+- **postgres/** - PostgreSQL database configuration
+- **documentations/** - Project documentation
+- **nginx.conf** - Nginx reverse proxy configuration
+- **docker-compose.yaml** - Docker composition for multi-container setup
+
+## Setup Instructions
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Python 3.x (for backend development)
+- Node.js and npm (for frontend development)
+- PostgreSQL (if running locally without Docker)
+
+### Installation
+
+#### Using Installation Scripts
+- **Windows**: Run `install.bat`
+- **Linux/Mac**: Run `install.sh`
+
+#### Using Docker Compose
+```bash
+docker-compose up -d
+```
+
+## Environment Configuration
+
+Copy `.env.example` to `.env` and configure your environment variables:
+```bash
+cp .env.example .env
+```
+
+## Development
+
+### Backend
+Navigate to the `aps_backend/` directory and follow the backend-specific setup instructions.
+
+### Frontend
+Navigate to the `frontend/` directory and follow the frontend-specific setup instructions.
 
 ## Documentation
 
-- Full project documentation: [documentations/App_Documentation.md](documentations/App_Documentation.md)
-- How-to user guide (step-by-step): [documentations/User_Guide.md](documentations/User_Guide.md)
-- Developer notes: [documentations/Developer_Notes.md](documentations/Developer_Notes.md)
-- Backend details: [aps_backend/backend_details.md](aps_backend/backend_details.md)
-- Scheduler details: [aps_backend/scheduler/scheduler_details.md](aps_backend/scheduler/scheduler_details.md)
-- [Google OR-Tools documentation](https://developers.google.com/optimization/reference)
-- [ERP-Next documentation](https://docs.frappe.io/erpnext/introduction) 
+Detailed documentation is available in the `documentations/` directory.
 
-## Quick Start
+## Technologies Used
 
-**Recommended:** Use the install script for your OS (`install.sh` for Linux/macOS/WSL, `install.bat` for Windows) to automate setup. If the script works, skip to step 3 below.
+- **Backend**: Python, Django/FastAPI
+- **Frontend**: JavaScript/TypeScript, React
+- **Database**: PostgreSQL
+- **Containerization**: Docker
+- **Web Server**: Nginx
 
-If the install script does not work for your environment, follow the manual steps starting from step 1.
+## Contributing
 
-> **Important:**
-> Set your credentials in `.env` after running the install script.
-> PostgreSQL must be running and healthy before Appsmith starts.
+This is a SHRDC internship project. Please follow the project guidelines and conventions when making contributions.
 
-### 1) Start all services
+## License
 
-From repository root:
-
-```bash
-docker compose up -d --build
-```
-
-> **Warning:** Start `postgres` first (or confirm it is healthy) before using `appsmith`.
-
-### 2) Verify key services
-
-- APS backend API: `http://localhost:8000`
-- FastAPI docs (Swagger): `http://localhost:8000/docs`
-- Appsmith: `http://localhost:8080`
-- Node-RED: `http://localhost:1880`
-- ERPNext app: `http://localhost:8001`
-
-### 3) Create Appsmith Account & Restore App
-
-On a fresh install, Appsmith will prompt you to create the first admin account when you visit `http://localhost:8080`.
-
-You must set your Appsmith login credentials (admin email/password) on first access before using the app.
-
-1. Open Appsmith in your browser: `http://localhost:8080`
-2. Complete the onboarding and create your admin account (email/password).
-3. If you're prompted to setup datasource, press "skip" on the top right corner
-4. Import the app manually:
-   - To import from JSON: Click the "Create New" button → "Import Application" → upload your exported Appsmith JSON file (`init_apps_and_flows/APS-Schedule V0.4.json`).
-5. Invite additional users as needed (Share/Invite workspace).
-
-### 4) Run your first schedule
-
-1. Enter Appsmith: `http://localhost:8080`
-2. Press the "Edit Jobs" Button which shows the Jobs menu to edit the detail
-3. Press the "+" Icon to Add Jobs then fill in the necessary details
-4. Return to scheduling menu by pressing "schedule" button
-5. Run Schedule by pressing the "Start Schedule" button
-
-> **Note:**  
-> If no data exists yet and you want to add resources (machines/employees), create the corresponding types first, then add the resources.
-
-## Core Services
-
-- `aps-backend`: FastAPI scheduler and data APIs
-- `postgres`: PostgreSQL + Apache AGE
-- `appsmith`: low-code UI
-- `node-red`: workflow automation service
-- `erpnext-db`, `erpnext-app`: ERP integration services
-
-## Notes
-
-- Environment variables are managed via a `.env` file (see `.env.example` for template). Secrets and config are not stored in version control.
-- Use `install.sh` (Linux/macOS/WSL) or `install.bat` (Windows) for automated setup and startup.
-- Database schema and initial data are loaded automatically using Docker's `/docker-entrypoint-initdb.d` mechanism (see `db_init/`).
-- Mapping config used by ingestion is stored in `aps_backend/configs/config.json`.
-- For detailed endpoint reference and workflows, see docs in the `docs/` folder.
+All rights reserved - SHRDC Internship Project
