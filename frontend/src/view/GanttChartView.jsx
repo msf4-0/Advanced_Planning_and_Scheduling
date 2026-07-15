@@ -15,9 +15,14 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
     return acc;
   }, {});
 
-  // 2. Find the max timespan to calculate layout scales
+  // 2. Sort tasks within each resource by start time (for gap detection)
+  Object.keys(resourcesGroup).forEach(resId => {
+    resourcesGroup[resId].sort((a, b) => (a.start_minute || 0) - (b.start_minute || 0));
+  });
+
+  // 3. Find the max timespan to calculate layout scales
   const globalMaxMinutes = schedule.reduce((max, task) => Math.max(max, task.end_minute || 0), 0);
-  const chartWidthMinutes = Math.max(globalMaxMinutes + 30, 180); // Pad workspace area
+  const chartWidthMinutes = Math.max(globalMaxMinutes + 30, 180);
   const scale = 4; // 4px per production minute
 
   return (
@@ -25,6 +30,13 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
       <div style={styles.tableHeader}>
         <h2>Operational Gantt Timeline (Resource Allocation)</h2>
         <button onClick={onRefresh} style={styles.refreshButton}>Refresh Schedule</button>
+      </div>
+
+      {/* Legend */}
+      <div style={{ padding: '12px 16px', backgroundColor: '#f9fafb', borderRadius: '6px', marginBottom: '16px', fontSize: '12px', color: '#6b7280' }}>
+        <div><span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#3b82f6', borderRadius: '2px', marginRight: '6px' }}></span>Scheduled Task</div>
+        <div><span style={{ display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#10b981', borderRadius: '2px', marginRight: '6px' }}></span>Completed Task</div>
+        <div style={{ marginTop: '6px', fontStyle: 'italic' }}>Hover over tasks to see details. Gaps may indicate waiting for predecessors or due date constraints.</div>
       </div>
 
       {/* Gantt Container Scroll Wrapper */}
@@ -45,75 +57,196 @@ export function GanttChartView({ schedule, loading, onRefresh }) {
 
           {/* Machine Rows */}
           {Object.entries(resourcesGroup).map(([resourceId, tasks]) => (
-            <div key={resourceId} style={{ display: 'flex', alignItems: 'center', height: '55px', borderBottom: '1px dashed #f3f4f6' }}>
-              
-              {/* Row Label */}
-              <div style={{ width: '150px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
-                📟 {resourceId}
-              </div>
-
-              {/* Tracks View Window */}
-              <div style={{ position: 'relative', flex: 1, height: '100%' }}>
-                {tasks.map((task, index) => {
-                  const leftPos = (task.start_minute || 0) * scale;
-                  const blockWidth = ((task.end_minute || 0) - (task.start_minute || 0)) * scale;
+            <div key={resourceId}>
+              {/* Resource Header Row */}
+              <div style={{ display: 'flex', alignItems: 'center', height: '55px', borderBottom: '1px dashed #f3f4f6' }}>
                 
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        position: 'absolute',
-                        left: `${leftPos}px`,
-                        // CHANGED: Subtracting 2px from the width provides a natural visual gap between back-to-back tasks
-                        width: `${Math.max(blockWidth - 2, 8)}px`, 
-                        top: '8px',
-                        height: '36px',
-                        backgroundColor: task.status === 'Completed' ? '#10b981' : '#3b82f6', // Richer Tailwind colors
-                        color: '#ffffff',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        borderRadius: '4px',
-                        padding: '4px 6px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        
-                        // ADDED: High-contrast crisp border outline to separate blocks
-                        border: '1.5px solid #ffffff', 
-                        
-                        // ADDED: Enhanced shadows to give individual depth
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
-                        cursor: 'pointer',
-                        boxSizing: 'border-box', // Ensures border stays inside calculated width
-                        zIndex: 2,
-                        transition: 'all 0.1s ease'
-                      }}
-                      // Interactive scale highlight on hover
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scaleY(1.08)';
-                        e.currentTarget.style.zIndex = '10';
-                        e.currentTarget.style.borderColor = '#1e3a8a'; // Dark blue outline emphasis on hover
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scaleY(1)';
-                        e.currentTarget.style.zIndex = '2';
-                        e.currentTarget.style.borderColor = '#ffffff';
-                      }}
-                      title={`Job: ${task.job_id}\nOrder: ${task.work_order_id || 'N/A'}\nSpan: ${task.start_minute}m - ${task.end_minute}m`}
-                    >
-                      <div style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.15)' }}>{task.job_id}</div>
-                      <div style={{ fontSize: '9px', opacity: 0.9, fontWeight: 'normal' }}>
-                        WO: {task.work_order_id || '-'}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                {/* Row Label */}
+                <div style={{ width: '150px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
+                  📟 {resourceId}
+                </div>
 
+                {/* Tracks View Window */}
+                <div style={{ position: 'relative', flex: 1, height: '100%' }}>
+                  {/* Render tasks */}
+                  {tasks.map((task, index) => {
+                    const leftPos = (task.start_minute || 0) * scale;
+                    const blockWidth = ((task.end_minute || 0) - (task.start_minute || 0)) * scale;
+                  
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          position: 'absolute',
+                          left: `${leftPos}px`,
+                          width: `${Math.max(blockWidth - 2, 8)}px`, 
+                          top: '8px',
+                          height: '36px',
+                          backgroundColor: task.status === 'Completed' ? '#10b981' : '#3b82f6',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          borderRadius: '4px',
+                          padding: '4px 6px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          border: '1.5px solid #ffffff', 
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                          cursor: 'pointer',
+                          boxSizing: 'border-box',
+                          zIndex: 2,
+                          transition: 'all 0.1s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scaleY(1.08)';
+                          e.currentTarget.style.zIndex = '10';
+                          e.currentTarget.style.borderColor = '#1e3a8a';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scaleY(1)';
+                          e.currentTarget.style.zIndex = '2';
+                          e.currentTarget.style.borderColor = '#ffffff';
+                        }}
+                        title={buildTooltip(task)}
+                      >
+                        <div style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.15)' }}>{task.job_id}</div>
+                        <div style={{ fontSize: '9px', opacity: 0.9, fontWeight: 'normal' }}>
+                          WO: {task.work_order_id || '-'}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Gap indicators - show idle periods */}
+                  {tasks.map((task, index) => {
+                    if (index === tasks.length - 1) return null; // No gap after last task
+                    
+                    const currentEnd = task.end_minute || 0;
+                    const nextStart = tasks[index + 1].start_minute || 0;
+                    const gap = nextStart - currentEnd;
+
+                    if (gap <= 0) return null; // No gap
+
+                    const gapLeftPos = currentEnd * scale;
+                    const gapWidth = gap * scale;
+
+                    return (
+                      <div
+                        key={`gap-${index}`}
+                        style={{
+                          position: 'absolute',
+                          left: `${gapLeftPos}px`,
+                          width: `${gapWidth}px`,
+                          top: '8px',
+                          height: '36px',
+                          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                          border: '1px dashed rgba(239, 68, 68, 0.3)',
+                          borderRadius: '2px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '9px',
+                          color: 'rgba(239, 68, 68, 0.6)',
+                          fontWeight: '500',
+                          zIndex: 1,
+                          cursor: 'help'
+                        }}
+                        title={`Gap: ${gap}m between ${task.job_id} and ${tasks[index + 1].job_id}${
+                          tasks[index + 1].predecessor ? `\nNext task waiting for: ${tasks[index + 1].predecessor}` : ''
+                        }`}
+                      >
+                        {gap > 20 ? `${gap}m gap` : gap > 10 ? '⏸' : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ))}
 
         </div>
+      </div>
+
+      {/* Gap Analysis Summary */}
+      <GapAnalysisSummary schedule={schedule} />
+    </div>
+  );
+}
+
+/**
+ * Build enhanced tooltip with dependency information
+ */
+function buildTooltip(task) {
+  let tooltip = `Job: ${task.job_id}\nOrder: ${task.work_order_id || 'N/A'}\nSpan: ${task.start_minute}m - ${task.end_minute}m\nStatus: ${task.status || 'Scheduled'}`;
+  
+  if (task.predecessor && task.predecessor !== '-') {
+    tooltip += `\n\nWaiting for: ${task.predecessor}`;
+  }
+  
+  if (task.duration) {
+    tooltip += `\nDuration: ${Math.round(task.duration / 60)} hours`;
+  }
+  
+  return tooltip;
+}
+
+/**
+ * Show summary statistics about resource utilization and gaps
+ */
+function GapAnalysisSummary({ schedule }) {
+  if (!schedule || schedule.length === 0) return null;
+
+  // Group by resource
+  const byResource = {};
+  schedule.forEach(task => {
+    const res = task.resources || 'Unassigned';
+    if (!byResource[res]) byResource[res] = [];
+    byResource[res].push(task);
+  });
+
+  // Calculate metrics
+  const metrics = {};
+  Object.entries(byResource).forEach(([resId, tasks]) => {
+    const sorted = [...tasks].sort((a, b) => (a.start_minute || 0) - (b.start_minute || 0));
+    
+    let totalWorking = 0;
+    let totalGaps = 0;
+    
+    sorted.forEach((task, idx) => {
+      const duration = (task.end_minute || 0) - (task.start_minute || 0);
+      totalWorking += duration;
+      
+      if (idx < sorted.length - 1) {
+        const nextStart = sorted[idx + 1].start_minute || 0;
+        const gap = nextStart - (task.end_minute || 0);
+        if (gap > 0) totalGaps += gap;
+      }
+    });
+    
+    const totalTime = sorted[sorted.length - 1]?.end_minute || 0;
+    const utilization = totalTime > 0 ? ((totalWorking / totalTime) * 100).toFixed(1) : 0;
+    
+    metrics[resId] = { utilization, totalGaps, totalTime, totalWorking };
+  });
+
+  return (
+    <div style={{ marginTop: '24px', padding: '12px 16px', backgroundColor: '#f0fdf4', borderRadius: '6px', fontSize: '12px', color: '#15803d' }}>
+      <div style={{ fontWeight: '600', marginBottom: '8px' }}>📊 Resource Utilization</div>
+      {Object.entries(metrics).map(([resId, metric]) => (
+        <div key={resId} style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{resId}</span>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ width: '100px', height: '6px', backgroundColor: '#d1fae5', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${metric.utilization}%`, height: '100%', backgroundColor: '#10b981' }} />
+            </div>
+            <span style={{ minWidth: '50px', textAlign: 'right' }}>{metric.utilization}%</span>
+            {metric.totalGaps > 0 && <span style={{ color: '#ea580c', fontWeight: '500' }}>+{metric.totalGaps}m idle</span>}
+          </div>
+        </div>
+      ))}
+      <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.7 }}>
+        💡 <strong>Gaps may indicate:</strong> waiting for predecessors, due date constraints, or setup time
       </div>
     </div>
   );
