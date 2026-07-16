@@ -16,7 +16,6 @@ The backend implements generic CRUD APIs, admin/schema discovery, Apache AGE gra
 - classes/ — core scheduling engine entry (ScheduleCreator)
 - requirements.txt — Python dependencies
 - Dockerfile — production image (python:3.11-slim)
-- backend_details.md — extended architecture notes
 - tests/ — unit / integration tests
 
 ---
