@@ -53,21 +53,21 @@ When running with Docker Compose, populate these in the project `.env` or compos
 ## Local development
 
 1. Create a virtual environment and install deps:
-
+```
    cd aps_backend
    python -m venv .venv
    source .venv/bin/activate   # PowerShell: .\.venv\Scripts\Activate.ps1
    pip install -r requirements.txt
-
+```
 2. Start local server (pointing to a running PostgreSQL):
-
+```
    POSTGRES_HOST=localhost POSTGRES_PORT=5432 \   # or set envs in shell
    uvicorn main_backend:app --reload --host 0.0.0.0 --port 8000
-
+```
 3. Open the interactive docs:
-
+```
    http://localhost:8000/docs
-
+```
 Notes: If your DB requires Apache AGE for graph features, enable that extension in the DB used for dev.
 
 ---
@@ -75,24 +75,25 @@ Notes: If your DB requires Apache AGE for graph features, enable that extension 
 ## Docker / Compose
 
 Build image locally (optional build-arg not required):
-
+```
    docker build -t aps-backend:local ./aps_backend
-
+```
 Run with Docker directly (pass envs):
-
+```
    docker run --rm -e POSTGRES_HOST=host.docker.internal -e POSTGRES_USER=... -e POSTGRES_PASSWORD=... -e POSTGRES_DB=... -p 8000:8000 aps-backend:local
-
+```
 Start via project docker-compose (recommended for full stack):
 
    # from repository root
+```
    docker compose up -d --build aps-postgres aps-backend aps-frontend aps-reverse-proxy
-
+```
 If using the compose file as provided, service names are prefixed with `aps-` (e.g., `aps-postgres`). Ensure `POSTGRES_HOST` in backend environment is set to `aps-postgres` (the compose service key).
 
 Validate the compose config and service names:
-
+```
    docker compose config
-
+```
 ---
 
 ## Key endpoints (quick reference)
@@ -100,17 +101,17 @@ Validate the compose config and service names:
 - POST /run_scheduler
   - Triggers the scheduler pipeline. Returns { success, result } on success.
   - Example (curl):
-
+```
     curl -X POST http://localhost:8000/run_scheduler
-
+```
 - GET /recent-schedule
   - Returns the most recent successful schedule run and its tasks.
 
 - Generic CRUD router (prefix `/api/v1`) in `api/crud_routes.py`:
-  - GET /api/v1/{table_name}
-  - POST /api/v1/{table_name}
-  - PUT /api/v1/{table_name}?id_value=...  (update)
-  - DELETE /api/v1/{table_name}?id_value=... 
+  - `GET /api/v1/{table_name}`
+  - `POST /api/v1/{table_name}`
+  - `PUT /api/v1/{table_name}?id_value=...  (update)`
+  - `DELETE /api/v1/{table_name}?id_value=... `
 
 Use the interactive docs (`/docs`) to explore request/response shapes.
 
@@ -129,11 +130,11 @@ Use the interactive docs (`/docs`) to explore request/response shapes.
 ## Tests
 
 Run tests from project root or aps_backend folder (pytest required):
-
+```
    cd aps_backend
    pip install -r requirements.txt
    pytest -q
-
+```
 If tests depend on a live DB, configure a test database and export its connection settings before running.
 
 ---
