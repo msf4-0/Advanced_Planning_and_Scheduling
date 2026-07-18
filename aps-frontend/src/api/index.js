@@ -5,6 +5,7 @@ import { resourcesApi } from './services/resources.js';
 import { workordersApi } from './services/workorder.js';
 import { itemsApi } from './services/items.js';
 import { materialsApi } from './services/materials.js';
+import { routingApi } from './services/routing.js';
 
 export const api = {
   schedule: scheduleApi,
@@ -13,4 +14,5 @@ export const api = {
   workorder: workordersApi,
   items: itemsApi,
   materials: materialsApi,
+  routing: routingApi,
 };

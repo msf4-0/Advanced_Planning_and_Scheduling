@@ -14,6 +14,8 @@ import { ItemsView } from './view/ItemsView';
 import { ItemForm } from './form/ItemForm';
 import { MaterialsView } from './view/MaterialsView';
 import { MaterialForm } from './form/MaterialForm';
+import { RoutingTemplatesView } from './view/RoutingTemplatesView';
+import { RoutingTemplateForm } from './form/RoutingTemplateForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -85,6 +87,35 @@ export default function App() {
   const [materials, setMaterials] = useState([]);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [newMaterial, setNewMaterial] = useState({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
+
+  const [showRoutingForm, setShowRoutingForm] = useState(false);
+  const [newRoutingTemplate, setNewRoutingTemplate] = useState({
+    target_item_id: '',
+    step_sequence: '',
+    required_resource_type: 'Machine',
+    standard_duration_minutes: ''
+  });
+
+  // Add the submission callback function
+  const handleAddRoutingTemplate = async () => {
+    try {
+      await api.routing.createTemplate(newRoutingTemplate);
+      
+      // Reset form state & close modal view window
+      setNewRoutingTemplate({
+        target_item_id: '',
+        step_sequence: '',
+        required_resource_type: 'Machine',
+        standard_duration_minutes: ''
+      });
+      setShowRoutingForm(false);
+      
+      // Refresh table view list contents
+      fetchRoutingTemplates();
+    } catch (error) {
+      console.error("Error creating routing template:", error);
+    }
+  };
 
   const fetchMaterialsData = async () => {
     setLoading(true);
@@ -353,6 +384,16 @@ export default function App() {
             >
               🧱 Materials Ledger
             </button>
+
+            <button
+              onClick={() => setView('routing')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'routing' ? styles.activeNav : {})
+              }}
+            >
+              Routing Blueprints
+            </button>
             
           </nav>
         </div>
@@ -480,6 +521,26 @@ export default function App() {
                 setNewMaterial={setNewMaterial}
                 onSubmit={handleAddMaterial}
                 onClose={() => setShowMaterialForm(false)}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'routing' && (
+          <>
+            <RoutingTemplatesView 
+              data={routingTemplates} 
+              loading={loading}
+              onRefresh={fetchRoutingTemplates}
+              onAddClick={() => setShowRoutingForm(true)}
+            />
+            
+            {showRoutingForm && (
+              <RoutingTemplateForm 
+                newTemplate={newRoutingTemplate}
+                setNewTemplate={setNewRoutingTemplate}
+                onSubmit={handleAddRoutingTemplate}
+                onClose={() => setShowRoutingForm(false)}
               />
             )}
           </>
