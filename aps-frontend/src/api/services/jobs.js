@@ -46,7 +46,7 @@ export const jobsApi = {
       id: task.job_id,
       work_order_id: task.work_order_id || 'MANUAL-WO', 
       sequence_number: parseInt(task.sequence_number) || 10,
-      duration_minutes: parseInt(task.duration) * 60,
+      duration_minutes: parseInt(task.duration),
       assigned_resource_id: (task.resources && task.resources.trim() !== '') ? task.resources.trim().toString() : null,
       status: 'Draft'
     };

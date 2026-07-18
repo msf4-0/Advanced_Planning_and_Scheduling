@@ -41,7 +41,7 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
 
           {/* 3. DURATION - REQUIRED */}
           <label style={styles.label}>
-            Duration (Hours) <span style={{ color: '#ef4444' }}>*</span>
+            Duration (Minutes) <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <input
             type="number"

@@ -44,7 +44,7 @@ export function BacklogView({ backlog, loading, onRefresh, onAddClick, onLinkCli
             {backlog.map((task, index) => (
               <tr key={index} style={styles.tr}>
                 <td style={styles.td}><strong>{task.job_id}</strong></td>
-                <td style={styles.td}>{task.duration || task.properties?.duration} hrs</td>
+                <td style={styles.td}>{task.duration || task.properties?.duration} min</td>
                 <td style={styles.td}>{task.predecessor || task.properties?.predecessor || '-'}</td>
                 <td style={styles.td}>{(task.allowed_resources || task.properties?.allowed_resources || []).join(', ')}</td>
                 <td style={styles.td}>
