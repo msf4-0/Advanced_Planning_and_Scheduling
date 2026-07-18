@@ -33,7 +33,6 @@ export const machinesApi = {
       id: machine.machine_id.toString(),
       name: machine.name || `${machine.type} Unit ${machine.machine_id}`,
       resource_type: machine.type || 'Machine',
-      capacity: machine.capacity ? parseInt(machine.capacity) : 1,
       is_active: true
     };
 
