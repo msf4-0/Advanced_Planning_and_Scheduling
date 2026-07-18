@@ -28,8 +28,8 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [newTask, setNewTask] = useState({
     job_id: '',
-    work_order_id: '', // ADDED: Required matching database constraint element
-    duration: '',      // Changed baseline to empty string for safe entry scaling
+    work_order_id: '',
+    duration: '',
     predecessor: '',
     due_date: '',
     resources: ''
