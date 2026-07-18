@@ -4,6 +4,7 @@
  * Supports both BacklogView and ScheduleView requirements
  */
 export const mapOperationToUniversalTask = (op) => ({
+  raw_id: op.id,
   // Shared properties
   // Use operation_id (e.g., "op_wo1_10") so it displays meaningfully in the UI tables
   job_id: op.operation_id || `job-${op.id}`, 

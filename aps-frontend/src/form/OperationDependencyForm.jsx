@@ -59,7 +59,7 @@ export function OperationDependencyForm({ availableOperations, onSubmit, onClose
             >
               <option value="">-- Select Prerequisite Operation --</option>
               {availableOperations.map((op) => (
-                <option key={op.job_id} value={op.job_id}>
+                <option key={op.raw_id} value={op.raw_id}>
                   {op.job_id} (WO: {op.work_order_id || 'Manual'})
                 </option>
               ))}
@@ -76,7 +76,7 @@ export function OperationDependencyForm({ availableOperations, onSubmit, onClose
             >
               <option value="">-- Select Blocked Operation --</option>
               {availableOperations.map((op) => (
-                <option key={op.job_id} value={op.job_id}>
+                <option key={op.raw_id} value={op.raw_id}>
                   {op.job_id} (WO: {op.work_order_id || 'Manual'})
                 </option>
               ))}

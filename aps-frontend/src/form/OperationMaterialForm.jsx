@@ -58,7 +58,9 @@ export function OperationMaterialForm({ availableOperations, availableMaterials,
             <select value={opId} onChange={(e) => setOpId(e.target.value)} style={modalStyles.select}>
               <option value="">-- Select Operation Target --</option>
               {availableOperations.map((op) => (
-                <option key={op.job_id} value={op.job_id}>{op.job_id}</option>
+                <option key={op.raw_id} value={op.raw_id}>
+                  {op.job_id} {op.work_order_id ? `(WO: ${op.work_order_id})` : ''}
+                </option>
               ))}
             </select>
           </div>
