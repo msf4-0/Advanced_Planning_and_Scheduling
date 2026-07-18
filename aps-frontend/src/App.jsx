@@ -536,6 +536,7 @@ export default function App() {
               <WorkorderForm 
                 newWorkorder={newWorkorder}
                 setNewWorkorder={setNewWorkorder}
+                availableItems={items}
                 onSubmit={handleAddWorkorder}
                 onClose={() => setShowWorkorderForm(false)}
               />
