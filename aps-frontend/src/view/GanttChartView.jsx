@@ -313,10 +313,16 @@ function buildTooltip(task) {
 }
 
 /**
- * Show summary statistics about resource utilization and gaps
+ * Show summary statistics about resource utilization with high-specificity diagnostics only
  */
 function GapAnalysisSummary({ schedule }) {
   if (!schedule || schedule.length === 0) return null;
+
+  // Global lookup map to retrieve execution times of predecessor tasks across different resources
+  const taskMap = schedule.reduce((acc, t) => {
+    if (t.job_id) acc[t.job_id] = t;
+    return acc;
+  }, {});
 
   // Group by resource
   const byResource = {};
@@ -333,41 +339,101 @@ function GapAnalysisSummary({ schedule }) {
     
     let totalWorking = 0;
     let totalGaps = 0;
+    const diagnostics = [];
+
+    // Track a leading empty delay before the first task starts on this resource
+    if (sorted.length > 0 && sorted[0].start_minute > 0) {
+      const firstTask = sorted[0];
+      const gapDuration = firstTask.start_minute;
+      totalGaps += gapDuration;
+
+      const deps = firstTask.predecessor && firstTask.predecessor !== '-'
+        ? firstTask.predecessor.split(',').map(d => d.trim())
+        : [];
+
+      // ONLY add if there is explicit specific dependency data present
+      if (deps.length > 0) {
+        diagnostics.push({
+          duration: gapDuration,
+          timeWindow: `0m - ${firstTask.start_minute}m`,
+          targetJob: firstTask.job_id,
+          dependencies: deps
+        });
+      }
+    }
     
     sorted.forEach((task, idx) => {
       const duration = (task.end_minute || 0) - (task.start_minute || 0);
       totalWorking += duration;
       
       if (idx < sorted.length - 1) {
-        const nextStart = sorted[idx + 1].start_minute || 0;
-        const gap = nextStart - (task.end_minute || 0);
-        if (gap > 0) totalGaps += gap;
+        const nextTask = sorted[idx + 1];
+        const currentEnd = task.end_minute || 0;
+        const nextStart = nextTask.start_minute || 0;
+        const gap = nextStart - currentEnd;
+        
+        if (gap > 0) {
+          totalGaps += gap;
+          const deps = nextTask.predecessor && nextTask.predecessor !== '-'
+            ? nextTask.predecessor.split(',').map(d => d.trim())
+            : [];
+
+          // ONLY add if there is explicit specific dependency data present
+          if (deps.length > 0) {
+            diagnostics.push({
+              duration: gap,
+              timeWindow: `${currentEnd}m - ${nextStart}m`,
+              targetJob: nextTask.job_id,
+              dependencies: deps
+            });
+          }
+        }
       }
     });
     
     const totalTime = sorted[sorted.length - 1]?.end_minute || 0;
     const utilization = totalTime > 0 ? ((totalWorking / totalTime) * 100).toFixed(1) : 0;
     
-    metrics[resId] = { utilization, totalGaps, totalTime, totalWorking };
+    metrics[resId] = { utilization, totalGaps, totalTime, totalWorking, diagnostics };
   });
 
   return (
     <div style={{ marginTop: '24px', padding: '12px 16px', backgroundColor: '#f0fdf4', borderRadius: '6px', fontSize: '12px', color: '#15803d' }}>
       <div style={{ fontWeight: '600', marginBottom: '8px' }}>📊 Resource Utilization</div>
       {Object.entries(metrics).map(([resId, metric]) => (
-        <div key={resId} style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{resId}</span>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div style={{ width: '100px', height: '6px', backgroundColor: '#d1fae5', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ width: `${metric.utilization}%`, height: '100%', backgroundColor: '#10b981' }} />
+        <div key={resId} style={{ marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{resId}</span>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <div style={{ width: '100px', height: '6px', backgroundColor: '#d1fae5', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${metric.utilization}%`, height: '100%', backgroundColor: '#10b981' }} />
+              </div>
+              <span style={{ minWidth: '50px', textAlign: 'right' }}>{metric.utilization}%</span>
+              {metric.totalGaps > 0 && <span style={{ color: '#ea580c', fontWeight: '500' }}>+{metric.totalGaps}m idle</span>}
             </div>
-            <span style={{ minWidth: '50px', textAlign: 'right' }}>{metric.utilization}%</span>
-            {metric.totalGaps > 0 && <span style={{ color: '#ea580c', fontWeight: '500' }}>+{metric.totalGaps}m idle</span>}
           </div>
+
+          {/* Renders ONLY if specific upstream tasks are explicitly found blocking the gap */}
+          {metric.diagnostics.length > 0 && (
+            <div style={{ paddingLeft: '12px', marginTop: '4px', fontSize: '11px', color: '#c2410c' }}>
+              {metric.diagnostics.map((diag, i) => {
+                const details = diag.dependencies.map(dId => {
+                  const depTask = taskMap[dId];
+                  return depTask ? `${dId} (ends at ${depTask.end_minute}m)` : dId;
+                }).join(', ');
+                
+                return (
+                  <div key={i} style={{ marginTop: '2px' }}>
+                    • {diag.duration}m gap ({diag.timeWindow}) before {diag.targetJob} waiting on: [ {details} ]
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
       <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.7 }}>
-        💡 <strong>Gaps may indicate:</strong> waiting for predecessors, materials, or due date constraints
+        💡 <strong>Gaps:</strong> Gaps explain idle intervals where a machine is waiting for scheduled predecessor chains.
       </div>
     </div>
   );
