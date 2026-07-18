@@ -12,6 +12,8 @@ import { WorkorderForm } from './form/WorkorderForm';
 import { GanttChartView } from './view/GanttChartView';
 import { ItemsView } from './view/ItemsView';
 import { ItemForm } from './form/ItemForm';
+import { MaterialsView } from './view/MaterialsView';
+import { MaterialForm } from './form/MaterialForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -79,6 +81,44 @@ export default function App() {
   const [items, setItems] = useState([]);
   const [showItemForm, setShowItemForm] = useState(false);
   const [newItem, setNewItem] = useState({ id: '', name: '', sku: '' });
+
+  const [materials, setMaterials] = useState([]);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
+
+  const fetchMaterialsData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.materials.fetchMaterials();
+      setMaterials(data || []);
+    } catch (error) {
+      console.error("Error updating materials ledger:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMaterial = async (e) => {
+    e.preventDefault();
+    try {
+      await api.materials.addMaterial(newMaterial);
+      setShowMaterialForm(false);
+      setNewMaterial({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
+      fetchMaterialsData();
+    } catch (error) {
+      console.error("Failed to append material schema entry:", error);
+    }
+  };
+
+  const handleDeleteMaterial = async (matId) => {
+    if (!window.confirm(`Are you sure you want to completely drop material allocation entry: ${matId}?`)) return;
+    try {
+      await api.materials.deleteMaterial(matId);
+      fetchMaterialsData();
+    } catch (error) {
+      console.error("Error dropped cascade tracking entry:", error);
+    }
+  };
 
   const fetchItemsData = async () => {
     setLoading(true);
@@ -229,6 +269,7 @@ export default function App() {
     fetchMachines();
     fetchWorkorderData();
     fetchItemsData();
+    fetchMaterialsData();
 
     // Debugging: Log API data fetches to console for verification
     api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
@@ -301,6 +342,16 @@ export default function App() {
               }}
             >
               📦 Items Master
+            </button>
+
+            <button
+              onClick={() => setView('materials')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'materials' ? styles.activeNav : {})
+              }}
+            >
+              🧱 Materials Ledger
             </button>
             
           </nav>
@@ -409,6 +460,26 @@ export default function App() {
                 setNewItem={setNewItem}
                 onSubmit={handleAddItem}
                 onClose={() => setShowItemForm(false)}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'materials' && (
+          <>
+            <MaterialsView 
+              materials={materials} 
+              loading={loading}
+              onRefresh={fetchMaterialsData}
+              onAddClick={() => setShowMaterialForm(true)}
+              onDeleteMaterial={handleDeleteMaterial}
+            />
+            {showMaterialForm && (
+              <MaterialForm 
+                newMaterial={newMaterial}
+                setNewMaterial={setNewMaterial}
+                onSubmit={handleAddMaterial}
+                onClose={() => setShowMaterialForm(false)}
               />
             )}
           </>
