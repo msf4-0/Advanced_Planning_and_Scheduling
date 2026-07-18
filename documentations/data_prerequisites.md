@@ -12,18 +12,18 @@ Because the scheduling engine relies heavily on relational mappings (e.g., match
 
 ```
   LEVEL 1: Independent Master Data
-  ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-  │    resources     │      │    materials     │      │      items       │
-  └────────┬─────────┘      └────────┬─────────┘      └────────┬─────────┘
+  ┌──────────────────┐      ┌──────────────────┐      ┌───────────────────┐
+  │    resources     │      │    materials     │      │       items       │
+  └────────┬─────────┘      └────────┬─────────┘      └────────┬──────────┘
            │                         │                         │
   LEVEL 2: Core Operational Targets  │                         │
-           │                         │                ┌────────▼─────────┐
-           │                         │                │ routing_templates│
-           │                         │                └──────────────────┘
+           │                         │                ┌────────▼──────────┐
+           │                         │                │ routing_templates │
+           │                         │                └───────────────────┘
            │                         │                         
-           │                         │                ┌──────────────────┐
-           │                         └───────────────►│work_orders (Draft)
-           │                                          └────────┬─────────┘
+           │                         │                ┌───────────────────┐
+           │                         └───────────────►│work_orders (Draft)│
+           │                                          └────────┬──────────┘
   LEVEL 3: Transactional Graph Engine                          │
            │                                                   │
            └─────────────────►┌──────────────────┐◄────────────┘
@@ -34,7 +34,7 @@ Because the scheduling engine relies heavily on relational mappings (e.g., match
                       ┌────────────────┴────────────────┐
                       ▼                                 ▼
          ┌─────────────────────────┐       ┌─────────────────────────┐
-         │ operation_dependencies   │       │   operation_materials   │
+         │ operation_dependencies  │       │   operation_materials   │
          └─────────────────────────┘       └─────────────────────────┘
 ```
 

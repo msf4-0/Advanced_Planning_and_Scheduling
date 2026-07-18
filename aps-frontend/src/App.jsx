@@ -294,7 +294,7 @@ export default function App() {
       
       // CHANGED: Verifies wrapper success state flag token values
       if (result && result.success) {
-        setShowForm(false);
+        setShowTaskForm(false);
         setNewTask({ 
           job_id: '', 
           work_order_id: '', 

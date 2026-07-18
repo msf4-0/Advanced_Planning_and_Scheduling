@@ -101,17 +101,11 @@ export const jobsApi = {
   },
 
   /**
-   * Deletes a task/operation and its dependencies
+   * Deletes a task/operation and relies on database cascading for dependencies
    * @param {string} operationId - ID of the operation to delete
    * @returns {Promise<Object>} Deletion response
    */
   deleteTask: async (operationId) => {
-    // Clean up dependent child connections first for relational integrity
-    await fetch(`${API_CONFIG.BASE_URL}/operation_dependencies?id_value=${encodeURIComponent(operationId)}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    }).catch(err => console.debug("Cleared task dependency relational map elements", err));
-
     const response = await fetch(`${API_CONFIG.BASE_URL}/operations?id_value=${encodeURIComponent(operationId)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
