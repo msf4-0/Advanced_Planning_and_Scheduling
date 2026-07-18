@@ -1,7 +1,7 @@
 # How to Add a New Page/View
 
 ## Quick Answer
-Yes, use `ScheduleView.jsx` or `BacklogView.jsx` as templates - they're simple and reusable.
+Use `ScheduleView.jsx` or `BacklogView.jsx` as templates - they're simple and reusable.
 
 ---
 
