@@ -292,7 +292,7 @@ export default function App() {
                 ...(view === 'schedule' ? styles.activeNav : {})
               }}
             >
-              Schedule
+              📅 Schedule
             </button>
 
             <button 
@@ -312,7 +312,7 @@ export default function App() {
                 ...(view === 'backlog' ? styles.activeNav : {})
               }}
             >
-              Backlog
+              📋 Backlog
             </button>
             <button
               onClick={() => setView('machines')}
@@ -321,7 +321,7 @@ export default function App() {
                 ...(view === 'machines' ? styles.activeNav : {})
               }}
             >
-              Machines
+              🏭 Machines
             </button>
             
             <button
@@ -331,7 +331,7 @@ export default function App() {
                 ...(view === 'workorder' ? styles.activeNav : {})
               }}
             >
-              Workorders
+              📝 Workorders
             </button>
 
             <button
