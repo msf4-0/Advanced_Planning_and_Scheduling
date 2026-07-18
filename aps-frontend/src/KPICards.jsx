@@ -6,7 +6,7 @@ export function KPICards({ metrics, optimizing }) {
     <section style={styles.kpiGrid}>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Makespan (C_max)</h3>
-        <p style={styles.cardValue}>{metrics.makespan} hrs</p>
+        <p style={styles.cardValue}>{metrics.makespan} minutes</p>
       </div>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Total Tardiness</h3>
