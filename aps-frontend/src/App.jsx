@@ -262,8 +262,31 @@ export default function App() {
       const scheduleArray = await api.schedule.fetchSchedule();
       setSchedule(scheduleArray);
 
-      const maxEnd = scheduleArray.reduce((max, job) => Math.max(max, job.end_minute || 0), 0);
-      setMetrics({ makespan: maxEnd, tardiness: 0 });
+      let maxEnd = 0;
+      let totalTardiness = 0;
+
+      scheduleArray.forEach(job => {
+        // Calculate makespan (max end time)
+        const endMin = job.end_minute || 0;
+        if (endMin > maxEnd) {
+          maxEnd = endMin;
+        }
+
+        // Calculate tardiness: Max(0, end_minute - due_minute)
+        // Note: Change 'due_minute' if your API uses a different field name like 'deadline'
+        if (job.due_minute) {
+          const delay = endMin - job.due_minute;
+          if (delay > 0) {
+            totalTardiness += delay;
+          }
+        }
+      });
+
+      setMetrics({ 
+        makespan: maxEnd, 
+        tardiness: totalTardiness 
+      });
+      
     } catch (error) {
       console.error("Error fetching schedule execution data:", error);
     } finally {
