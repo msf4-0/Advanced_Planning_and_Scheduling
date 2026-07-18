@@ -24,7 +24,7 @@ export const workordersApi = {
    */
   addWorkorders: async (workorder) => {
     const payload = {
-      work_order_id: workorder.work_order_id?.toString() || '',
+      id: workorder.work_order_id?.toString() || '',
       target_item_id: workorder.target_item_id?.toString() || '',
       quantity_to_make: workorder.quantity_to_make ? parseInt(workorder.quantity_to_make) : 0,
       due_date: workorder.due_date || null

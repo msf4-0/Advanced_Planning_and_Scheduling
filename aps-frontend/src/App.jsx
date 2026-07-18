@@ -4,12 +4,20 @@ import { styles } from './styles';
 import { KPICards } from './KPICards';
 import { ScheduleView } from './view/ScheduleView';
 import { BacklogView } from './view/BacklogView';
-import { MachinesView } from './view/MachinesView';
+import { ResourcesView } from './view/ResourcesView';
 import { TaskForm } from './form/TaskForm';
-import { MachineForm } from './form/MachineForm';
+import { ResourceForm } from './form/ResourceForm';
 import { WorkorderView } from './view/WorkorderView';
 import { WorkorderForm } from './form/WorkorderForm';
 import { GanttChartView } from './view/GanttChartView';
+import { ItemsView } from './view/ItemsView';
+import { ItemForm } from './form/ItemForm';
+import { MaterialsView } from './view/MaterialsView';
+import { MaterialForm } from './form/MaterialForm';
+import { RoutingTemplatesView } from './view/RoutingTemplatesView';
+import { RoutingTemplateForm } from './form/RoutingTemplateForm';
+import { OperationDependencyForm } from './form/OperationDependencyForm';
+import { OperationMaterialForm } from './form/OperationMaterialForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -18,22 +26,22 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [metrics, setMetrics] = useState({ makespan: 0, tardiness: 0 });
-  const [showForm, setShowForm] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     job_id: '',
-    work_order_id: '', // ADDED: Required matching database constraint element
-    duration: '',      // Changed baseline to empty string for safe entry scaling
+    work_order_id: '',
+    duration: '',
     predecessor: '',
     due_date: '',
     resources: ''
   });
 
-  const [machines, setMachines] = useState([]);
-  const [showMachineForm, setShowMachineForm] = useState(false);
-  const [newMachine, setNewMachine] = useState({
-    machine_id: '',
-    type: '',
-    capacity: 1
+  const [resources, setResources] = useState([]);
+  const [showResourceForm, setShowResourceForm] = useState(false);
+  const [newResource, setNewResource] = useState({
+    id: '',
+    name: '',
+    resource_type: ''
   });
 
   const [workorderData, setWorkorderData] = useState([]);
@@ -74,11 +82,158 @@ export default function App() {
     }
   };
 
-  // Fetch unscheduled tasks
-  const fetchBacklog = async () => {
+  const [items, setItems] = useState([]);
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [newItem, setNewItem] = useState({ id: '', name: '', sku: '' });
+
+  const [materials, setMaterials] = useState([]);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
+
+  const [routingTemplates, setRoutingTemplates] = useState([]);
+  const [showRoutingForm, setShowRoutingForm] = useState(false);
+  const [newRoutingTemplate, setNewRoutingTemplate] = useState({
+    target_item_id: '',
+    step_sequence: '',
+    required_resource_type: 'Machine',
+    standard_duration_minutes: ''
+  });
+
+  const [showDependencyForm, setShowDependencyForm] = useState(false);
+
+  const [showMaterialAllocationForm, setShowMaterialAllocationForm] = useState(false);
+
+  const handleAddMaterialAllocation = async (allocationData) => {
+    try {
+      await api.materials.allocateMaterial(allocationData);
+      setShowMaterialAllocationForm(false);
+      fetchBacklogData(); // Refresh the active state context elements
+      fetchMaterialsData(); // Sync warehouse inventory ledger metrics
+    } catch (error) {
+      console.error("Error committing bill of materials mapping:", error);
+      alert("Could not complete material allocation entry check logs.");
+    }
+  };
+
+  const handleAddDependencyLink = async (dependencyData) => {
+    try {
+      await api.jobs.addDependencyLink(dependencyData);
+      setShowDependencyForm(false);
+      
+      // Refresh task lists immediately so the "Predecessor" column recalculates text
+      fetchBacklogData(); 
+    } catch (error) {
+      console.error("Error connecting operation flow paths:", error);
+      alert("Could not establish dependency line. Verify the link does not duplicate an existing row.");
+    }
+  };
+
+  const fetchRoutingTemplates = async () => {
     setLoading(true);
     try {
-      const data = await api.jobs.fetchBacklog();
+      const data = await api.routing.fetchTemplates();
+      setRoutingTemplates(data || []);
+    } catch (error) {
+      console.error("Error syncing routing templates:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add the submission callback function
+  const handleAddRoutingTemplate = async () => {
+    try {
+      await api.routing.createTemplate(newRoutingTemplate);
+      
+      // Reset form state & close modal view window
+      setNewRoutingTemplate({
+        target_item_id: '',
+        step_sequence: '',
+        required_resource_type: 'Machine',
+        standard_duration_minutes: ''
+      });
+      setShowRoutingForm(false);
+      
+      // Refresh table view list contents
+      fetchRoutingTemplates();
+    } catch (error) {
+      console.error("Error creating routing template:", error);
+    }
+  };
+
+  const fetchMaterialsData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.materials.fetchMaterials();
+      setMaterials(data || []);
+    } catch (error) {
+      console.error("Error updating materials ledger:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddMaterial = async (e) => {
+    e.preventDefault();
+    try {
+      await api.materials.addMaterial(newMaterial);
+      setShowMaterialForm(false);
+      setNewMaterial({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
+      fetchMaterialsData();
+    } catch (error) {
+      console.error("Failed to append material schema entry:", error);
+    }
+  };
+
+  const handleDeleteMaterial = async (matId) => {
+    if (!window.confirm(`Are you sure you want to completely drop material allocation entry: ${matId}?`)) return;
+    try {
+      await api.materials.deleteMaterial(matId);
+      fetchMaterialsData();
+    } catch (error) {
+      console.error("Error dropped cascade tracking entry:", error);
+    }
+  };
+
+  const fetchItemsData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.items.fetchItems();
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    try {
+      await api.items.addItem(newItem);
+      setShowItemForm(false);
+      setNewItem({ id: '', name: '', sku: '' });
+      fetchItemsData();
+    } catch (error) {
+      console.error("Failed to append item record:", error);
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm(`Are you sure you want to remove item template ${itemId}?`)) return;
+    try {
+      await api.items.deleteItem(itemId);
+      fetchItemsData();
+    } catch (error) {
+      console.error("Error removing item template reference:", error);
+    }
+  };
+
+  // Fetch unscheduled tasks
+  const fetchBacklogData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.jobs.fetchBacklogData();
       setBacklog(data || []);
     } catch (error) {
       console.error("Error fetching backlog:", error);
@@ -87,14 +242,14 @@ export default function App() {
     }
   };
 
-  // Fetch machines
-  const fetchMachines = async () => {
+  // Fetch Resources
+  const fetchResources = async () => {
     setLoading(true);
     try {
-      const data = await api.machines.fetchMachines();
-      setMachines(data || []);
+      const data = await api.resources.fetchResources();
+      setResources(data || []);
     } catch (error) {
-      console.error("Error fetching machines:", error);
+      console.error("Error fetching resources:", error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +277,7 @@ export default function App() {
     try {
       await api.schedule.triggerOptimization();
       await fetchSchedule();
-      await fetchBacklog();
+      await fetchBacklogData();
       setView('schedule');
     } catch (error) {
       console.error("Failed to trigger optimization pipeline:", error);
@@ -132,41 +287,41 @@ export default function App() {
   };
 
   // Handle add task
-    const handleAddTask = async (e) => {
-      e.preventDefault();
-      try {
-        const result = await api.jobs.addTask(newTask);
-        
-        // CHANGED: Verifies wrapper success state flag token values
-        if (result && result.success) {
-          setShowForm(false);
-          setNewTask({ 
-            job_id: '', 
-            work_order_id: '', 
-            duration: '', 
-            predecessor: '', 
-            due_date: '', 
-            resources: '' 
-          });
-          fetchBacklog();
-        } else {
-          console.error('Failed to add task, backend response:', result);
-        }
-      } catch (error) {
-        console.error("Failed to add task:", error);
-      }
-    };
-
-  // Handle add machine
-  const handleAddMachine = async (e) => {
+  const handleAddTask = async (e) => {
     e.preventDefault();
     try {
-      await api.machines.addMachine(newMachine);
-      setShowMachineForm(false);
-      setNewMachine({ machine_id: '', type: '', capacity: 1 });
-      fetchMachines();
+      const result = await api.jobs.addTask(newTask);
+      
+      // CHANGED: Verifies wrapper success state flag token values
+      if (result && result.success) {
+        setShowTaskForm(false);
+        setNewTask({ 
+          job_id: '', 
+          work_order_id: '', 
+          duration: '', 
+          predecessor: '', 
+          due_date: '', 
+          resources: '' 
+        });
+        fetchBacklogData();
+      } else {
+        console.error('Failed to add task, backend response:', result);
+      }
     } catch (error) {
-      console.error("Failed to add machine:", error);
+      console.error("Failed to add task:", error);
+    }
+  };
+
+  // Handle add resource
+  const handleAddResource = async (e) => {
+    e.preventDefault();
+    try {
+      await api.resources.addResource(newResource);
+      setShowResourceForm(false);
+      setNewResource({ id: '', name: '', resource_type: '' });
+      fetchResources();
+    } catch (error) {
+      console.error("Failed to add resource:", error);
     }
   };
 
@@ -176,7 +331,7 @@ export default function App() {
     
     try {
       await api.jobs.deleteTask(jobId);
-      fetchBacklog();
+      fetchBacklogData();
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -185,12 +340,17 @@ export default function App() {
   // Initial data load
   useEffect(() => {
     fetchSchedule();
-    fetchBacklog();
-    fetchMachines();
+    fetchBacklogData();
+    fetchResources();
     fetchWorkorderData();
+    fetchItemsData();
+    fetchMaterialsData();
+    fetchRoutingTemplates();
+
+    // Debugging: Log API data fetches to console for verification
     api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
-    api.jobs.fetchBacklog().then(data => console.log(" Backlog Data Input:", data));
-    api.machines.fetchMachines().then(data => console.log(" Machines Data Input:", data));
+    api.jobs.fetchBacklogData().then(data => console.log(" Backlog Data Input:", data));
+    api.resources.fetchResources().then(data => console.log(" Resources Data Input:", data));
     api.workorder.fetchWorkorders().then(data => console.log(" Workorders Data Input:", data));
   }, []);
 
@@ -208,7 +368,7 @@ export default function App() {
                 ...(view === 'schedule' ? styles.activeNav : {})
               }}
             >
-              Schedule
+              📅 Schedule
             </button>
 
             <button 
@@ -228,16 +388,16 @@ export default function App() {
                 ...(view === 'backlog' ? styles.activeNav : {})
               }}
             >
-              Backlog
+              📋 Backlog
             </button>
             <button
-              onClick={() => setView('machines')}
+              onClick={() => setView('resources')}
               style={{
                 ...styles.navButton,
-                ...(view === 'machines' ? styles.activeNav : {})
+                ...(view === 'resources' ? styles.activeNav : {})
               }}
             >
-              Machines
+              🏭 Resources
             </button>
             
             <button
@@ -247,7 +407,37 @@ export default function App() {
                 ...(view === 'workorder' ? styles.activeNav : {})
               }}
             >
-              Workorders
+              📝 Workorders
+            </button>
+
+            <button
+              onClick={() => setView('items')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'items' ? styles.activeNav : {})
+              }}
+            >
+              📦 Items Master
+            </button>
+
+            <button
+              onClick={() => setView('materials')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'materials' ? styles.activeNav : {})
+              }}
+            >
+              🧱 Materials Ledger
+            </button>
+
+            <button
+              onClick={() => setView('routing')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'routing' ? styles.activeNav : {})
+              }}
+            >
+              Routing Blueprints
             </button>
             
           </nav>
@@ -279,35 +469,55 @@ export default function App() {
             <BacklogView 
               backlog={backlog} 
               loading={loading}
-              onRefresh={fetchBacklog}
-              onAddClick={() => setShowForm(true)}
+              onRefresh={fetchBacklogData}
+              onAddClick={() => setShowTaskForm(true)}
+              onLinkClick={() => setShowDependencyForm(true)}
+              onAllocateClick={() => setShowMaterialAllocationForm(true)}
               onDeleteTask={handleDeleteTask}
             />
-            {showForm && (
+            
+            {showTaskForm && (
               <TaskForm 
                 newTask={newTask}
                 setNewTask={setNewTask}
                 onSubmit={handleAddTask}
-                onClose={() => setShowForm(false)}
+                onClose={() => setShowTaskForm(false)}
+              />
+            )}
+
+            {showDependencyForm && (
+              <OperationDependencyForm 
+                availableOperations={backlog}
+                onClose={() => setShowDependencyForm(false)}
+                onSubmit={handleAddDependencyLink}
+              />
+            )}
+
+            {showMaterialAllocationForm && (
+              <OperationMaterialForm
+                availableOperations={backlog}
+                availableMaterials={materials}
+                onClose={() => setShowMaterialAllocationForm(false)}
+                onSubmit={handleAddMaterialAllocation}
               />
             )}
           </>
         )}
 
-        {view === 'machines' && (
+        {view === 'resources' && (
           <>
-            <MachinesView 
-              machines={machines} 
+            <ResourcesView 
+              resources={resources} 
               loading={loading}
-              onRefresh={fetchMachines}
-              onAddClick={() => setShowMachineForm(true)}
+              onRefresh={fetchResources}
+              onAddClick={() => setShowResourceForm(true)}
             />
-            {showMachineForm && (
-              <MachineForm 
-                newMachine={newMachine}
-                setNewMachine={setNewMachine}
-                onSubmit={handleAddMachine}
-                onClose={() => setShowMachineForm(false)}
+            {showResourceForm && (
+              <ResourceForm 
+                newResource={newResource}
+                setNewResource={setNewResource}
+                onSubmit={handleAddResource}
+                onClose={() => setShowResourceForm(false)}
               />
             )}
           </>
@@ -326,6 +536,7 @@ export default function App() {
               <WorkorderForm 
                 newWorkorder={newWorkorder}
                 setNewWorkorder={setNewWorkorder}
+                availableItems={items}
                 onSubmit={handleAddWorkorder}
                 onClose={() => setShowWorkorderForm(false)}
               />
@@ -339,6 +550,66 @@ export default function App() {
             loading={loading}
             onRefresh={fetchSchedule}
           />
+        )}
+
+        {view === 'items' && (
+          <>
+            <ItemsView 
+              items={items} 
+              loading={loading}
+              onRefresh={fetchItemsData}
+              onAddClick={() => setShowItemForm(true)}
+              onDeleteItem={handleDeleteItem}
+            />
+            {showItemForm && (
+              <ItemForm 
+                newItem={newItem}
+                setNewItem={setNewItem}
+                onSubmit={handleAddItem}
+                onClose={() => setShowItemForm(false)}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'materials' && (
+          <>
+            <MaterialsView 
+              materials={materials} 
+              loading={loading}
+              onRefresh={fetchMaterialsData}
+              onAddClick={() => setShowMaterialForm(true)}
+              onDeleteMaterial={handleDeleteMaterial}
+            />
+            {showMaterialForm && (
+              <MaterialForm 
+                newMaterial={newMaterial}
+                setNewMaterial={setNewMaterial}
+                onSubmit={handleAddMaterial}
+                onClose={() => setShowMaterialForm(false)}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'routing' && (
+          <>
+            <RoutingTemplatesView 
+              data={routingTemplates} 
+              loading={loading}
+              onRefresh={fetchRoutingTemplates}
+              onAddClick={() => setShowRoutingForm(true)}
+            />
+            
+            {showRoutingForm && (
+              <RoutingTemplateForm 
+                newTemplate={newRoutingTemplate}
+                setNewTemplate={setNewRoutingTemplate}
+                onSubmit={handleAddRoutingTemplate}
+                onClose={() => setShowRoutingForm(false)}
+              />
+            )}
+          </>
         )}
         
       </main>

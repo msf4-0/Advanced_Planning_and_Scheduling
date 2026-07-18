@@ -1,7 +1,8 @@
 # How to Add a New Page/View
 
 ## Quick Answer
-Yes, use `ScheduleView.jsx` or `BacklogView.jsx` as templates - they're simple and reusable.
+
+Use `ScheduleView.jsx` or `BacklogView.jsx` as templates - they're simple and reusable.
 
 ---
 
@@ -9,12 +10,12 @@ Yes, use `ScheduleView.jsx` or `BacklogView.jsx` as templates - they're simple a
 
 ### Step 1: Create a New View Component
 
-Create a new file like `ReportView.jsx` in your `src/` directory:
+Create a new file like `ReportView.jsx` in your `view/` directory:
 
 ```javascript
-// src/ReportView.jsx
+// src/view/ReportView.jsx
 import React from 'react';
-import { styles } from './styles';
+import { styles } from '../styles';
 
 export function ReportView({ data, loading, onRefresh }) {
   return (
@@ -51,13 +52,52 @@ export function ReportView({ data, loading, onRefresh }) {
     </div>
   );
 }
+
 ```
 
 ---
 
-### Step 2: Add State & Logic to App.jsx
+### Step 2: Add API Service Function
 
-Open `App.jsx` and add:
+Following the application's actual modular API layer, isolate your server calls by creating a distinct service file under `src/api/services/`:
+
+```javascript
+// src/api/services/report.js
+import { API_CONFIG } from '../config.js';
+import { handleApiError } from '../utils/errorHandler.js';
+
+export const reportApi = {
+  fetchReportData: async () => {
+    // Uses generic CRUD routing matching the base backend endpoint configuration paths
+    const response = await fetch(`${API_CONFIG.BASE_URL}/reports`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch report data');
+    }
+    const payload = await response.json();
+    return payload.data || [];
+  }
+};
+
+```
+
+Make sure to export this new service from your central `src/api/index.js` file so it is attached correctly to the global `api` client wrapper:
+
+```javascript
+// src/api/index.js example addition
+import { reportApi } from './services/report.js';
+
+export const api = {
+  // ... existing services (jobs, machines, workorder, schedule)
+  report: reportApi
+};
+
+```
+
+---
+
+### Step 3: Add State & Logic to App.jsx
+
+Open `App.jsx` and add the management hooks pointing to your aggregated client object namespace (`api.report.<method>`):
 
 ```javascript
 // Add state for your new page
@@ -67,7 +107,7 @@ const [reportData, setReportData] = useState([]);
 const fetchReportData = async () => {
   setLoading(true);
   try {
-    const data = await api.fetchReportData(); // You'll need to add this to api.js
+    const data = await api.report.fetchReportData(); // Clean modular structure
     setReportData(data || []);
   } catch (error) {
     console.error("Error fetching report:", error);
@@ -76,20 +116,23 @@ const fetchReportData = async () => {
   }
 };
 
-// Call it on component load
+// Call it on component load mounting
 useEffect(() => {
   fetchSchedule();
   fetchBacklog();
   fetchMachines();
   fetchReportData(); // Add this
+
+  // ... other code if there are any
 }, []);
+
 ```
 
 ---
 
-### Step 3: Add Navigation Button
+### Step 4: Add Navigation Button
 
-In your App.jsx header, add a nav button:
+In your App.jsx header section, add a matching route selector button:
 
 ```javascript
 <nav style={styles.nav}>
@@ -131,13 +174,14 @@ In your App.jsx header, add a nav button:
     Reports
   </button>
 </nav>
+
 ```
 
 ---
 
-### Step 4: Add View Conditional in App.jsx
+### Step 5: Add View Conditional in App.jsx
 
-In the main content section, add your view:
+In the main layout render area, add the wrapper execution block for the component lifecycle:
 
 ```javascript
 <main style={styles.mainContent}>
@@ -169,26 +213,7 @@ In the main content section, add your view:
     </>
   )}
 
-  {view === 'machines' && (
-    <>
-      <MachinesView 
-        machines={machines} 
-        loading={loading}
-        onRefresh={fetchMachines}
-        onAddClick={() => setShowMachineForm(true)}
-      />
-      {showMachineForm && (
-        <MachineForm 
-          newMachine={newMachine}
-          setNewMachine={setNewMachine}
-          onSubmit={handleAddMachine}
-          onClose={() => setShowMachineForm(false)}
-        />
-      )}
-    </>
-  )}
-
-  {/* ADD THIS NEW VIEW */}
+  {/* ADD THIS NEW VIEW RENDER STEP */}
   {view === 'report' && (
     <ReportView 
       data={reportData} 
@@ -197,23 +222,7 @@ In the main content section, add your view:
     />
   )}
 </main>
-```
 
----
-
-### Step 5: Add API Function (if needed)
-
-If your new page needs data from the backend, add it to `api.js`:
-
-```javascript
-// Add to api.js
-fetchReportData: async () => {
-  const response = await fetch(`${API_BASE_URL}/data?table_name=reports`);
-  if (response.ok) {
-    return await response.json();
-  }
-  throw new Error('Failed to fetch report data');
-},
 ```
 
 ---
@@ -223,9 +232,9 @@ fetchReportData: async () => {
 Here's a minimal template you can use:
 
 ```javascript
-// src/MyNewView.jsx
+// src/view/MyNewView.jsx
 import React from 'react';
-import { styles } from './styles';
+import { styles } from '../styles';
 
 export function MyNewView({ data, loading, onRefresh, onAdd }) {
   return (
@@ -265,107 +274,42 @@ export function MyNewView({ data, loading, onRefresh, onAdd }) {
     </div>
   );
 }
+
 ```
 
 ---
 
-## Common Examples
-
-### Example 1: Analytics Page
-
-```javascript
-// src/AnalyticsView.jsx
-export function AnalyticsView({ metrics, loading, onRefresh }) {
-  return (
-    <div style={styles.tableCard}>
-      <div style={styles.tableHeader}>
-        <h2>System Analytics</h2>
-        <button onClick={onRefresh} style={styles.refreshButton}>Refresh</button>
-      </div>
-      
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', padding: '24px'}}>
-        {Object.entries(metrics).map(([key, value]) => (
-          <div key={key} style={styles.card}>
-            <h3 style={styles.cardTitle}>{key}</h3>
-            <p style={styles.cardValue}>{value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-### Example 2: Settings Page
-
-```javascript
-// src/SettingsView.jsx
-export function SettingsView({ settings, onSave, loading }) {
-  const [formData, setFormData] = React.useState(settings);
-  
-  return (
-    <div style={styles.tableCard}>
-      <h2>Settings</h2>
-      <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }}>
-        {Object.entries(formData).map(([key, value]) => (
-          <div key={key} style={{marginBottom: '16px'}}>
-            <label style={styles.label}>{key}</label>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setFormData({...formData, [key]: e.target.value})}
-              style={styles.input}
-            />
-          </div>
-        ))}
-        <button type="submit" style={styles.submitButton}>Save Settings</button>
-      </form>
-    </div>
-  );
-}
-```
-
----
-
-## Checklist for Adding a New Page
-
-- [ ] Create new `.jsx` file with export function
-- [ ] Import `styles` from './styles'
-- [ ] Add state in `App.jsx` for your data
-- [ ] Add fetch function in `App.jsx`
-- [ ] Add API method in `api.js` (if backend call needed)
-- [ ] Add navigation button in App.jsx header
-- [ ] Add conditional view in main content
-- [ ] Import new view component at top of App.jsx
-- [ ] Test locally with `npm run build`
-
----
-
-## File Structure After Adding New Page
+## File Structure Reference
 
 ```
 src/
-├── App.jsx (updated with new state/logic)
-├── api.js (updated with new API call)
+├── api/
+│   ├── services/
+│   │   ├── report.js ✨ (NEW)
+│   │   ├── jobs.js
+│   │   ├── machines.js
+│   │   ├── schedule.js
+│   │   └── workorder.js
+│   ├── utils/
+│   │   ├── errorHandler.js
+│   │   └── mappers.js
+│   ├── config.js
+│   ├── index.js (Export new services here)
+│   └── README.md
+├── form/
+│   ├── MachineForm.jsx
+│   ├── TaskForm.jsx
+│   └── WorkorderForm.jsx
+├── view/
+│   ├── BacklogView.jsx
+│   ├── GanttChartView.jsx
+│   ├── MachinesView.jsx
+│   ├── ScheduleView.jsx
+│   ├── WorkorderView.jsx
+│   └── ReportView.jsx ✨ (NEW)
+├── App.jsx (updated with new state/logic) 
 ├── styles.js
 ├── KPICards.jsx
-├── ScheduleView.jsx
-├── BacklogView.jsx
-├── MachinesView.jsx
-├── TaskForm.jsx
-├── MachineForm.jsx
-├── MyNewView.jsx ✨ (NEW)
-├── main.jsx
-└── index.html
+└── main.jsx
+
 ```
-
----
-
-## Need Help?
-
-Share:
-1. What kind of page you want to add
-2. What data it should display
-3. Any special functionality (forms, charts, etc.)
-
-And I can create the exact component for you!

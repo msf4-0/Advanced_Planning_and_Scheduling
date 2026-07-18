@@ -32,7 +32,7 @@ export function WorkorderView({ workorder, loading, onRefresh, onAddClick, onDel
             {workorder.map((item, index) => (
               <tr key={index} style={styles.tr}>
                 <td style={styles.td}>
-                  <strong>{item.workorder_id}</strong>
+                  <strong>{item.id}</strong>
                 </td>
                 <td style={styles.td}>
                   {item.target_item_id}

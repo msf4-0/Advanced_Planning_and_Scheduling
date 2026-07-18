@@ -8,7 +8,7 @@ export const jobsApi = {
    * Fetches all operations from the backlog (including completed tasks)
    * @returns {Promise<Array>} Array of all operations
    */
-  fetchBacklog: async () => {
+  fetchBacklogData: async () => {
     const [opsRes, depsRes] = await Promise.all([
       fetch(`${API_CONFIG.BASE_URL}/operations`),
       fetch(`${API_CONFIG.BASE_URL}/operation_dependencies`)
@@ -84,17 +84,28 @@ export const jobsApi = {
   },
 
   /**
-   * Deletes a task/operation and its dependencies
+   * Directly links an upstream and downstream operation constraint
+   * @param {Object} dependencyData - contains upstream_op_id and downstream_op_id
+   */
+  addDependencyLink: async (dependencyData) => {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/operation_dependencies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dependencyData)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create operational dependency relationship line.');
+    }
+    return response.json();
+  },
+
+  /**
+   * Deletes a task/operation and relies on database cascading for dependencies
    * @param {string} operationId - ID of the operation to delete
    * @returns {Promise<Object>} Deletion response
    */
   deleteTask: async (operationId) => {
-    // Clean up dependent child connections first for relational integrity
-    await fetch(`${API_CONFIG.BASE_URL}/operation_dependencies?id_value=${encodeURIComponent(operationId)}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    }).catch(err => console.debug("Cleared task dependency relational map elements", err));
-
     const response = await fetch(`${API_CONFIG.BASE_URL}/operations?id_value=${encodeURIComponent(operationId)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }

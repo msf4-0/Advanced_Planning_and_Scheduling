@@ -52,19 +52,7 @@ export function TaskForm({ newTask, setNewTask, onSubmit, onClose }) {
             required
           />
 
-          {/* 4. PREDECESSOR - OPTIONAL */}
-          <label style={styles.label}>
-            Predecessor Job ID(s) <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 'normal' }}>(Optional)</span>
-          </label>
-          <input
-            type="text"
-            value={newTask.predecessor || ''}
-            onChange={(e) => setNewTask({...newTask, predecessor: e.target.value})}
-            style={styles.input}
-            placeholder="e.g., OP-100, OP-099 (Separate with commas)"
-          />
-
-          {/* 5. MACHINE ID - OPTIONAL */}
+          {/* 4. MACHINE ID - OPTIONAL */}
           <label style={styles.label}>
             Assign to Specific Machine ID <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 'normal' }}>(Optional)</span>
           </label>
