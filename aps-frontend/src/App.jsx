@@ -4,9 +4,9 @@ import { styles } from './styles';
 import { KPICards } from './KPICards';
 import { ScheduleView } from './view/ScheduleView';
 import { BacklogView } from './view/BacklogView';
-import { MachinesView } from './view/MachinesView';
+import { ResourcesView } from './view/ResourcesView';
 import { TaskForm } from './form/TaskForm';
-import { MachineForm } from './form/MachineForm';
+import { ResourceForm } from './form/ResourceForm';
 import { WorkorderView } from './view/WorkorderView';
 import { WorkorderForm } from './form/WorkorderForm';
 import { GanttChartView } from './view/GanttChartView';
@@ -32,12 +32,12 @@ export default function App() {
     resources: ''
   });
 
-  const [machines, setMachines] = useState([]);
-  const [showMachineForm, setShowMachineForm] = useState(false);
-  const [newMachine, setNewMachine] = useState({
-    machine_id: '',
-    type: '',
-    capacity: 1
+  const [resources, setResources] = useState([]);
+  const [showResourceForm, setShowResourceForm] = useState(false);
+  const [newResource, setNewResource] = useState({
+    id: '',
+    name: '',
+    resource_type: ''
   });
 
   const [workorderData, setWorkorderData] = useState([]);
@@ -167,14 +167,14 @@ export default function App() {
     }
   };
 
-  // Fetch machines
-  const fetchMachines = async () => {
+  // Fetch Resources
+  const fetchResources = async () => {
     setLoading(true);
     try {
-      const data = await api.machines.fetchMachines();
-      setMachines(data || []);
+      const data = await api.resources.fetchResources();
+      setResources(data || []);
     } catch (error) {
-      console.error("Error fetching machines:", error);
+      console.error("Error fetching resources:", error);
     } finally {
       setLoading(false);
     }
@@ -237,16 +237,16 @@ export default function App() {
       }
     };
 
-  // Handle add machine
-  const handleAddMachine = async (e) => {
+  // Handle add resource
+  const handleAddResource = async (e) => {
     e.preventDefault();
     try {
-      await api.machines.addMachine(newMachine);
-      setShowMachineForm(false);
-      setNewMachine({ machine_id: '', type: '', capacity: 1 });
-      fetchMachines();
+      await api.resources.addResource(newResource);
+      setShowResourceForm(false);
+      setNewResource({ id: '', name: '', resource_type: '' });
+      fetchResources();
     } catch (error) {
-      console.error("Failed to add machine:", error);
+      console.error("Failed to add resource:", error);
     }
   };
 
@@ -266,7 +266,7 @@ export default function App() {
   useEffect(() => {
     fetchSchedule();
     fetchBacklog();
-    fetchMachines();
+    fetchResources();
     fetchWorkorderData();
     fetchItemsData();
     fetchMaterialsData();
@@ -274,7 +274,7 @@ export default function App() {
     // Debugging: Log API data fetches to console for verification
     api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
     api.jobs.fetchBacklog().then(data => console.log(" Backlog Data Input:", data));
-    api.machines.fetchMachines().then(data => console.log(" Machines Data Input:", data));
+    api.resources.fetchResources().then(data => console.log(" Resources Data Input:", data));
     api.workorder.fetchWorkorders().then(data => console.log(" Workorders Data Input:", data));
   }, []);
 
@@ -315,13 +315,13 @@ export default function App() {
               📋 Backlog
             </button>
             <button
-              onClick={() => setView('machines')}
+              onClick={() => setView('resources')}
               style={{
                 ...styles.navButton,
-                ...(view === 'machines' ? styles.activeNav : {})
+                ...(view === 'resources' ? styles.activeNav : {})
               }}
             >
-              🏭 Machines
+              🏭 Resources
             </button>
             
             <button
@@ -398,20 +398,20 @@ export default function App() {
           </>
         )}
 
-        {view === 'machines' && (
+        {view === 'resources' && (
           <>
-            <MachinesView 
-              machines={machines} 
+            <ResourcesView 
+              resources={resources} 
               loading={loading}
-              onRefresh={fetchMachines}
-              onAddClick={() => setShowMachineForm(true)}
+              onRefresh={fetchResources}
+              onAddClick={() => setShowResourceForm(true)}
             />
-            {showMachineForm && (
-              <MachineForm 
-                newMachine={newMachine}
-                setNewMachine={setNewMachine}
-                onSubmit={handleAddMachine}
-                onClose={() => setShowMachineForm(false)}
+            {showResourceForm && (
+              <ResourceForm 
+                newResource={newResource}
+                setNewResource={setNewResource}
+                onSubmit={handleAddResource}
+                onClose={() => setShowResourceForm(false)}
               />
             )}
           </>
