@@ -10,6 +10,8 @@ import { MachineForm } from './form/MachineForm';
 import { WorkorderView } from './view/WorkorderView';
 import { WorkorderForm } from './form/WorkorderForm';
 import { GanttChartView } from './view/GanttChartView';
+import { ItemsView } from './view/ItemsView';
+import { ItemForm } from './form/ItemForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -71,6 +73,44 @@ export default function App() {
       fetchWorkorderData();
     } catch (error) {
       console.error("Failed to add workorder:", error)
+    }
+  };
+
+  const [items, setItems] = useState([]);
+  const [showItemForm, setShowItemForm] = useState(false);
+  const [newItem, setNewItem] = useState({ id: '', name: '', sku: '' });
+
+  const fetchItemsData = async () => {
+    setLoading(true);
+    try {
+      const data = await api.items.fetchItems();
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    try {
+      await api.items.addItem(newItem);
+      setShowItemForm(false);
+      setNewItem({ id: '', name: '', sku: '' });
+      fetchItemsData();
+    } catch (error) {
+      console.error("Failed to append item record:", error);
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm(`Are you sure you want to remove item template ${itemId}?`)) return;
+    try {
+      await api.items.deleteItem(itemId);
+      fetchItemsData();
+    } catch (error) {
+      console.error("Error removing item template reference:", error);
     }
   };
 
@@ -188,6 +228,9 @@ export default function App() {
     fetchBacklog();
     fetchMachines();
     fetchWorkorderData();
+    fetchItemsData();
+
+    // Debugging: Log API data fetches to console for verification
     api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
     api.jobs.fetchBacklog().then(data => console.log(" Backlog Data Input:", data));
     api.machines.fetchMachines().then(data => console.log(" Machines Data Input:", data));
@@ -248,6 +291,16 @@ export default function App() {
               }}
             >
               Workorders
+            </button>
+
+            <button
+              onClick={() => setView('items')}
+              style={{
+                ...styles.navButton,
+                ...(view === 'items' ? styles.activeNav : {})
+              }}
+            >
+              📦 Items Master
             </button>
             
           </nav>
@@ -339,6 +392,26 @@ export default function App() {
             loading={loading}
             onRefresh={fetchSchedule}
           />
+        )}
+
+        {view === 'items' && (
+          <>
+            <ItemsView 
+              items={items} 
+              loading={loading}
+              onRefresh={fetchItemsData}
+              onAddClick={() => setShowItemForm(true)}
+              onDeleteItem={handleDeleteItem}
+            />
+            {showItemForm && (
+              <ItemForm 
+                newItem={newItem}
+                setNewItem={setNewItem}
+                onSubmit={handleAddItem}
+                onClose={() => setShowItemForm(false)}
+              />
+            )}
+          </>
         )}
         
       </main>
