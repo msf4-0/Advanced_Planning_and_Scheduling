@@ -1,19 +1,25 @@
 import React from 'react';
 import { styles } from '../styles';
 
-export function BacklogView({ backlog, loading, onRefresh, onAddClick, onLinkClick, onDeleteTask }) {
+export function BacklogView({ backlog, loading, onRefresh, onAddClick, onLinkClick, onAllocateClick, onDeleteTask }) {
   return (
     <div style={styles.tableCard}>
       <div style={styles.tableHeader}>
         <h2>Unscheduled Task Backlog</h2>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
+            onClick={onAllocateClick} 
+            style={{ ...styles.button, backgroundColor: '#16a34a', padding: '8px 16px' }}
+          >
+            📦 Allocate Materials
+          </button>
+          <button 
             onClick={onLinkClick} 
             style={{ ...styles.button, backgroundColor: '#2563eb', padding: '8px 16px' }}
           >
             🔗 Link Dependencies
           </button>
-          <button onClick={onAddClick} style={{ ...styles.button, backgroundColor: '#16a34a' }}>+ Add New Task</button>
+          <button onClick={onAddClick} style={{ ...styles.button, backgroundColor: '#4b5563' }}>+ Add New Task</button>
           <button onClick={onRefresh} style={styles.refreshButton}>Refresh</button>
         </div>
       </div>

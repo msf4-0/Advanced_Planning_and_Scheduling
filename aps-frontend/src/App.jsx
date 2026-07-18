@@ -17,6 +17,7 @@ import { MaterialForm } from './form/MaterialForm';
 import { RoutingTemplatesView } from './view/RoutingTemplatesView';
 import { RoutingTemplateForm } from './form/RoutingTemplateForm';
 import { OperationDependencyForm } from './form/OperationDependencyForm';
+import { OperationMaterialForm } from './form/OperationMaterialForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -25,7 +26,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [metrics, setMetrics] = useState({ makespan: 0, tardiness: 0 });
-  const [showForm, setShowForm] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     job_id: '',
     work_order_id: '',
@@ -99,6 +100,20 @@ export default function App() {
   });
 
   const [showDependencyForm, setShowDependencyForm] = useState(false);
+
+  const [showMaterialAllocationForm, setShowMaterialAllocationForm] = useState(false);
+
+  const handleAddMaterialAllocation = async (allocationData) => {
+    try {
+      await api.materials.allocateMaterial(allocationData);
+      setShowMaterialAllocationForm(false);
+      fetchBacklogData(); // Refresh the active state context elements
+      fetchMaterialsData(); // Sync warehouse inventory ledger metrics
+    } catch (error) {
+      console.error("Error committing bill of materials mapping:", error);
+      alert("Could not complete material allocation entry check logs.");
+    }
+  };
 
   const handleAddDependencyLink = async (dependencyData) => {
     try {
@@ -272,30 +287,30 @@ export default function App() {
   };
 
   // Handle add task
-    const handleAddTask = async (e) => {
-      e.preventDefault();
-      try {
-        const result = await api.jobs.addTask(newTask);
-        
-        // CHANGED: Verifies wrapper success state flag token values
-        if (result && result.success) {
-          setShowForm(false);
-          setNewTask({ 
-            job_id: '', 
-            work_order_id: '', 
-            duration: '', 
-            predecessor: '', 
-            due_date: '', 
-            resources: '' 
-          });
-          fetchBacklogData();
-        } else {
-          console.error('Failed to add task, backend response:', result);
-        }
-      } catch (error) {
-        console.error("Failed to add task:", error);
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    try {
+      const result = await api.jobs.addTask(newTask);
+      
+      // CHANGED: Verifies wrapper success state flag token values
+      if (result && result.success) {
+        setShowForm(false);
+        setNewTask({ 
+          job_id: '', 
+          work_order_id: '', 
+          duration: '', 
+          predecessor: '', 
+          due_date: '', 
+          resources: '' 
+        });
+        fetchBacklogData();
+      } else {
+        console.error('Failed to add task, backend response:', result);
       }
-    };
+    } catch (error) {
+      console.error("Failed to add task:", error);
+    }
+  };
 
   // Handle add resource
   const handleAddResource = async (e) => {
@@ -457,14 +472,33 @@ export default function App() {
               onRefresh={fetchBacklogData}
               onAddClick={() => setShowTaskForm(true)}
               onLinkClick={() => setShowDependencyForm(true)}
+              onAllocateClick={() => setShowMaterialAllocationForm(true)}
               onDeleteTask={handleDeleteTask}
             />
             
+            {showTaskForm && (
+              <TaskForm 
+                newTask={newTask}
+                setNewTask={setNewTask}
+                onSubmit={handleAddTask}
+                onClose={() => setShowTaskForm(false)}
+              />
+            )}
+
             {showDependencyForm && (
               <OperationDependencyForm 
                 availableOperations={backlog}
                 onClose={() => setShowDependencyForm(false)}
                 onSubmit={handleAddDependencyLink}
+              />
+            )}
+
+            {showMaterialAllocationForm && (
+              <OperationMaterialForm
+                availableOperations={backlog}
+                availableMaterials={materials}
+                onClose={() => setShowMaterialAllocationForm(false)}
+                onSubmit={handleAddMaterialAllocation}
               />
             )}
           </>
