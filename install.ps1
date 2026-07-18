@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Colors
-$Green = "`e[32m"; $Red = "`e[31m"; $Yellow = "`e[33m"; $Cyan = "`e[36m"; $NC = "`e[0m"
+$Green = "$([char]0x1b)[32m"; $Red = "$([char]0x1b)[31m"; $Yellow = "$([char]0x1b)[33m"; $Cyan = "$([char]0x1b)[36m"; $NC = "$([char]0x1b)[0m"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $LogFile = Join-Path $ScriptDir "install-windows.log"
@@ -16,8 +16,8 @@ $MinDockerVersion = '20.10'
 $MinComposeVersion = '1.29'
 
 function Log([string]$msg){ Write-Host "${Cyan}[INFO]${NC} $msg"; Add-Content -Path $LogFile -Value "[INFO] $msg" }
-function Success([string]$msg){ Write-Host "${Green}[✓]${NC} $msg"; Add-Content -Path $LogFile -Value "[OK] $msg" }
-function ErrorMsg([string]$msg){ Write-Host "${Red}[✗]${NC} $msg"; Add-Content -Path $LogFile -Value "[ERR] $msg" }
+function Success([string]$msg){ Write-Host "${Green}[$([char]0x2713)]${NC} $msg"; Add-Content -Path $LogFile -Value "[OK] $msg" }
+function ErrorMsg([string]$msg){ Write-Host "${Red}[$([char]0x2717)]${NC} $msg"; Add-Content -Path $LogFile -Value "[ERR] $msg" }
 function Warn([string]$msg){ Write-Host "${Yellow}[!]${NC} $msg"; Add-Content -Path $LogFile -Value "[WARN] $msg" }
 
 function Test-CommandExists([string]$name){ return (Get-Command $name -ErrorAction SilentlyContinue) -ne $null }
@@ -125,7 +125,17 @@ function Start-DockerServices{
 
     Log 'Bringing up containers (may take a few minutes)'
     try {
-        & $composeCmd up --build -d 2>&1 | Tee-Object -FilePath $LogFile
+        # Temporarily allow pipeline errors so Docker text streams don't crash the script
+        $OldErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+
+        & cmd.exe /c "$composeCmd up --build -d 2>&1" | Tee-Object -FilePath $LogFile
+
+        $ErrorActionPreference = $OldErrorAction
+
+        # Check if the containers actually spun up successfully
+        if ($LASTEXITCODE -ne 0) { throw "Docker Compose exited with code $LASTEXITCODE" }
+
         Success 'Docker containers started'
     } catch { ErrorMsg "Failed to start containers: $_"; throw }
 }
@@ -133,11 +143,11 @@ function Start-DockerServices{
 function Wait-ForPort([string]$host,[int]$port,[int]$retries=30){
     for ($i=0;$i -lt $retries;$i++){
         $r = Test-NetConnection -ComputerName $host -Port $port -WarningAction SilentlyContinue
-        if ($r.TcpTestSucceeded){ Success "$host:$port is reachable"; return $true }
+        if ($r.TcpTestSucceeded){ Success "${host}:${port} is reachable"; return $true }
         Write-Host "Attempt $($i+1)/$retries...`r" -NoNewline
         Start-Sleep -Seconds 2
     }
-    ErrorMsg "$host:$port did not respond in time"
+    ErrorMsg "${host}:${port} did not respond in time"
     return $false
 }
 
