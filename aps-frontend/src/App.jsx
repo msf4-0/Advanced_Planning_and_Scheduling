@@ -16,6 +16,7 @@ import { MaterialsView } from './view/MaterialsView';
 import { MaterialForm } from './form/MaterialForm';
 import { RoutingTemplatesView } from './view/RoutingTemplatesView';
 import { RoutingTemplateForm } from './form/RoutingTemplateForm';
+import { OperationDependencyForm } from './form/OperationDependencyForm';
 
 export default function App() {
   const [view, setView] = useState('schedule');
@@ -88,6 +89,7 @@ export default function App() {
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [newMaterial, setNewMaterial] = useState({ id: '', name: '', quantity_available: 0, available_date_minutes: 0 });
 
+  const [routingTemplates, setRoutingTemplates] = useState([]);
   const [showRoutingForm, setShowRoutingForm] = useState(false);
   const [newRoutingTemplate, setNewRoutingTemplate] = useState({
     target_item_id: '',
@@ -95,6 +97,33 @@ export default function App() {
     required_resource_type: 'Machine',
     standard_duration_minutes: ''
   });
+
+  const [showDependencyForm, setShowDependencyForm] = useState(false);
+
+  const handleAddDependencyLink = async (dependencyData) => {
+    try {
+      await api.jobs.addDependencyLink(dependencyData);
+      setShowDependencyForm(false);
+      
+      // Refresh task lists immediately so the "Predecessor" column recalculates text
+      fetchBacklogData(); 
+    } catch (error) {
+      console.error("Error connecting operation flow paths:", error);
+      alert("Could not establish dependency line. Verify the link does not duplicate an existing row.");
+    }
+  };
+
+  const fetchRoutingTemplates = async () => {
+    setLoading(true);
+    try {
+      const data = await api.routing.fetchTemplates();
+      setRoutingTemplates(data || []);
+    } catch (error) {
+      console.error("Error syncing routing templates:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Add the submission callback function
   const handleAddRoutingTemplate = async () => {
@@ -186,10 +215,10 @@ export default function App() {
   };
 
   // Fetch unscheduled tasks
-  const fetchBacklog = async () => {
+  const fetchBacklogData = async () => {
     setLoading(true);
     try {
-      const data = await api.jobs.fetchBacklog();
+      const data = await api.jobs.fetchBacklogData();
       setBacklog(data || []);
     } catch (error) {
       console.error("Error fetching backlog:", error);
@@ -233,7 +262,7 @@ export default function App() {
     try {
       await api.schedule.triggerOptimization();
       await fetchSchedule();
-      await fetchBacklog();
+      await fetchBacklogData();
       setView('schedule');
     } catch (error) {
       console.error("Failed to trigger optimization pipeline:", error);
@@ -259,7 +288,7 @@ export default function App() {
             due_date: '', 
             resources: '' 
           });
-          fetchBacklog();
+          fetchBacklogData();
         } else {
           console.error('Failed to add task, backend response:', result);
         }
@@ -287,7 +316,7 @@ export default function App() {
     
     try {
       await api.jobs.deleteTask(jobId);
-      fetchBacklog();
+      fetchBacklogData();
     } catch (error) {
       console.error("Error deleting task:", error);
     }
@@ -296,15 +325,16 @@ export default function App() {
   // Initial data load
   useEffect(() => {
     fetchSchedule();
-    fetchBacklog();
+    fetchBacklogData();
     fetchResources();
     fetchWorkorderData();
     fetchItemsData();
     fetchMaterialsData();
+    fetchRoutingTemplates();
 
     // Debugging: Log API data fetches to console for verification
     api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
-    api.jobs.fetchBacklog().then(data => console.log(" Backlog Data Input:", data));
+    api.jobs.fetchBacklogData().then(data => console.log(" Backlog Data Input:", data));
     api.resources.fetchResources().then(data => console.log(" Resources Data Input:", data));
     api.workorder.fetchWorkorders().then(data => console.log(" Workorders Data Input:", data));
   }, []);
@@ -424,16 +454,17 @@ export default function App() {
             <BacklogView 
               backlog={backlog} 
               loading={loading}
-              onRefresh={fetchBacklog}
-              onAddClick={() => setShowForm(true)}
+              onRefresh={fetchBacklogData}
+              onAddClick={() => setShowTaskForm(true)}
+              onLinkClick={() => setShowDependencyForm(true)}
               onDeleteTask={handleDeleteTask}
             />
-            {showForm && (
-              <TaskForm 
-                newTask={newTask}
-                setNewTask={setNewTask}
-                onSubmit={handleAddTask}
-                onClose={() => setShowForm(false)}
+            
+            {showDependencyForm && (
+              <OperationDependencyForm 
+                availableOperations={backlog}
+                onClose={() => setShowDependencyForm(false)}
+                onSubmit={handleAddDependencyLink}
               />
             )}
           </>

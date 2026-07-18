@@ -8,7 +8,7 @@ export const jobsApi = {
    * Fetches all operations from the backlog (including completed tasks)
    * @returns {Promise<Array>} Array of all operations
    */
-  fetchBacklog: async () => {
+  fetchBacklogData: async () => {
     const [opsRes, depsRes] = await Promise.all([
       fetch(`${API_CONFIG.BASE_URL}/operations`),
       fetch(`${API_CONFIG.BASE_URL}/operation_dependencies`)
@@ -81,6 +81,23 @@ export const jobsApi = {
     }
 
     return { success: true };
+  },
+
+  /**
+   * Directly links an upstream and downstream operation constraint
+   * @param {Object} dependencyData - contains upstream_op_id and downstream_op_id
+   */
+  addDependencyLink: async (dependencyData) => {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/operation_dependencies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dependencyData)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create operational dependency relationship line.');
+    }
+    return response.json();
   },
 
   /**
