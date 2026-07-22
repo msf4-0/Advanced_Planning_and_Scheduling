@@ -2,6 +2,8 @@
 
 A comprehensive scheduling and planning system developed during the SHRDC internship.
 
+[Youtube Guide link](https://youtu.be/Rl4YBtpFbTY)
+
 ## Project Structure
 
 - **aps_backend/** - Backend API service
