@@ -5,8 +5,6 @@ An enterprise-grade scheduling, resource allocation, and graph-based planning sy
 ---
 [Youtube Guide link](https://youtu.be/Rl4YBtpFbTY)
 
-## Project Structure
-
 ## 🏗️ System Architecture Overview
 
 The application runs as a multi-container Docker stack managed by Docker Compose and routed through an Nginx reverse proxy.
