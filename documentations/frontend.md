@@ -120,3 +120,9 @@ Common commands
 - Keep `VITE_API_URL` set for both dev and build to avoid runtime proxy issues.
 
 If more detailed guides are needed (component templates, code examples, or API JSON schemas), indicate which area and a focused doc will be added.
+
+## API Contract & Backend Integration
+
+- API clients are located under `src/api/` and exported via `api` (see `src/api/README.md`).
+- Common services include: `api.schedule`, `api.jobs`, `api.machines`, `api.workorder`, `api.materials`, and `api.routing`.
+- **Data & Solver Prerequisites**: To understand the database relationships, DAG dependencies, and backend constraint expectations that power UI forms (like `TaskForm` and `WorkorderForm`), refer to the [Developer Overview](./developer_overview.md) and [Master Data Guide](./master_data_guide.md).
