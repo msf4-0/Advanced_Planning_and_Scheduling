@@ -3,6 +3,9 @@
 An enterprise-grade scheduling, resource allocation, and graph-based planning system developed during the **SHRDC Internship Program**. The APS system leverages graph node modeling (`SupplyNode`, `ResourceNode`, `ProcessNode`) to solve complex manufacturing and scheduling constraints, exposed via a microservice architecture.
 
 ---
+[Youtube Guide link](https://youtu.be/Rl4YBtpFbTY)
+
+## Project Structure
 
 ## 🏗️ System Architecture Overview
 
