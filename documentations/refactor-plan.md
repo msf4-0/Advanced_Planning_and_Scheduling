@@ -177,7 +177,7 @@ aps-frontend/src/
 - [x] Define domain dataclasses: `WorkOrder`, `Operation`, `Resource`, `Material`, `Item`, `RoutingTemplate`, `OperationDependency`, `OperationMaterial`, `FactoryShift`, `FactoryHoliday`.
 - [x] Define enums: `OperationStatus`, `WorkOrderStatus`, `RunStatus`, `SolverStatus`, `ResourceType`; replace string literals everywhere.
 - [x] Define `DomainError` hierarchy: `ValidationError`, `NotFoundError`, `ConflictError`, `InfeasibleSchedule`, `SchedulerUnavailable`.
-- [ ] Add row → domain mappers in `adapters/db/mappers.py` (temporary psycopg2 source is fine).
+- [x] Add row → domain mappers in `adapters/db/mappers.py` (temporary psycopg2 source is fine).
 - [ ] Enforce immutability where appropriate (`frozen=True`) and validate invariants in constructors (`duration > 0`, `quantity >= 0`).
 - [ ] Add unit tests for enums, invariants, and mappers; assert `domain/` imports no infrastructure packages.
 - [ ] Add `import-linter` contract and wire it into CI.
