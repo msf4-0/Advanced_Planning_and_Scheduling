@@ -163,3 +163,6 @@ appsmith-stacks/*
 node_modules/
 dist/
 .env.local
+
+# Local pytest temp directory used in sandboxed environments
+.pytest_tmp/

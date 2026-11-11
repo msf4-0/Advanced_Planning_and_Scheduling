@@ -86,7 +86,7 @@ Known gaps at baseline:
 - `db_init/database_schema_init.sql` starts by dropping every table.
 - No migrations exist; schema changes are destructive.
 
-## Baseline tests
+## Baseline tests (at capture)
 
 Command (a writable `TMPDIR` is required in the sandboxed environment):
 
@@ -97,14 +97,16 @@ mkdir -p "$TMPDIR"
 TMPDIR="$TMPDIR" ../.venv/bin/python -m pytest -q
 ```
 
-Result: **7 passed in 1.11s**
+Result at capture: **7 passed in 1.11s**
 
 - `tests/test_schedule_creator.py` — 4 tests, repository fully mocked.
 - `tests/test_complex_scheduling_constraints.py` — 3 tests, repository fully mocked.
 
-There are no frontend tests, API tests, repository tests, or worker tests. The
-existing tests encode the current procedural structure and will be kept as
-characterization tests until the Phase 2/3 replacements are in place.
+The Phase 0 golden test adds 2 more tests (`tests/test_golden_schedule.py`), so
+the suite now reports **9 passed**. There are no frontend tests, API tests,
+repository tests, or worker tests. The existing tests encode the current
+procedural structure and will be kept as characterization tests until the
+Phase 2/3 replacements are in place.
 
 ## Illustrative schedule (current engine behavior)
 
@@ -125,8 +127,11 @@ makespan: 165
 ```
 
 This demonstrates the three current constraint rules: machine no-overlap,
-precedence, and material availability date. It is illustrative only; the
-deterministic golden regression test is the third Phase 0 checklist item.
+precedence, and material availability date. The same graph is now locked by
+`aps_backend/tests/test_golden_schedule.py` and
+`aps_backend/tests/fixtures/golden_schedule.json`, solved with
+`num_search_workers=1` and `random_seed=0`. The fixture stores both the input
+graph and the expected assignments, so solver behavior drift fails the test.
 
 ## Known defects recorded before refactor
 
@@ -154,15 +159,18 @@ deterministic golden regression test is the third Phase 0 checklist item.
   approved plan in `documentations/refactor-plan.md` are the first committed artifacts of
   the refactor.
 
-## Pending from Phase 0
+## Phase 0 checklist status
 
-- [ ] Deterministic golden schedule fixture (checklist item 3).
-- [ ] Test/lint configuration (item 4).
-- [ ] CI workflow (item 5).
-- [ ] Repository error contract (item 6).
-- [ ] FastAPI exception handlers (item 7).
-- [ ] Correct non-2xx scheduling failures (item 8).
-- [ ] Interim table allowlist (item 9).
-- [ ] Frontend bug fixes (item 10).
-- [ ] `/health` and `/ready` (item 11).
-- [ ] `.dockerignore` and stray lockfile cleanup (item 12).
+- [x] 1. Tag `pre-refactor`, PostgreSQL schema dump, and OpenAPI snapshot.
+- [x] 2. Record the baseline in `docs/baseline.md`.
+- [x] 3. Deterministic golden schedule fixture and regression test.
+- [x] 4. `pyproject.toml` (pytest/ruff/mypy/coverage) + `requirements-dev.txt`;
+  `pytest` now runs from the repository root via `pythonpath`/`testpaths`.
+- [ ] 5. CI workflow.
+- [ ] 6. Repository error contract.
+- [ ] 7. FastAPI exception handlers.
+- [ ] 8. Correct non-2xx scheduling failures.
+- [ ] 9. Interim table allowlist.
+- [ ] 10. Frontend bug fixes.
+- [ ] 11. `/health` and `/ready`.
+- [ ] 12. `.dockerignore` and stray lockfile cleanup.

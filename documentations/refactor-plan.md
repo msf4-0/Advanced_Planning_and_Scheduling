@@ -152,10 +152,10 @@ aps-frontend/src/
 
 **Why:** refactoring without a safety net is unsafe; the silent-failure bug is the highest user impact.
 
-- [ ] Tag the current commit `pre-refactor`; create a baseline DB dump and save current `/openapi.json`.
-- [ ] Record current behavior in `docs/baseline.md`: screens, endpoints, sample schedule, known bugs.
-- [ ] Add a deterministic golden test: fixture graph → fixed solver seed + 1 worker → expected makespan/assignments saved as a fixture.
-- [ ] Add `pyproject.toml`: ruff (lint + format), mypy, pytest, coverage; make `pytest` runnable from the repo root (`pythonpath`/`testpaths`).
+- [x] Tag the current commit `pre-refactor`; create a baseline DB dump and save current `/openapi.json`.
+- [x] Record current behavior in `docs/baseline.md`: endpoints, sample schedule, known bugs (no UI screenshots; frontend was not running).
+- [x] Add a deterministic golden test: fixture graph → fixed solver seed + 1 worker → expected makespan/assignments saved as a fixture.
+- [x] Add `pyproject.toml`: ruff (lint + format), mypy, pytest, coverage; make `pytest` runnable from the repo root (`pythonpath`/`testpaths`).
 - [ ] Add `.github/workflows/ci.yml`: backend lint/typecheck/test, frontend lint/typecheck/build, compose config validation.
 - [ ] Replace the repository's swallow-and-return-defaults contract with raised typed errors (`DatabaseError`, `NotFoundError`, `ConflictError`); update all callers.
 - [ ] Add FastAPI exception handlers; map validation → 422, not found → 404, FK/unique → 409, unexpected → 500; adopt RFC 7807 error bodies.

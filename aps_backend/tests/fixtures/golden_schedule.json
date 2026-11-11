@@ -1,0 +1,52 @@
+{
+  "description": "Golden schedule fixture: two machines, three sequential operations, and one material arriving at minute 120. The optimum is unique, so exact assignments can be asserted.",
+  "horizon_days": 1,
+  "resources": [
+    { "id": "MCH-1", "resource_type": "Machine" },
+    { "id": "MCH-2", "resource_type": "Machine" }
+  ],
+  "materials": [
+    {
+      "id": "MAT-1",
+      "name": "Steel",
+      "quantity_available": 100.0,
+      "available_date": 120
+    }
+  ],
+  "operations": [
+    {
+      "id": "OP-A",
+      "job_id": "WO-1",
+      "duration": 60,
+      "resource_id": "MCH-1",
+      "material_ids": []
+    },
+    {
+      "id": "OP-B",
+      "job_id": "WO-1",
+      "duration": 30,
+      "resource_id": "MCH-1",
+      "material_ids": []
+    },
+    {
+      "id": "OP-C",
+      "job_id": "WO-1",
+      "duration": 45,
+      "resource_id": "MCH-2",
+      "material_ids": ["MAT-1"]
+    }
+  ],
+  "dependencies": [
+    { "upstream": "OP-A", "downstream": "OP-B" },
+    { "upstream": "OP-B", "downstream": "OP-C" }
+  ],
+  "expected": {
+    "status": "SUCCESS",
+    "makespan": 165,
+    "assignments": {
+      "OP-A": { "start": 0, "end": 60 },
+      "OP-B": { "start": 60, "end": 90 },
+      "OP-C": { "start": 120, "end": 165 }
+    }
+  }
+}
