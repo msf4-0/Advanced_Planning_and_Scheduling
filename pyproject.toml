@@ -49,3 +49,25 @@ omit = ["aps_backend/tests/*"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+
+[tool.importlinter]
+root_packages = ["app", "api", "classes", "repository"]
+
+[[tool.importlinter.contracts]]
+name = "Domain has no infrastructure or delivery dependencies"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = [
+    "app.adapters",
+    "app.config",
+    "app.main",
+    "api",
+    "classes",
+    "repository",
+]
+
+[[tool.importlinter.contracts]]
+name = "Persistence and legacy engine have no delivery dependencies"
+type = "forbidden"
+source_modules = ["repository", "classes"]
+forbidden_modules = ["api", "app.main"]

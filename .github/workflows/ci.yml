@@ -42,6 +42,11 @@ jobs:
       - name: Typecheck
         run: mypy
 
+      - name: Check import boundaries
+        run: lint-imports
+        env:
+          PYTHONPATH: aps_backend
+
       - name: Test
         run: pytest -q
 

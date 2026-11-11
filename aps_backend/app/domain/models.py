@@ -10,9 +10,10 @@ from datetime import date, datetime, time
 from typing import Optional
 
 from .enums import OperationStatus, ResourceType, WorkOrderStatus
+from .errors import ValidationError
 
 
-@dataclass
+@dataclass(frozen=True)
 class WorkOrder:
     """Customer/manufacturing demand that anchors operations."""
 
@@ -22,8 +23,14 @@ class WorkOrder:
     due_date: datetime
     status: WorkOrderStatus = WorkOrderStatus.DRAFT
 
+    def __post_init__(self) -> None:
+        if self.quantity_to_make <= 0:
+            raise ValidationError(
+                "Work order quantity_to_make must be greater than zero."
+            )
 
-@dataclass
+
+@dataclass(frozen=True)
 class Operation:
     """A single processing step within a work order."""
 
@@ -34,8 +41,14 @@ class Operation:
     assigned_resource_id: Optional[str] = None
     status: OperationStatus = OperationStatus.DRAFT
 
+    def __post_init__(self) -> None:
+        if self.duration_minutes <= 0:
+            raise ValidationError(
+                "Operation duration_minutes must be greater than zero."
+            )
 
-@dataclass
+
+@dataclass(frozen=True)
 class Resource:
     """A machine, human, or tooling resource."""
 
@@ -45,7 +58,7 @@ class Resource:
     is_active: bool = True
 
 
-@dataclass
+@dataclass(frozen=True)
 class Material:
     """Raw material stock and its earliest availability time."""
 
@@ -54,8 +67,14 @@ class Material:
     quantity_available: float = 0.0
     available_date_minutes: int = 0
 
+    def __post_init__(self) -> None:
+        if self.quantity_available < 0:
+            raise ValidationError("Material quantity_available cannot be negative.")
+        if self.available_date_minutes < 0:
+            raise ValidationError("Material available_date_minutes cannot be negative.")
 
-@dataclass
+
+@dataclass(frozen=True)
 class Item:
     """Finished-product master data."""
 
@@ -64,7 +83,7 @@ class Item:
     sku: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class RoutingTemplate:
     """Blueprint step used to generate operations for a new work order."""
 
@@ -74,8 +93,16 @@ class RoutingTemplate:
     standard_duration_minutes: int
     id: Optional[int] = None
 
+    def __post_init__(self) -> None:
+        if self.step_sequence <= 0:
+            raise ValidationError("Routing step_sequence must be greater than zero.")
+        if self.standard_duration_minutes <= 0:
+            raise ValidationError(
+                "Routing standard_duration_minutes must be greater than zero."
+            )
 
-@dataclass
+
+@dataclass(frozen=True)
 class OperationDependency:
     """Directed edge between two operations (upstream must finish first)."""
 
@@ -83,7 +110,7 @@ class OperationDependency:
     downstream_op_id: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class OperationMaterial:
     """Bill-of-materials requirement for one operation."""
 
@@ -91,8 +118,14 @@ class OperationMaterial:
     material_id: str
     quantity_required: float
 
+    def __post_init__(self) -> None:
+        if self.quantity_required <= 0:
+            raise ValidationError(
+                "Operation material quantity_required must be greater than zero."
+            )
 
-@dataclass
+
+@dataclass(frozen=True)
 class FactoryShift:
     """Weekly working-time window for a resource."""
 
@@ -102,8 +135,14 @@ class FactoryShift:
     end_time: time
     id: Optional[int] = None
 
+    def __post_init__(self) -> None:
+        if not 1 <= self.day_of_week <= 7:
+            raise ValidationError("Factory shift day_of_week must be between 1 and 7.")
+        if self.start_time >= self.end_time:
+            raise ValidationError("Factory shift start_time must be before end_time.")
 
-@dataclass
+
+@dataclass(frozen=True)
 class FactoryHoliday:
     """Global factory closure date."""
 
