@@ -1,24 +1,31 @@
 """Typed exceptions raised by the repository layer.
 
 Callers must not receive ambiguous defaults (``[]``, ``None``, ``0``) for a
-failed database operation. The HTTP layer maps these exceptions to status codes
-in Phase 0 item 7; until then the generic CRUD routes surface them as 400.
+failed database operation. Repository errors subclass the matching domain
+errors so API mapping can catch either layer.
 """
 
+from app.domain.errors import (
+    ConflictError as DomainConflictError,
+    DomainError,
+    NotFoundError as DomainNotFoundError,
+    ValidationError as DomainValidationError,
+)
 
-class RepositoryError(Exception):
+
+class RepositoryError(DomainError):
     """Base class for all repository-layer failures."""
 
 
-class RepositoryValidationError(RepositoryError):
+class RepositoryValidationError(DomainValidationError, RepositoryError):
     """Input failed table/column/value validation before SQL was executed."""
 
 
-class NotFoundError(RepositoryError):
-    """A requested record does not exist. Reserved for the typed API layer."""
+class NotFoundError(DomainNotFoundError, RepositoryError):
+    """A requested record does not exist."""
 
 
-class ConflictError(RepositoryError):
+class ConflictError(DomainConflictError, RepositoryError):
     """The write violated a database constraint (unique, FK, NOT NULL, check)."""
 
 

@@ -25,6 +25,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.domain.errors import (
+    ConflictError as DomainConflictError,
+    DomainError,
+    InfeasibleSchedule,
+    NotFoundError as DomainNotFoundError,
+    SchedulerUnavailable,
+    ValidationError as DomainValidationError,
+)
 from repository import (
     ConflictError,
     DatabaseError,
@@ -121,6 +129,46 @@ async def repository_error_handler(request: Request, exc: RepositoryError) -> JS
     )
 
 
+async def domain_error_handler(request: Request, exc: DomainError) -> JSONResponse:
+    if isinstance(exc, InfeasibleSchedule):
+        return problem_response(
+            request,
+            422,
+            "infeasible",
+            "Schedule infeasible",
+            str(exc),
+        )
+    if isinstance(exc, SchedulerUnavailable):
+        return problem_response(
+            request,
+            503,
+            "unavailable",
+            "Scheduler unavailable",
+            str(exc),
+        )
+    if isinstance(exc, DomainValidationError):
+        return problem_response(
+            request,
+            422,
+            "validation",
+            "Request validation failed",
+            str(exc),
+        )
+    if isinstance(exc, DomainNotFoundError):
+        return problem_response(request, 404, "not-found", "Not Found", str(exc))
+    if isinstance(exc, DomainConflictError):
+        return problem_response(request, 409, "conflict", "Conflict", str(exc))
+
+    logger.error("Domain error on %s: %s", request.url.path, exc)
+    return problem_response(
+        request,
+        500,
+        "internal",
+        "Internal server error",
+        "An unexpected domain error occurred.",
+    )
+
+
 async def http_exception_handler(
     request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
@@ -170,6 +218,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach the RFC 7807 handlers to the application."""
     app.add_exception_handler(RepositoryError, repository_error_handler)
+    app.add_exception_handler(DomainError, domain_error_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, request_validation_error_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)

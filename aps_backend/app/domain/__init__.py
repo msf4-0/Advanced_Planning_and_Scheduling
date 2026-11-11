@@ -7,6 +7,14 @@ from .enums import (
     SolverStatus,
     WorkOrderStatus,
 )
+from .errors import (
+    ConflictError,
+    DomainError,
+    InfeasibleSchedule,
+    NotFoundError,
+    SchedulerUnavailable,
+    ValidationError,
+)
 from .models import (
     FactoryHoliday,
     FactoryShift,
@@ -26,6 +34,12 @@ __all__ = [
     "RunStatus",
     "SolverStatus",
     "ResourceType",
+    "DomainError",
+    "ValidationError",
+    "NotFoundError",
+    "ConflictError",
+    "InfeasibleSchedule",
+    "SchedulerUnavailable",
     "WorkOrder",
     "Operation",
     "Resource",

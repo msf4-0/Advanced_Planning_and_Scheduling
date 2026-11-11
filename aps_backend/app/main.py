@@ -13,12 +13,12 @@ from api import crud_routes
 from api.errors import register_exception_handlers
 from app.config import Settings, get_settings
 from app.domain.enums import RunStatus
+from app.domain.errors import DomainError
 from classes import ScheduleCreator
 from repository import (
     ConnectionManager,
     DatabaseConfig,
     Repository,
-    RepositoryError,
 )
 
 app = FastAPI(title="APS Production Scheduling Engine API")
@@ -130,7 +130,7 @@ def run_scheduler_endpoint():
             detail=f"Scheduling failed: {pipeline_err}",
         ) from pipeline_err
 
-    except RepositoryError as pipeline_err:
+    except DomainError as pipeline_err:
         _mark_run_failed(runs_repo, active_run_id, pipeline_err)
         raise
 

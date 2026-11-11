@@ -3,6 +3,7 @@
 from fastapi.testclient import TestClient
 
 from app import main as main_app
+from app.domain.errors import InfeasibleSchedule, SchedulerUnavailable
 from api import crud_routes
 from repository import ConflictError, DatabaseError
 
@@ -47,6 +48,28 @@ def test_database_error_maps_to_500_without_leaking_details(monkeypatch):
     body = response.json()
     assert body["type"] == "urn:aps:error:database"
     assert "secret SQL detail" not in body["detail"]
+
+
+def test_infeasible_schedule_maps_to_422(monkeypatch):
+    _patch_repository(monkeypatch, fetch_error=InfeasibleSchedule("no feasible plan"))
+
+    response = client.get("/api/v1/resources")
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["type"] == "urn:aps:error:infeasible"
+    assert "no feasible plan" in body["detail"]
+
+
+def test_scheduler_unavailable_maps_to_503(monkeypatch):
+    _patch_repository(monkeypatch, fetch_error=SchedulerUnavailable("solver offline"))
+
+    response = client.get("/api/v1/resources")
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["type"] == "urn:aps:error:unavailable"
+    assert "solver offline" in body["detail"]
 
 
 def test_unexpected_error_maps_to_generic_500(monkeypatch):
