@@ -27,6 +27,14 @@ from .models import (
     RoutingTemplate,
     WorkOrder,
 )
+from .scheduling import (
+    Assignment,
+    Schedule,
+    SchedulingPolicy,
+    SchedulingProblem,
+    SchedulingSnapshot,
+    SolveResult,
+)
 
 __all__ = [
     "OperationStatus",
@@ -50,4 +58,10 @@ __all__ = [
     "OperationMaterial",
     "FactoryShift",
     "FactoryHoliday",
+    "SchedulingPolicy",
+    "SchedulingSnapshot",
+    "SchedulingProblem",
+    "Assignment",
+    "SolveResult",
+    "Schedule",
 ]
