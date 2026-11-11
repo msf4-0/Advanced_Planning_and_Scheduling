@@ -10,7 +10,11 @@ export function KPICards({ metrics, optimizing }) {
       </div>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Total Tardiness</h3>
-        <p style={styles.cardValue}>{metrics.tardiness} jobs</p>
+        <p style={styles.cardValue}>
+          {metrics.tardiness === null || metrics.tardiness === undefined
+            ? 'Not tracked yet'
+            : `${metrics.tardiness} minutes`}
+        </p>
       </div>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>System Status</h3>

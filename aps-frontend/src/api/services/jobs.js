@@ -42,9 +42,14 @@ export const jobsApi = {
    * @returns {Promise<Object>} Success response
    */
   addTask: async (task) => {
+    const workOrderId = (task.work_order_id || '').trim();
+    if (!workOrderId) {
+      throw new Error('A work order ID is required to create an operation.');
+    }
+
     const operationPayload = {
       id: task.job_id,
-      work_order_id: task.work_order_id || 'MANUAL-WO', 
+      work_order_id: workOrderId,
       sequence_number: parseInt(task.sequence_number) || 10,
       duration_minutes: parseInt(task.duration),
       assigned_resource_id: (task.resources && task.resources.trim() !== '') ? task.resources.trim().toString() : null,

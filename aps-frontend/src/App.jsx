@@ -25,7 +25,7 @@ export default function App() {
   const [backlog, setBacklog] = useState([]);
   const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
-  const [metrics, setMetrics] = useState({ makespan: 0, tardiness: 0 });
+  const [metrics, setMetrics] = useState({ makespan: 0, tardiness: null });
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     job_id: '',
@@ -79,6 +79,18 @@ export default function App() {
       fetchWorkorderData();
     } catch (error) {
       console.error("Failed to add workorder:", error)
+      alert(error.message || "Failed to add workorder.");
+    }
+  };
+
+  const handleDeleteWorkorder = async (workorderId) => {
+    if (!window.confirm(`Are you sure you want to delete workorder ${workorderId}?`)) return;
+    try {
+      await api.workorder.deleteWorkorder(workorderId);
+      fetchWorkorderData();
+    } catch (error) {
+      console.error("Failed to delete workorder:", error);
+      alert(error.message || "Failed to delete workorder.");
     }
   };
 
@@ -263,28 +275,21 @@ export default function App() {
       setSchedule(scheduleArray);
 
       let maxEnd = 0;
-      let totalTardiness = 0;
 
       scheduleArray.forEach(job => {
-        // Calculate makespan (max end time)
+        // Makespan = latest end offset in the current snapshot.
         const endMin = job.end_minute || 0;
         if (endMin > maxEnd) {
           maxEnd = endMin;
         }
-
-        // Calculate tardiness: Max(0, end_minute - due_minute)
-        // Note: Change 'due_minute' if your API uses a different field name like 'deadline'
-        if (job.due_minute) {
-          const delay = endMin - job.due_minute;
-          if (delay > 0) {
-            totalTardiness += delay;
-          }
-        }
       });
 
+      // Tardiness requires work-order due dates, which the scheduling snapshot
+      // does not carry yet (Phase 4). Keep it explicitly unknown instead of
+      // reporting a misleading zero.
       setMetrics({ 
         makespan: maxEnd, 
-        tardiness: totalTardiness 
+        tardiness: null
       });
       
     } catch (error) {
@@ -304,6 +309,7 @@ export default function App() {
       setView('schedule');
     } catch (error) {
       console.error("Failed to trigger optimization pipeline:", error);
+      alert(error.message || "Optimization failed. Check the backend logs and run status.");
     } finally {
       setOptimizing(false);
     }
@@ -329,9 +335,11 @@ export default function App() {
         fetchBacklogData();
       } else {
         console.error('Failed to add task, backend response:', result);
+        alert("Failed to add task. Check the work order ID and try again.");
       }
     } catch (error) {
       console.error("Failed to add task:", error);
+      alert(error.message || "Failed to add task.");
     }
   };
 
@@ -369,12 +377,6 @@ export default function App() {
     fetchItemsData();
     fetchMaterialsData();
     fetchRoutingTemplates();
-
-    // Debugging: Log API data fetches to console for verification
-    api.schedule.fetchSchedule().then(data => console.log(" Gantt/Schedule Data Input:", data));
-    api.jobs.fetchBacklogData().then(data => console.log(" Backlog Data Input:", data));
-    api.resources.fetchResources().then(data => console.log(" Resources Data Input:", data));
-    api.workorder.fetchWorkorders().then(data => console.log(" Workorders Data Input:", data));
   }, []);
 
   return (
@@ -553,7 +555,7 @@ export default function App() {
               loading={loading}
               onRefresh={fetchWorkorderData}
               onAddClick={() => setShowWorkorderForm(true)}
-              onDeleteTask={(id) => console.log("Delete workorder", id)}
+              onDeleteTask={handleDeleteWorkorder}
             />
             {showWorkorderForm && (
               <WorkorderForm 

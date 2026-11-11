@@ -38,7 +38,7 @@ export function WorkorderView({ workorder, loading, onRefresh, onAddClick, onDel
                   {item.target_item_id}
                 </td>
                 <td style={styles.td}>
-                  {item.quantity} units
+                  {item.quantity_to_make} units
                 </td>
                 <td style={styles.td}>
                   {item.due_date || '-'}
@@ -46,15 +46,15 @@ export function WorkorderView({ workorder, loading, onRefresh, onAddClick, onDel
                 <td style={styles.td}>
                   <span style={{
                     ...styles.badge,
-                    backgroundColor: item.status === 'Completed' ? '#d1fae5' : '#fef3c7',
-                    color: item.status === 'Completed' ? '#065f46' : '#92400e'
+                    backgroundColor: item.status === 'Done' ? '#d1fae5' : '#fef3c7',
+                    color: item.status === 'Done' ? '#065f46' : '#92400e'
                   }}>
                     {item.status || 'Unscheduled'}
                   </span>
                 </td>
                 <td style={styles.td}>
                   <button 
-                    onClick={() => onDeleteTask(item.workorder_id)}
+                    onClick={() => onDeleteTask(item.id)}
                     style={{...styles.button, backgroundColor: '#dc2626', padding: '6px 12px', fontSize: '12px'}}
                   >
                     Delete

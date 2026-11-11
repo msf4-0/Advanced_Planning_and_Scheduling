@@ -1,6 +1,6 @@
 # APS Scheduling — Full Refactor Plan for Maintainability & Extension
 
-**Status:** Approved plan, saved to the repository.
+**Status:** Approved plan; Phase 0 complete (2026-11-11).
 **Date:** 2026-11-11
 **Starting commit:** `4253fea`
 
@@ -158,12 +158,12 @@ aps-frontend/src/
 - [x] Add `pyproject.toml`: ruff (lint + format), mypy, pytest, coverage; make `pytest` runnable from the repo root (`pythonpath`/`testpaths`).
 - [x] Add `.github/workflows/ci.yml`: backend lint/typecheck/test, frontend build, compose config validation (frontend lint/typecheck arrives with the Phase 7 TypeScript rewrite).
 - [x] Replace the repository's swallow-and-return-defaults contract with raised typed errors (`DatabaseError`, `NotFoundError`, `ConflictError`); update all callers.
-- [ ] Add FastAPI exception handlers; map validation → 422, not found → 404, FK/unique → 409, unexpected → 500; adopt RFC 7807 error bodies.
-- [ ] Remove the 200-with-`success:false` scheduling response; enqueue failures or solver infeasibility must be non-2xx (temporary until Phase 6).
-- [ ] Interim security: reject `users` and system tables in the generic route; add an explicit table allowlist.
-- [ ] Fix known correctness bugs: `deleteWorkorder` calls `/workorders` instead of `/work_orders`; `MANUAL-WO` FK fallback; dead `due_minute` KPI (hide or label “unavailable” until Phase 4); remove duplicate debug fetches on mount.
-- [ ] Add `GET /health` (liveness) and `GET /ready` (DB ping).
-- [ ] Add `.dockerignore`; delete the stray empty root `package-lock.json`; ensure no build artifacts are tracked.
+- [x] Add FastAPI exception handlers; map validation → 422, not found → 404, FK/unique → 409, unexpected → 500; adopt RFC 7807 error bodies.
+- [x] Remove the 200-with-`success:false` scheduling response; enqueue failures or solver infeasibility must be non-2xx (temporary until Phase 6).
+- [x] Interim security: reject `users` and system tables in the generic route; add an explicit table allowlist.
+- [x] Fix known correctness bugs: `deleteWorkorder` calls `/workorders` instead of `/work_orders`; `MANUAL-WO` FK fallback; dead `due_minute` KPI (hide or label “unavailable” until Phase 4); remove duplicate debug fetches on mount.
+- [x] Add `GET /health` (liveness) and `GET /ready` (DB ping).
+- [x] Add `.dockerignore`; delete the stray empty root `package-lock.json`; ensure no build artifacts are tracked.
 
 **Exit gate:** CI green; no silent API success on failure; baseline documented; golden schedule recorded.
 

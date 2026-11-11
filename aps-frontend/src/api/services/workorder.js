@@ -46,7 +46,7 @@ export const workordersApi = {
    * @returns {Promise<Object>} Deletion response
    */
   deleteWorkorder: async (workorderId) => {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/workorders?id_value=${encodeURIComponent(workorderId)}`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/work_orders?id_value=${encodeURIComponent(workorderId)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });

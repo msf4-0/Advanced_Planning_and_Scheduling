@@ -102,12 +102,14 @@ Result at capture: **7 passed in 1.11s**
 - `tests/test_schedule_creator.py` — 4 tests, repository fully mocked.
 - `tests/test_complex_scheduling_constraints.py` — 3 tests, repository fully mocked.
 
-The Phase 0 golden test adds 2 more tests (`tests/test_golden_schedule.py`) and
+The Phase 0 golden test adds 2 more tests (`tests/test_golden_schedule.py`),
 the repository error-contract tests add 3 (`tests/test_repository_errors.py`),
-so the suite now reports **12 passed**. There are still no frontend tests, API
-tests, or worker tests, and repository coverage is limited to the error-contract
-tests. The existing tests encode the current procedural structure and will be
-kept as characterization tests until the Phase 2/3 replacements are in place.
+and the API tests add 10 (`tests/test_api_errors.py`), so the suite now reports
+**22 passed**. There are still no frontend tests or worker tests; API and
+repository coverage now includes the error contract, health probes, and
+scheduler failure statuses. The existing tests encode the current procedural
+structure and will be kept as characterization tests until the Phase 2/3
+replacements are in place.
 
 ## Illustrative schedule (current engine behavior)
 
@@ -148,6 +150,9 @@ graph and the expected assignments, so solver behavior drift fails the test.
 9. A 14-day Gantt at 4 px/minute is roughly 80,000 px wide.
 10. `/recent-schedule` picks the latest success by list order, not by timestamp.
 
+**Status after Phase 0:** defects 1–8 and 10 are fixed; defect 9 (Gantt width)
+remains open for Phase 7.
+
 ## Environment notes
 
 - The database container was started from a fresh named volume,
@@ -169,9 +174,14 @@ graph and the expected assignments, so solver behavior drift fails the test.
   `pytest` now runs from the repository root via `pythonpath`/`testpaths`.
 - [x] 5. CI workflow (`.github/workflows/ci.yml`).
 - [x] 6. Repository error contract (typed exceptions, no silent defaults; HTTP mapping follows in item 7).
-- [ ] 7. FastAPI exception handlers.
-- [ ] 8. Correct non-2xx scheduling failures.
-- [ ] 9. Interim table allowlist.
-- [ ] 10. Frontend bug fixes.
-- [ ] 11. `/health` and `/ready`.
-- [ ] 12. `.dockerignore` and stray lockfile cleanup.
+- [x] 7. FastAPI exception handlers (RFC 7807; 404/409/422/500 mapped).
+- [x] 8. Correct non-2xx scheduling failures (solver infeasibility 422, unexpected 500).
+- [x] 9. Interim table allowlist (system tables and `users` rejected with 404).
+- [x] 10. Frontend bug fixes (workorder URL/ID, `MANUAL-WO`, tardiness KPI, duplicate fetches, status vocabulary).
+- [x] 11. `/health` and `/ready` endpoints (ready returns 503 when PostgreSQL is unreachable).
+- [x] 12. `.dockerignore` files; stray root `package-lock.json` removed; no build artifacts tracked.
+
+**Phase 0 status:** all 12 items complete. Local checks pass: 22 tests, `ruff`,
+`mypy`, frontend build, compose config, and real-Postgres conflict/readiness
+checks. The GitHub Actions workflow is added but has not yet been observed on a
+remote run.
