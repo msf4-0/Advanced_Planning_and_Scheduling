@@ -191,7 +191,7 @@ aps-frontend/src/
 **Why:** `ScheduleCreator.run()` is the main god function and the reason tests need eight mocks.
 
 - [x] Define `SchedulingProblem`, `SchedulingSnapshot`, `Assignment`, `Schedule`, `SolveResult`, `SchedulingPolicy` in `domain/scheduling.py`.
-- [ ] Define ports in `scheduling/ports.py`:
+- [x] Define ports in `scheduling/ports.py`:
   - `ScheduleDataPort.load(policy) -> SchedulingSnapshot`
   - `SolverPort.solve(problem, policy) -> SolveResult`
   - `ScheduleStorePort.persist(run_id, schedule) -> None`
