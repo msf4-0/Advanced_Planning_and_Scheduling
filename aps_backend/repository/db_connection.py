@@ -12,14 +12,27 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseConfig:
-    """Centralized database configuration from environment variables."""
+    """Centralized database configuration.
+
+    Values may be supplied explicitly (preferred, from app Settings) or fall
+    back to the historical ``POSTGRES_*`` environment variables.
+    """
     
-    def __init__(self):
-        self.host = os.getenv("POSTGRES_HOST", "postgres")
-        self.port = int(os.getenv("POSTGRES_PORT", 5432))
-        self.user = os.getenv("POSTGRES_USER", "postgresUser")
-        self.password = os.getenv("POSTGRES_PASSWORD", "postgresPass")
-        self.dbname = os.getenv("POSTGRES_DB", "postgresDB")
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        dbname: Optional[str] = None,
+    ):
+        self.host = host if host is not None else os.getenv("POSTGRES_HOST", "postgres")
+        self.port = port if port is not None else int(os.getenv("POSTGRES_PORT", 5432))
+        self.user = user if user is not None else os.getenv("POSTGRES_USER", "postgresUser")
+        self.password = (
+            password if password is not None else os.getenv("POSTGRES_PASSWORD", "postgresPass")
+        )
+        self.dbname = dbname if dbname is not None else os.getenv("POSTGRES_DB", "postgresDB")
     
     def to_dict(self) -> dict:
         """Convert config to psycopg2 connection params."""

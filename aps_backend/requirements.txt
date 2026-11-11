@@ -3,3 +3,4 @@ uvicorn
 psycopg2-binary
 ortools
 python-multipart
+pydantic-settings>=2.4,<3

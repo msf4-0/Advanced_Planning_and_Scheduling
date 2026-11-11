@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException
 
 from api import crud_routes
 from api.errors import register_exception_handlers
+from app.config import Settings, get_settings
 from classes import ScheduleCreator
 from repository import (
     ConnectionManager,
@@ -20,15 +21,21 @@ from repository import (
 )
 
 app = FastAPI(title="APS Production Scheduling Engine API")
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=get_settings().log_level)
 
 register_exception_handlers(app)
 app.include_router(crud_routes.router)
 
 
-def get_connection_manager() -> ConnectionManager:
+def _database_config(settings: Settings) -> DatabaseConfig:
+    return DatabaseConfig(**settings.database_kwargs())
+
+
+def get_connection_manager(
+    settings: Settings = Depends(get_settings),
+) -> ConnectionManager:
     """Dependency so tests can override database connectivity."""
-    return ConnectionManager(DatabaseConfig())
+    return ConnectionManager(_database_config(settings))
 
 
 def _mark_run_failed(runs_repo: Repository, run_id, error: Exception) -> None:
@@ -78,7 +85,7 @@ def run_scheduler_endpoint():
     Pipeline failures are non-2xx: solver infeasibility is 422, repository
     failures keep their typed status, and unexpected failures are 500.
     """
-    config = DatabaseConfig()
+    config = _database_config(get_settings())
     conn_manager = ConnectionManager(config)
     runs_repo = Repository("scheduling_runs", conn_manager)
 
@@ -140,7 +147,7 @@ def get_schedule():
     """
     Return the most recent successful run and its scheduled-task snapshots.
     """
-    config = DatabaseConfig()
+    config = _database_config(get_settings())
     conn_manager = ConnectionManager(config)
 
     runs_repo = Repository("scheduling_runs", conn_manager)
