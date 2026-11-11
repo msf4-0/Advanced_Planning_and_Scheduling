@@ -181,14 +181,21 @@ docker compose logs -f
 
 ### Running Backend Unit Tests
 
-The scheduling algorithm features dedicated constraint unit tests. Run them inside the backend environment:
+The tests need the backend dependencies and the dev tools. Use the project
+virtualenv; a system-wide `pytest` will not have `fastapi`, `ortools`, or
+`psycopg2` installed.
 
 ```bash
-# Run locally from aps_backend/ directory
-cd aps_backend
-pytest tests/
-
+# From the repository root
+python3 -m venv .venv
+.venv/bin/python -m pip install -r aps_backend/requirements.txt -r requirements-dev.txt
+.venv/bin/python -m pytest
 ```
+
+On Windows, replace `.venv/bin/python` with `.venv\Scripts\python`. If you
+prefer activating the environment, `source .venv/bin/activate` followed by
+`python -m pytest` is equivalent. The root `conftest.py` reports a clear error
+if the dependencies are missing.
 
 ### Frontend Development
 
