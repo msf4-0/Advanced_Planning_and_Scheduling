@@ -4,7 +4,7 @@ High-level data access API that orchestrates all database operations.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, NoReturn, Optional
 
 from .db_connection import ConnectionManager
 from .db_validation import ValidationPipeline, InputValidator
@@ -12,8 +12,13 @@ from .db_query_builder import QueryBuilder
 from .db_executor import QueryExecutor
 from .db_transactions import TransactionManager
 from .db_schema import SchemaManager
+from .errors import ConflictError, DatabaseError, RepositoryValidationError
 
 logger = logging.getLogger(__name__)
+
+# PostgreSQL SQLSTATE codes that mean the request conflicts with existing data
+# or a declared constraint. They map to HTTP 409 in the API layer.
+_CONFLICT_PGCODES = frozenset({"23502", "23503", "23505", "23514"})
 
 
 class Repository:
@@ -85,6 +90,18 @@ class Repository:
         """Cleanup: close connection when repository is destroyed."""
         if hasattr(self, 'connection') and self.connection:
             self.connection_manager.close_connection(self.connection)
+
+    def _raise_validation_error(self, action: str, error: Exception) -> NoReturn:
+        message = f"Validation failed while {action} '{self.table_name}': {error}"
+        logger.error(message)
+        raise RepositoryValidationError(message) from error
+
+    def _raise_database_error(self, action: str, error: Exception) -> NoReturn:
+        message = f"Database error while {action} '{self.table_name}': {error}"
+        logger.error(message)
+        if getattr(error, "pgcode", None) in _CONFLICT_PGCODES:
+            raise ConflictError(message) from error
+        raise DatabaseError(message) from error
     
     # ==================== FETCH (SELECT) ====================
     
@@ -115,8 +132,7 @@ class Repository:
         try:
             return self.executor.fetch_many(sql, params)
         except Exception as e:
-            logger.error("Error fetching all from '%s': %s", self.table_name, e)
-            return []
+            self._raise_database_error("fetching all records from", e)
     
     def fetch_by_id(self, id_value: Any) -> Optional[Dict[str, Any]]:
         """
@@ -136,8 +152,7 @@ class Repository:
         try:
             return self.executor.fetch_one(sql, params)
         except Exception as e:
-            logger.error("Error fetching by ID from '%s': %s", self.table_name, e)
-            return None
+            self._raise_database_error("fetching a record by ID from", e)
     
     def fetch_where(self, **filters) -> List[Dict[str, Any]]:
         """
@@ -160,8 +175,7 @@ class Repository:
                 self.allowed_tables
             )
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return []
+            self._raise_validation_error("fetching filtered records from", e)
         
         builder = QueryBuilder(self.table_name)
         
@@ -173,8 +187,7 @@ class Repository:
         try:
             return self.executor.fetch_many(sql, params)
         except Exception as e:
-            logger.error("Error fetching with filters from '%s': %s", self.table_name, e)
-            return []
+            self._raise_database_error("fetching filtered records from", e)
     
     def fetch_one_where(self, **filters) -> Optional[Dict[str, Any]]:
         """
@@ -213,8 +226,7 @@ class Repository:
             result = self.executor.execute_scalar(sql, params)
             return result or 0
         except Exception as e:
-            logger.error("Error counting in '%s': %s", self.table_name, e)
-            return 0
+            self._raise_database_error("counting records in", e)
     
     # ==================== ADD (INSERT) ====================
     
@@ -238,8 +250,7 @@ class Repository:
                 self.allowed_tables
             )
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return None
+            self._raise_validation_error("inserting into", e)
         
         builder = QueryBuilder(self.table_name)
         sql, params = builder.build_insert(sanitized)
@@ -247,8 +258,7 @@ class Repository:
         try:
             return self.executor.execute_insert_returning(sql, params)
         except Exception as e:
-            logger.error("Error adding to '%s': %s", self.table_name, e)
-            return None
+            self._raise_database_error("inserting into", e)
     
     # ==================== UPDATE ====================
     
@@ -274,8 +284,7 @@ class Repository:
                 self.allowed_tables
             )
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return 0
+            self._raise_validation_error("updating", e)
         
         builder = QueryBuilder(self.table_name)
         builder.where("id", id_value)
@@ -285,8 +294,7 @@ class Repository:
         try:
             return self.executor.execute_update(sql, params)
         except Exception as e:
-            logger.error("Error updating in '%s': %s", self.table_name, e)
-            return 0
+            self._raise_database_error("updating", e)
     
     def update_where(self, data: Dict[str, Any], **filters) -> int:
         """
@@ -317,8 +325,7 @@ class Repository:
                 self.allowed_tables
             )
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return 0
+            self._raise_validation_error("updating filtered records in", e)
         
         builder = QueryBuilder(self.table_name)
         
@@ -330,8 +337,7 @@ class Repository:
         try:
             return self.executor.execute_update(sql, params)
         except Exception as e:
-            logger.error("Error updating in '%s': %s", self.table_name, e)
-            return 0
+            self._raise_database_error("updating filtered records in", e)
     
     # ==================== DELETE ====================
     
@@ -353,8 +359,7 @@ class Repository:
         try:
             return self.executor.execute_update(sql, params)
         except Exception as e:
-            logger.error("Error deleting from '%s': %s", self.table_name, e)
-            return 0
+            self._raise_database_error("deleting from", e)
     
     def delete_where(self, **filters) -> int:
         """
@@ -372,8 +377,7 @@ class Repository:
         try:
             InputValidator.validate_conditions(filters)
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return 0
+            self._raise_validation_error("deleting filtered records from", e)
         
         builder = QueryBuilder(self.table_name)
         
@@ -385,8 +389,7 @@ class Repository:
         try:
             return self.executor.execute_update(sql, params)
         except Exception as e:
-            logger.error("Error deleting from '%s': %s", self.table_name, e)
-            return 0
+            self._raise_database_error("deleting filtered records from", e)
     
     # ==================== UPSERT ====================
     
@@ -411,8 +414,7 @@ class Repository:
             InputValidator.validate_dict(data)
             InputValidator.validate_conflict_columns(conflict_columns)
         except ValueError as e:
-            logger.error("Validation error: %s", e)
-            return None
+            self._raise_validation_error("upserting into", e)
         
         builder = QueryBuilder(self.table_name)
         sql, params = builder.build_upsert(data, conflict_columns)
@@ -420,8 +422,7 @@ class Repository:
         try:
             return self.executor.execute_insert_returning(sql, params)
         except Exception as e:
-            logger.error("Error upserting into '%s': %s", self.table_name, e)
-            return None
+            self._raise_database_error("upserting into", e)
     
     # ==================== TRANSACTIONS ====================
     
@@ -512,10 +513,13 @@ class Repository:
             logger.info(f"Batch add committed: {len(results)} records inserted total")
             return results
             
-        except Exception as e:
-            logger.error("Batch add failed, rolling back: %s", e)
+        except ValueError as e:
             self.connection.rollback()
-            return []
+            self._raise_validation_error("bulk inserting into", e)
+
+        except Exception as e:
+            self.connection.rollback()
+            self._raise_database_error("bulk inserting into", e)
             
         finally:
             self.connection.autocommit = original_autocommit
@@ -576,9 +580,8 @@ class Repository:
             logger.info(f"Batch update committed: {total_updated} rows updated total")
             return total_updated
         except Exception as e:
-            logger.error("Batch update failed, rolling back: %s", e)
             self.connection.rollback()
-            return 0
+            self._raise_database_error("bulk updating", e)
 
         finally:
             self.connection.autocommit = original_autocommit
@@ -621,9 +624,8 @@ class Repository:
             return total_deleted
             
         except Exception as e:
-            logger.error("Batch delete failed, rolling back: %s", e)
             self.connection.rollback()
-            return 0
+            self._raise_database_error("bulk deleting from", e)
             
         finally:
             self.connection.autocommit = original_autocommit
@@ -655,7 +657,10 @@ class Repository:
         
         results = []
         original_autocommit = self.connection.autocommit
-        InputValidator.validate_conflict_columns(conflict_columns)
+        try:
+            InputValidator.validate_conflict_columns(conflict_columns)
+        except ValueError as e:
+            self._raise_validation_error("bulk upserting into", e)
         
         try:
             self.connection.autocommit = False
@@ -677,10 +682,13 @@ class Repository:
             logger.info(f"Batch upsert committed: {len(results)} records processed total")
             return results
             
-        except Exception as e:
-            logger.error("Batch upsert failed, rolling back: %s", e)
+        except ValueError as e:
             self.connection.rollback()
-            return []
+            self._raise_validation_error("bulk upserting into", e)
+
+        except Exception as e:
+            self.connection.rollback()
+            self._raise_database_error("bulk upserting into", e)
             
         finally:
             self.connection.autocommit = original_autocommit

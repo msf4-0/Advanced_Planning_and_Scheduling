@@ -156,8 +156,8 @@ aps-frontend/src/
 - [x] Record current behavior in `docs/baseline.md`: endpoints, sample schedule, known bugs (no UI screenshots; frontend was not running).
 - [x] Add a deterministic golden test: fixture graph → fixed solver seed + 1 worker → expected makespan/assignments saved as a fixture.
 - [x] Add `pyproject.toml`: ruff (lint + format), mypy, pytest, coverage; make `pytest` runnable from the repo root (`pythonpath`/`testpaths`).
-- [ ] Add `.github/workflows/ci.yml`: backend lint/typecheck/test, frontend lint/typecheck/build, compose config validation.
-- [ ] Replace the repository's swallow-and-return-defaults contract with raised typed errors (`DatabaseError`, `NotFoundError`, `ConflictError`); update all callers.
+- [x] Add `.github/workflows/ci.yml`: backend lint/typecheck/test, frontend build, compose config validation (frontend lint/typecheck arrives with the Phase 7 TypeScript rewrite).
+- [x] Replace the repository's swallow-and-return-defaults contract with raised typed errors (`DatabaseError`, `NotFoundError`, `ConflictError`); update all callers.
 - [ ] Add FastAPI exception handlers; map validation → 422, not found → 404, FK/unique → 409, unexpected → 500; adopt RFC 7807 error bodies.
 - [ ] Remove the 200-with-`success:false` scheduling response; enqueue failures or solver infeasibility must be non-2xx (temporary until Phase 6).
 - [ ] Interim security: reject `users` and system tables in the generic route; add an explicit table allowlist.

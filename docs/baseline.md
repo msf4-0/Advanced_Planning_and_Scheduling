@@ -102,11 +102,12 @@ Result at capture: **7 passed in 1.11s**
 - `tests/test_schedule_creator.py` — 4 tests, repository fully mocked.
 - `tests/test_complex_scheduling_constraints.py` — 3 tests, repository fully mocked.
 
-The Phase 0 golden test adds 2 more tests (`tests/test_golden_schedule.py`), so
-the suite now reports **9 passed**. There are no frontend tests, API tests,
-repository tests, or worker tests. The existing tests encode the current
-procedural structure and will be kept as characterization tests until the
-Phase 2/3 replacements are in place.
+The Phase 0 golden test adds 2 more tests (`tests/test_golden_schedule.py`) and
+the repository error-contract tests add 3 (`tests/test_repository_errors.py`),
+so the suite now reports **12 passed**. There are still no frontend tests, API
+tests, or worker tests, and repository coverage is limited to the error-contract
+tests. The existing tests encode the current procedural structure and will be
+kept as characterization tests until the Phase 2/3 replacements are in place.
 
 ## Illustrative schedule (current engine behavior)
 
@@ -166,8 +167,8 @@ graph and the expected assignments, so solver behavior drift fails the test.
 - [x] 3. Deterministic golden schedule fixture and regression test.
 - [x] 4. `pyproject.toml` (pytest/ruff/mypy/coverage) + `requirements-dev.txt`;
   `pytest` now runs from the repository root via `pythonpath`/`testpaths`.
-- [ ] 5. CI workflow.
-- [ ] 6. Repository error contract.
+- [x] 5. CI workflow (`.github/workflows/ci.yml`).
+- [x] 6. Repository error contract (typed exceptions, no silent defaults; HTTP mapping follows in item 7).
 - [ ] 7. FastAPI exception handlers.
 - [ ] 8. Correct non-2xx scheduling failures.
 - [ ] 9. Interim table allowlist.
