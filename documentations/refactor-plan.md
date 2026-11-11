@@ -174,7 +174,7 @@ aps-frontend/src/
 
 - [x] Create `app/` package; move the FastAPI app to `app.main` and update the Docker/uvicorn entry point (`main_backend.py` removed).
 - [x] Add `app/config.py` with a typed `Settings` object (env names preserved: `POSTGRES_*`, solver limits, log level, API flags).
-- [ ] Define domain dataclasses: `WorkOrder`, `Operation`, `Resource`, `Material`, `Item`, `RoutingTemplate`, `OperationDependency`, `OperationMaterial`, `FactoryShift`, `FactoryHoliday`.
+- [x] Define domain dataclasses: `WorkOrder`, `Operation`, `Resource`, `Material`, `Item`, `RoutingTemplate`, `OperationDependency`, `OperationMaterial`, `FactoryShift`, `FactoryHoliday`.
 - [ ] Define enums: `OperationStatus`, `WorkOrderStatus`, `RunStatus`, `SolverStatus`, `ResourceType`; replace string literals everywhere.
 - [ ] Define `DomainError` hierarchy: `ValidationError`, `NotFoundError`, `ConflictError`, `InfeasibleSchedule`, `SchedulerUnavailable`.
 - [ ] Add row → domain mappers in `adapters/db/mappers.py` (temporary psycopg2 source is fine).
