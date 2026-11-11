@@ -34,7 +34,7 @@ exclude = ["aps_backend/tests"]
 # Legacy modules predate typed boundaries. They are ignored until the Phase 1-2
 # domain/port extraction; new code under app/ is checked without overrides.
 [[tool.mypy.overrides]]
-module = ["classes.*", "repository.*", "api.*", "main_backend", "app.main"]
+module = ["classes.*", "repository.*", "api.*", "app.main"]
 ignore_errors = true
 
 [tool.coverage.run]

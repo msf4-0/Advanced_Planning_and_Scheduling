@@ -9,12 +9,6 @@ from repository import ConflictError, DatabaseError
 client = TestClient(main_app.app, raise_server_exceptions=False)
 
 
-def test_main_backend_shim_exposes_the_same_app():
-    import main_backend
-
-    assert main_backend.app is main_app.app
-
-
 def _patch_repository(monkeypatch, *, fetch_error=None, delete_count=0):
     class FakeRepository:
         def __init__(self, *args, **kwargs):

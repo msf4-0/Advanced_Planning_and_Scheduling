@@ -1,8 +1,6 @@
 """APS FastAPI application.
 
-The application lives here so the future domain/scheduling packages can depend
-on it in the intended direction. `main_backend.py` remains as a compatibility
-shim for Docker/uvicorn entry points.
+`app.main` is the canonical entry point (`uvicorn app.main:app`).
 """
 
 import logging

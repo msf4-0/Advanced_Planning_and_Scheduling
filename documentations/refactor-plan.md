@@ -64,10 +64,9 @@ main/config compose everything
 
 ```
 aps_backend/
-├── main_backend.py            # shim: from app.main import app (kept for uvicorn/Docker)
 ├── pyproject.toml             # deps, ruff, mypy, pytest, coverage
 ├── app/
-│   ├── main.py                # app factory, routers, middleware, exception handlers
+│   ├── main.py                # FastAPI entry point (uvicorn app.main:app)
 │   ├── config.py              # pydantic-settings Settings
 │   ├── deps.py                # FastAPI dependencies (settings, session, repos, service)
 │   ├── domain/
@@ -173,7 +172,7 @@ aps-frontend/src/
 
 **Why:** the DB schema is currently the domain model. This phase gives the code its own vocabulary and removes primitive obsession.
 
-- [x] Create `app/` package; convert `main_backend.py` to a thin shim so Docker/uvicorn keep working.
+- [x] Create `app/` package; move the FastAPI app to `app.main` and update the Docker/uvicorn entry point (`main_backend.py` removed).
 - [ ] Add `app/config.py` with a typed `Settings` object (env names preserved: `POSTGRES_*`, solver limits, log level, API flags).
 - [ ] Define domain dataclasses: `WorkOrder`, `Operation`, `Resource`, `Material`, `Item`, `RoutingTemplate`, `OperationDependency`, `OperationMaterial`, `FactoryShift`, `FactoryHoliday`.
 - [ ] Define enums: `OperationStatus`, `WorkOrderStatus`, `RunStatus`, `SolverStatus`, `ResourceType`; replace string literals everywhere.

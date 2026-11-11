@@ -13,8 +13,8 @@ This document provides a detailed technical reference for the FastAPI backend se
   * [1. Architectural File Structure & Responsibilities](#1-architectural-file-structure--responsibilities)
   * [2. Core Modules & Component Breakdown](#2-core-modules--component-breakdown)
   * [3. Optimized Batch Operations](#3-optimized-batch-operations)
-* [REST API Layer (`main_backend.py` & `api/crud_routes.py`)](#-rest-api-layer-main_backendpy--apicrud_routespy)
-  * [1. Scheduler Orchestration Router (`main_backend.py`)](#1-scheduler-orchestration-router-main_backendpy)
+* [REST API Layer (`app/main.py` & `api/crud_routes.py`)](#-rest-api-layer-appmainpy--apicrud_routespy)
+  * [1. Scheduler Orchestration Router (`app/main.py`)](#1-scheduler-orchestration-router-appmainpy)
   * [2. Generic Dynamic CRUD Router (`api/crud_routes.py`)](#2-generic-dynamic-crud-router-apicrud_routespy)
 * [Optimization & Pipeline Orchestration (`classes/`)](#optimization-orchestration)
   * [1. CP-SAT Mathematical Solver (`APSEngine.py`)](#1-cp-sat-mathematical-solver-apsenginepy)
@@ -39,7 +39,7 @@ All anchor tags are standard GitHub-flavored Markdown headers, so clicking any l
             ▼                                     ▼
 ┌───────────────────────┐             ┌───────────────────────┐
 │ Dynamic CRUD Router   │             │  Scheduler Router     │
-│ (`api/crud_routes.py`)│             │  (`main_backend.py`)  │
+│ (`api/crud_routes.py`)│             │  (`app/main.py`)      │
 └───────────┬───────────┘             └───────────┬───────────┘
             │                                     │
             │                                     ▼
@@ -73,7 +73,7 @@ All anchor tags are standard GitHub-flavored Markdown headers, so clicking any l
 
 ## Project Layout & Core Module Summary
 
-* **`main_backend.py`**: The application entry point initializing FastAPI, configuring routes, tracking scheduling run executions, and handling global errors.
+* **`app/main.py`**: The application entry point initializing FastAPI, configuring routes, tracking scheduling run executions, and handling global errors.
 
 
 * **`api/`**: Router layer containing dynamic CRUD endpoint definitions (`crud_routes.py`).
@@ -212,13 +212,13 @@ The `Repository` class implements dedicated high-performance batch methods using
 
 ***
 
-## REST API Layer (`main_backend.py` & `api/crud_routes.py`)
+## REST API Layer (`app/main.py` & `api/crud_routes.py`)
 
 The REST API layer connects HTTP client requests directly to the underlying repository and execution pipeline.
 
 ---
 
-### 1. Scheduler Orchestration Router (`main_backend.py`)
+### 1. Scheduler Orchestration Router (`app/main.py`)
 
 Handles system initialization, exposes optimization triggers, and retrieves execution state.
 
@@ -359,7 +359,7 @@ Upon reaching an `OPTIMAL` or `FEASIBLE` solution status, the engine directly mu
 The backend uses a standard Python 3.11 container environment:
 * **Base Image**: `python:3.11-slim`
 * **Exposed Port**: `8000` running Uvicorn
-* **Startup Command**: `uvicorn main_backend:app --host 0.0.0.0 --port 8000`
+* **Startup Command**: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 
 ### Core Dependencies (`requirements.txt`)

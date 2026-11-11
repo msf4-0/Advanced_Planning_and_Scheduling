@@ -58,7 +58,7 @@ The application runs as a multi-container Docker stack managed by Docker Compose
 ├── install.ps1                         # Automated installation script for Windows PowerShell
 │
 ├── aps_backend/                        # Backend API & Engine Service
-│   ├── main_backend.py                 # FastAPI/Flask application entry point
+│   ├── app/main.py                     # FastAPI application entry point
 │   ├── Dockerfile                      # Backend container definition
 │   ├── requirements.txt                # Python dependencies
 │   ├── api/                            # API endpoints & route handlers (`crud_routes.py`)
