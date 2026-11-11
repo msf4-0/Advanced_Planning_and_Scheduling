@@ -2,11 +2,17 @@
 
 from fastapi.testclient import TestClient
 
-import main_backend
+from app import main as main_app
 from api import crud_routes
 from repository import ConflictError, DatabaseError
 
-client = TestClient(main_backend.app, raise_server_exceptions=False)
+client = TestClient(main_app.app, raise_server_exceptions=False)
+
+
+def test_main_backend_shim_exposes_the_same_app():
+    import main_backend
+
+    assert main_backend.app is main_app.app
 
 
 def _patch_repository(monkeypatch, *, fetch_error=None, delete_count=0):
@@ -114,13 +120,13 @@ def test_health_and_ready_probes():
         def close_connection(self, connection):
             pass
 
-    main_backend.app.dependency_overrides[main_backend.get_connection_manager] = (
+    main_app.app.dependency_overrides[main_app.get_connection_manager] = (
         lambda: FakeManager()
     )
     try:
         response = client.get("/ready")
     finally:
-        main_backend.app.dependency_overrides.clear()
+        main_app.app.dependency_overrides.clear()
 
     assert response.status_code == 200
     assert response.json() == {"status": "ready"}
@@ -131,13 +137,13 @@ def test_ready_returns_503_when_database_is_unavailable():
         def get_connection(self):
             raise RuntimeError("connection refused")
 
-    main_backend.app.dependency_overrides[main_backend.get_connection_manager] = (
+    main_app.app.dependency_overrides[main_app.get_connection_manager] = (
         lambda: FailingManager()
     )
     try:
         response = client.get("/ready")
     finally:
-        main_backend.app.dependency_overrides.clear()
+        main_app.app.dependency_overrides.clear()
 
     assert response.status_code == 503
     assert response.json()["type"] == "urn:aps:error:unavailable"
@@ -155,9 +161,9 @@ def _run_scheduler_with(monkeypatch, pipeline_error):
             self.updates.append((id_value, data))
             return 1
 
-    monkeypatch.setattr(main_backend, "Repository", FakeRunsRepository)
+    monkeypatch.setattr(main_app, "Repository", FakeRunsRepository)
     monkeypatch.setattr(
-        main_backend.ScheduleCreator,
+        main_app.ScheduleCreator,
         "run",
         lambda run_id=None: (_ for _ in ()).throw(pipeline_error),
     )

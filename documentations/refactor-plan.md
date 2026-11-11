@@ -173,7 +173,7 @@ aps-frontend/src/
 
 **Why:** the DB schema is currently the domain model. This phase gives the code its own vocabulary and removes primitive obsession.
 
-- [ ] Create `app/` package; convert `main_backend.py` to a thin shim so Docker/uvicorn keep working.
+- [x] Create `app/` package; convert `main_backend.py` to a thin shim so Docker/uvicorn keep working.
 - [ ] Add `app/config.py` with a typed `Settings` object (env names preserved: `POSTGRES_*`, solver limits, log level, API flags).
 - [ ] Define domain dataclasses: `WorkOrder`, `Operation`, `Resource`, `Material`, `Item`, `RoutingTemplate`, `OperationDependency`, `OperationMaterial`, `FactoryShift`, `FactoryHoliday`.
 - [ ] Define enums: `OperationStatus`, `WorkOrderStatus`, `RunStatus`, `SolverStatus`, `ResourceType`; replace string literals everywhere.
