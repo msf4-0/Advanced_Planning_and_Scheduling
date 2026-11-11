@@ -3,14 +3,13 @@
 These are deliberately free of FastAPI, psycopg, SQLAlchemy, and OR-Tools
 imports. They are the shared vocabulary for the API, scheduling, and adapter
 layers.
-
-Status fields remain plain strings for now; the Phase 1 enum item replaces them
-with shared `OperationStatus`/`WorkOrderStatus` types.
 """
 
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Optional
+
+from .enums import OperationStatus, ResourceType, WorkOrderStatus
 
 
 @dataclass
@@ -21,7 +20,7 @@ class WorkOrder:
     target_item_id: str
     quantity_to_make: int
     due_date: datetime
-    status: str = "Draft"
+    status: WorkOrderStatus = WorkOrderStatus.DRAFT
 
 
 @dataclass
@@ -33,7 +32,7 @@ class Operation:
     sequence_number: int
     duration_minutes: int
     assigned_resource_id: Optional[str] = None
-    status: str = "Draft"
+    status: OperationStatus = OperationStatus.DRAFT
 
 
 @dataclass
@@ -42,7 +41,7 @@ class Resource:
 
     id: str
     name: str
-    resource_type: str = "Machine"
+    resource_type: ResourceType = ResourceType.MACHINE
     is_active: bool = True
 
 
@@ -71,7 +70,7 @@ class RoutingTemplate:
 
     target_item_id: str
     step_sequence: int
-    required_resource_type: str
+    required_resource_type: ResourceType
     standard_duration_minutes: int
     id: Optional[int] = None
 

@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from api import crud_routes
 from api.errors import register_exception_handlers
 from app.config import Settings, get_settings
+from app.domain.enums import RunStatus
 from classes import ScheduleCreator
 from repository import (
     ConnectionManager,
@@ -45,7 +46,7 @@ def _mark_run_failed(runs_repo: Repository, run_id, error: Exception) -> None:
         runs_repo.update(
             run_id,
             {
-                "run_status": "Failed",
+                "run_status": RunStatus.FAILED.value,
                 "completed_at": datetime.now(),
                 "log_messages": f"Pipeline failed with error: {error}",
             },
@@ -97,7 +98,7 @@ def run_scheduler_endpoint():
         logging.info("(API) Registering pipeline optimization run tracking entry...")
         new_run_list = runs_repo.add(
             data={
-                "run_status": "Running",
+                "run_status": RunStatus.RUNNING.value,
                 "started_at": datetime.now(),
                 "log_messages": "Optimization workflow initiated via API request endpoint.",
             }
@@ -154,7 +155,9 @@ def get_schedule():
     tasks_repo = Repository("scheduled_tasks", conn_manager)
 
     all_runs = runs_repo.fetch_all()
-    successful_runs = [run for run in all_runs if run.get("run_status") == "Success"]
+    successful_runs = [
+        run for run in all_runs if run.get("run_status") == RunStatus.SUCCESS.value
+    ]
 
     if not successful_runs:
         return {

@@ -4,6 +4,7 @@ from .APSEngine import APSEngine
 from .ProcessNode import ProcessNode
 from .ResourceNode import ResourceNode
 from .SupplyNode import SupplyNode
+from app.domain.enums import OperationStatus, RunStatus
 from repository import Repository, DatabaseConfig, ConnectionManager
 
 def run(run_id: int | None = None) -> dict:
@@ -52,7 +53,7 @@ def run(run_id: int | None = None) -> dict:
     process_nodes = {}
     for operation in db_operations:
         # Ignore completed jobs
-        if operation.get("status") == "Done":
+        if operation.get("status") == OperationStatus.DONE.value:
             continue
 
         node = ProcessNode(
@@ -163,7 +164,7 @@ def run(run_id: int | None = None) -> dict:
         work_order_ids = set(op.job_id for op in process_node_list)
         
         work_order_updates = [
-            {"id": wo_id, "status": "Scheduled"}
+            {"id": wo_id, "status": OperationStatus.SCHEDULED.value}
             for wo_id in work_order_ids
         ]
         
@@ -173,7 +174,7 @@ def run(run_id: int | None = None) -> dict:
 
         # ALSO update the operations table status
         operation_updates = [
-            {"id": op.id, "status": "Scheduled"}
+            {"id": op.id, "status": OperationStatus.SCHEDULED.value}
             for op in process_node_list
         ]
         
@@ -183,13 +184,13 @@ def run(run_id: int | None = None) -> dict:
 
         if run_id:
             runs_log_repo.update(run_id, {
-                "run_status": "Success",
+                "run_status": RunStatus.SUCCESS.value,
                 "completed_at": datetime.now(),
                 "log_messages": f"Engine successfully optimized snapshot configuration parameters. Generated allocations for {len(process_node_list)} operations."
             })
         else:
             runs_log_repo.add(data={
-                "run_status": "Success",
+                "run_status": RunStatus.SUCCESS.value,
                 "completed_at": datetime.now(),
                 "log_messages": f"Engine successfully optimized and processed {len(process_node_list)} shop floor operations. Scheduled {len(work_order_ids)} work orders."
             })
@@ -202,7 +203,7 @@ def run(run_id: int | None = None) -> dict:
     else:
         print(f"\n[!] Pipeline Failed: {result_status}")
         runs_log_repo.add(data={
-            "run_status": "Failed",
+            "run_status": RunStatus.FAILED.value,
             "completed_at": datetime.now(),
             "log_messages": f"Solver Engine optimization failed with output token status: {result_status}"
         })

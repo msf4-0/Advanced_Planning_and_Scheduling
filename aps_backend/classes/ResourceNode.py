@@ -1,7 +1,9 @@
+from app.domain.enums import ResourceType
+
 from .ProcessNode import ProcessNode
 
 class ResourceNode:
-    def __init__(self, resource_id: str, resource_type: str = "Machine"):
+    def __init__(self, resource_id: str, resource_type: str = ResourceType.MACHINE.value):
         # Properties
         self.id: str = resource_id                  # Unique ID
         self.type: str = resource_type              # e.g., "Machine", "Human"

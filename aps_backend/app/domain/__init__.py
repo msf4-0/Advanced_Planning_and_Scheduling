@@ -1,5 +1,12 @@
 """Domain model package."""
 
+from .enums import (
+    OperationStatus,
+    ResourceType,
+    RunStatus,
+    SolverStatus,
+    WorkOrderStatus,
+)
 from .models import (
     FactoryHoliday,
     FactoryShift,
@@ -14,6 +21,11 @@ from .models import (
 )
 
 __all__ = [
+    "OperationStatus",
+    "WorkOrderStatus",
+    "RunStatus",
+    "SolverStatus",
+    "ResourceType",
     "WorkOrder",
     "Operation",
     "Resource",

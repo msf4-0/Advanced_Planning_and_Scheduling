@@ -10,9 +10,12 @@ from app.domain import (
     Operation,
     OperationDependency,
     OperationMaterial,
+    OperationStatus,
     Resource,
+    ResourceType,
     RoutingTemplate,
     WorkOrder,
+    WorkOrderStatus,
 )
 
 
@@ -23,7 +26,7 @@ def test_domain_entities_construct_with_defaults():
         quantity_to_make=10,
         due_date=datetime(2026, 1, 1, 8, 0),
     )
-    assert work_order.status == "Draft"
+    assert work_order.status == WorkOrderStatus.DRAFT
 
     operation = Operation(
         id="OP-1",
@@ -32,10 +35,10 @@ def test_domain_entities_construct_with_defaults():
         duration_minutes=45,
     )
     assert operation.assigned_resource_id is None
-    assert operation.status == "Draft"
+    assert operation.status == OperationStatus.DRAFT
 
     resource = Resource(id="MCH-1", name="Mill")
-    assert resource.resource_type == "Machine"
+    assert resource.resource_type == ResourceType.MACHINE
     assert resource.is_active is True
 
     material = Material(id="MAT-1", name="Steel")
@@ -47,7 +50,7 @@ def test_domain_entities_construct_with_defaults():
     template = RoutingTemplate(
         target_item_id="ITEM-1",
         step_sequence=10,
-        required_resource_type="Machine",
+        required_resource_type=ResourceType.MACHINE,
         standard_duration_minutes=30,
     )
     assert template.id is None
